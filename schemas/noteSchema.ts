@@ -2,22 +2,23 @@ import { z } from "zod";
 import type { Content } from "@tiptap/react";
 
 export const note = z.object({
+  userId: z.string(),
   id: z.string(),
   title: z
     .string()
     .min(1, "O título não pode ser vazio")
     .max(30, "O título é muito longo"),
-  content: z.custom<Content>(),
-  tagIds: z.array(z.string()).default([]).optional(),
+  content: z.custom<Content>().optional().nullable(),
+  tagIds: z.array(z.string()).default([]),
   folderId: z.string().optional(),
-  archived: z.boolean().default(false).optional(),
-  trashed: z.boolean().default(false).optional(),
-  pinned: z.boolean().default(false).optional(),
+  archived: z.boolean().default(false),
+  trashed: z.boolean().default(false),
+  pinned: z.boolean().default(false),
   createdAt: z.string(),
   updatedAt: z.string(),
-  type: z.enum(["note", "pdf"]).default("note").optional(),
+  type: z.enum(["note", "pdf"]).default("note"),
   fileUrl: z.string().optional(),
-  isLocked: z.boolean().default(false).optional(),
+  isLocked: z.boolean().default(false),
 });
 
 export type Note = z.infer<typeof note>;
