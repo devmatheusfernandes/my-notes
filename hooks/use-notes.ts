@@ -33,6 +33,7 @@ export function useNotes() {
     try {
       const newNote = await noteService.createNote(userId, data);
       addNote(newNote);
+      console.log("Nota criada", newNote);
       return newNote;
     } catch (error) {
       const mensagemSegura = getErrorMessage(error);
