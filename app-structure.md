@@ -24,3 +24,6 @@ services/: Arquivos como services/noteService.ts com funções que fazem o "trab
 store/: Arquivos como store/useNoteStore.ts (usando Zustand) para guardar as notas baixadas na memória e evitar consultas repetidas ao banco.
 
 types/: Interfaces puras, como types/note.ts definindo que uma nota tem id: string e content: string.
+
+Design da página de notas
+https://dribbble.com/shots/22188919-Samsung-Notes-App-Redesign-Concept
