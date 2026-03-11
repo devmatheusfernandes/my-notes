@@ -12,7 +12,9 @@ export default function Home() {
           A simple note-taking app
         </p>
         <Link href="/singin">
-          <Button>Get Started</Button>
+          <Button variant="default" size="lg">
+            Get Started
+          </Button>
         </Link>
       </div>
     </div>
