@@ -22,4 +22,8 @@ export const note = z.object({
 });
 
 export type Note = z.infer<typeof note>;
-export type CreateNoteDTO = Omit<Note, "id" | "createdAt" | "updatedAt">;
+
+export type CreateNoteDTO = Omit<
+  z.input<typeof note>,
+  "id" | "createdAt" | "updatedAt" | "userId"
+>;

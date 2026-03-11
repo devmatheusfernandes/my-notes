@@ -7,7 +7,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Note, CreateNoteDTO } from "@/schemas/noteSchema";
+import { note, Note, CreateNoteDTO } from "@/schemas/noteSchema";
 
 const COLLECTION_NAME = "notes";
 
@@ -15,7 +15,8 @@ export const noteService = {
   async createNote(userId: string, data: CreateNoteDTO): Promise<Note> {
     try {
       const newNoteRef = doc(collection(db, COLLECTION_NAME));
-      const novaNota: Note = {
+
+      const rawNote = {
         ...data,
         id: newNoteRef.id,
         userId: userId,
@@ -23,6 +24,7 @@ export const noteService = {
         updatedAt: new Date().toISOString(),
       };
 
+      const novaNota = note.parse(rawNote);
       await setDoc(newNoteRef, novaNota);
       return novaNota;
     } catch (error) {
