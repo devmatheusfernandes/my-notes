@@ -17,8 +17,8 @@ export function useNotes() {
         const fetchedNotes = await noteService.getNotesByUser(userId);
         setNotes(fetchedNotes);
       } catch (error) {
-        const mensagemSegura = getErrorMessage(error);
-        setError(mensagemSegura);
+        const secureMessage = getErrorMessage(error);
+        setError(secureMessage);
       } finally {
         setLoading(false);
       }
@@ -33,12 +33,11 @@ export function useNotes() {
     try {
       const newNote = await noteService.createNote(userId, data);
       addNote(newNote);
-      console.log("Nota criada", newNote);
       return newNote;
     } catch (error) {
-      const mensagemSegura = getErrorMessage(error);
-      setError(mensagemSegura);
-      throw new Error(mensagemSegura);
+      const secureMessage = getErrorMessage(error);
+      setError(secureMessage);
+      throw new Error(secureMessage);
     } finally {
       setLoading(false);
     }

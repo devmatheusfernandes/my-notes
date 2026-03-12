@@ -24,9 +24,9 @@ export const noteService = {
         updatedAt: new Date().toISOString(),
       };
 
-      const novaNota = note.parse(rawNote);
-      await setDoc(newNoteRef, novaNota);
-      return novaNota;
+      const newNote = note.parse(rawNote);
+      await setDoc(newNoteRef, newNote);
+      return newNote;
     } catch (error) {
       console.error("Erro ao criar nota no Firebase:", error);
       throw new Error("Não foi possível salvar a nota no banco de dados.");
