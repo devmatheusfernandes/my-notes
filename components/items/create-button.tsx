@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useFolders } from "@/hooks/use-folders";
 import { useNotes } from "@/hooks/use-notes";
-// 1. Importe os componentes do Shadcn UI
 import {
   Drawer,
   DrawerClose,
@@ -20,14 +19,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useFolderId } from "@/utils/searchParams";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────────────────────
-
 interface MenuItem {
   icon: LucideIcon;
   label: string;
-  action: () => Promise<void> | void; // Pode ser void agora porque só vai abrir o Drawer
+  action: () => Promise<void> | void;
   offsetY: number;
   openDelay: string;
   closeDelay: string;
@@ -36,13 +31,8 @@ interface MenuItem {
 interface CreateButtonProps {
   isLoading?: boolean;
   handleCreateNewNote: () => Promise<void>;
-  // 2. Atualizamos para receber o título da pasta!
   handleCreateNewFolder: (title: string) => Promise<void>;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GooFilter (Mantido intacto)
-// ─────────────────────────────────────────────────────────────────────────────
 
 function GooFilter() {
   return (
@@ -69,10 +59,6 @@ function GooFilter() {
     </svg>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PlusIcon (Mantido intacto)
-// ─────────────────────────────────────────────────────────────────────────────
 
 function PlusIcon({ open }: { open: boolean }) {
   const base: React.CSSProperties = {
@@ -114,10 +100,6 @@ function PlusIcon({ open }: { open: boolean }) {
     </div>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// FloatingItem (Mantido intacto)
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface FloatingItemProps {
   item: MenuItem;
@@ -166,18 +148,12 @@ function FloatingItem({ item, open, isLoading, onSelect }: FloatingItemProps) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CreateButton
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function CreateButton({
   isLoading = false,
   handleCreateNewNote,
   handleCreateNewFolder,
 }: CreateButtonProps) {
   const [open, setOpen] = useState(false);
-
-  // 3. Estados para o Drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [isSubmittingFolder, setIsSubmittingFolder] = useState(false);
@@ -203,7 +179,6 @@ export default function CreateButton({
       icon: FolderPlus,
       label: "Criar pasta",
       action: () => {
-        // Ao invés de criar, apenas abre o Drawer!
         setIsDrawerOpen(true);
       },
       offsetY: 82,
@@ -222,22 +197,18 @@ export default function CreateButton({
 
   function handleItemSelect(item: MenuItem) {
     void item.action();
-    setOpen(false); // Recolhe o botão gooey
+    setOpen(false); 
   }
 
-  // 4. Função que roda quando o usuário clica em "Salvar" no Drawer
   const onSubmitFolder = async () => {
     if (!folderName.trim()) return;
 
     setIsSubmittingFolder(true);
     try {
       await handleCreateNewFolder(folderName);
-      // Se deu certo, fechamos o drawer e limpamos o input
       setIsDrawerOpen(false);
       setFolderName("");
     } catch {
-      // O Toast de erro já está sendo disparado lá no seu page.tsx,
-      // então aqui não precisamos fazer nada, apenas fechar o loading.
     } finally {
       setIsSubmittingFolder(false);
     }
@@ -246,7 +217,6 @@ export default function CreateButton({
   return (
     <>
       <GooFilter />
-
       <div
         ref={wrapRef}
         style={{
@@ -301,7 +271,6 @@ export default function CreateButton({
         </button>
       </div>
 
-      {/* 5. O Drawer do Shadcn renderizado fora do filtro SVG */}
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <DrawerContent>
           <div className="mx-auto w-full max-w-sm">
@@ -317,7 +286,6 @@ export default function CreateButton({
                 onChange={(e) => setFolderName(e.target.value)}
                 placeholder="Ex: Estudos em Gênesis"
                 autoFocus
-                // Permite salvar apertando "Enter" no teclado
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && folderName.trim()) {
                     onSubmitFolder();
@@ -369,7 +337,7 @@ export function SmartCreateButton({
   const handleCreateFolder = async (folderName: string) => {
     try {
       await createFolder(userId, {
-        name: folderName,
+        title: folderName,
         parentId: activeFolderId ?? undefined,
       });
       toast.success("Pasta criada!");

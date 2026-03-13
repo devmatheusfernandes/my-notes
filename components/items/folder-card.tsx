@@ -33,7 +33,7 @@ export default function FolderCard({
       </div>
 
       <h3 className="mb-2 text-base font-bold leading-tight tracking-tight md:text-lg line-clamp-2">
-        {folder.name}
+        {folder.title}
       </h3>
       <p className="mt-auto text-xs leading-relaxed text-zinc-500 md:text-sm">
         Abrir pasta

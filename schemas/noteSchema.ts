@@ -7,7 +7,7 @@ export const note = z.object({
   title: z
     .string()
     .min(1, "O título não pode ser vazio")
-    .max(30, "O título é muito longo")
+    .max(20, "O título é muito longo")
     .default("Nova Nota"),
   content: z.custom<Content>().optional().nullable(),
   tagIds: z.array(z.string()).default([]),

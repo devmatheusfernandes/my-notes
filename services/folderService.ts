@@ -8,13 +8,12 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { folder, Folder, CreateFolderDTO } from "@/schemas/folderSchema";
-
-const COLLECTION_NAME = "folders";
+import { FOLDERS_COLLECTION_NAME } from "@/lib/collections-name";
 
 export const folderService = {
   async createFolder(userId: string, data: CreateFolderDTO): Promise<Folder> {
     try {
-      const newFolderRef = doc(collection(db, COLLECTION_NAME));
+      const newFolderRef = doc(collection(db, FOLDERS_COLLECTION_NAME));
 
       const rawFolder = {
         ...data,
@@ -36,7 +35,7 @@ export const folderService = {
   async getFoldersByUser(userId: string): Promise<Folder[]> {
     try {
       const q = query(
-        collection(db, COLLECTION_NAME),
+        collection(db, FOLDERS_COLLECTION_NAME),
         where("userId", "==", userId),
       );
 

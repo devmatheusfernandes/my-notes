@@ -8,13 +8,12 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { note, Note, CreateNoteDTO } from "@/schemas/noteSchema";
-
-const COLLECTION_NAME = "notes";
+import { NOTES_COLLECTION_NAME } from "@/lib/collections-name";
 
 export const noteService = {
   async createNote(userId: string, data: CreateNoteDTO): Promise<Note> {
     try {
-      const newNoteRef = doc(collection(db, COLLECTION_NAME));
+      const newNoteRef = doc(collection(db, NOTES_COLLECTION_NAME));
 
       const rawNote = {
         ...data,
@@ -36,7 +35,7 @@ export const noteService = {
   async getNotesByUser(userId: string): Promise<Note[]> {
     try {
       const q = query(
-        collection(db, COLLECTION_NAME),
+        collection(db, NOTES_COLLECTION_NAME),
         where("userId", "==", userId),
       );
 

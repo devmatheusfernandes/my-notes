@@ -8,3 +8,12 @@ export function useFolderId() {
   if (Array.isArray(folderId)) return folderId[0] ?? null;
   return folderId;
 }
+
+export function useNoteId() {
+  const params = useParams<{ noteId?: string | string[] }>();
+  const noteId = params?.noteId;
+
+  if (!noteId) return null;
+  if (Array.isArray(noteId)) return noteId[0] ?? null;
+  return noteId;
+}

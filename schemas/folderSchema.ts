@@ -3,7 +3,11 @@ import z from "zod";
 export const folder = z.object({
   userId: z.string(),
   id: z.string(),
-  name: z.string(),
+  title: z
+    .string()
+    .min(1, "O título não pode ser vazio")
+    .max(20, "O título é muito longo")
+    .default("Nova Pasta"),
   parentId: z.string().optional(),
   color: z.string().optional(),
   archived: z.boolean().default(false),
