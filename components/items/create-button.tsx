@@ -338,7 +338,7 @@ export function SmartCreateButton({
     try {
       await createFolder(userId, {
         title: folderName,
-        parentId: activeFolderId ?? undefined,
+        parentId: activeFolderId ?? '',
       });
       toast.success("Pasta criada!");
     } catch (error) {
@@ -352,7 +352,7 @@ export function SmartCreateButton({
       const newNote = await createNote(userId, {
         title: "Nota nova",
         content: "",
-        folderId: activeFolderId ?? undefined,
+        folderId: activeFolderId ?? 'Raiz',
       });
       toast.success("Nota criada!");
       router.push(`/hub/notes/${newNote.id}`);
