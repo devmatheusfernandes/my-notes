@@ -1,13 +1,14 @@
 import { z } from "zod";
 
 export const tag = z.object({
+    userId: z.string(),
     id: z.string(),
     title: z
       .string()
       .min(1, "O título não pode ser vazio")
       .max(15, "O título é muito longo"),
     createdAt: z.string(),
-    updatedAt: z.string().optional(),
+    updatedAt: z.string(),
     color: z.string().optional(),
 })
 

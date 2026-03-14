@@ -1,7 +1,9 @@
 import {
     collection,
     doc,
+    deleteDoc,
     setDoc,
+    getDoc,
     getDocs,
     query,
     where,
@@ -21,7 +23,7 @@ export const tagService = {
             const verifyTagExists = query(
                 collection(db, TAGS_COLLECTION_NAME),
                 where("userId", "==", userId),
-                where("name", "==", data.title),
+                where("title", "==", data.title),
             );
 
             const querySnapshot = await getDocs(verifyTagExists);
@@ -67,6 +69,83 @@ export const tagService = {
         } catch (error) {
             console.error("Erro ao buscar tags:", error);
             throw new Error("Não foi possível carregar suas tags.");
+        }
+    },
+
+    async updateTag(
+        userId: string,
+        tagId: string,
+        data: { title: string; color?: string },
+    ): Promise<Tag> {
+        try {
+            const trimmedTitle = data.title.trim();
+            if (!trimmedTitle) {
+                throw new Error("O título não pode ser vazio");
+            }
+
+            const verifyTagExists = query(
+                collection(db, TAGS_COLLECTION_NAME),
+                where("userId", "==", userId),
+                where("title", "==", trimmedTitle),
+            );
+            const querySnapshot = await getDocs(verifyTagExists);
+            const conflictingTag = querySnapshot.docs.find((d) => d.id !== tagId);
+            if (conflictingTag) {
+                throw new Error("Já existe uma tag com este nome.");
+            }
+
+            const tagRef = doc(db, TAGS_COLLECTION_NAME, tagId);
+            const currentTagSnapshot = await getDoc(tagRef);
+            if (!currentTagSnapshot.exists()) {
+                throw new Error("Tag não encontrada.");
+            }
+
+            const updatedAt = new Date().toISOString();
+            await updateDoc(tagRef, {
+                title: trimmedTitle,
+                ...(data.color ? { color: data.color } : {}),
+                updatedAt,
+            });
+
+            const rawUpdatedTag = {
+                ...currentTagSnapshot.data(),
+                title: trimmedTitle,
+                ...(data.color ? { color: data.color } : {}),
+                updatedAt,
+            };
+            return tag.parse(rawUpdatedTag);
+        } catch (error) {
+            console.error("Erro ao editar tag:", error);
+            if (error instanceof Error && error.message === "Já existe uma tag com este nome.") {
+                throw error;
+            }
+            throw new Error("Não foi possível editar a tag.");
+        }
+    },
+
+    async deleteTag(tagId: string): Promise<void> {
+        try {
+            const tagRef = doc(db, TAGS_COLLECTION_NAME, tagId);
+            await deleteDoc(tagRef);
+
+            const q = query(
+                collection(db, NOTES_COLLECTION_NAME),
+                where("tagIds", "array-contains", tagId),
+            );
+            const querySnapshot = await getDocs(q);
+
+            const updatedAt = new Date().toISOString();
+            await Promise.all(
+                querySnapshot.docs.map((noteDoc) =>
+                    updateDoc(noteDoc.ref, {
+                        tagIds: arrayRemove(tagId),
+                        updatedAt,
+                    }),
+                ),
+            );
+        } catch (error) {
+            console.error("Erro ao deletar tag:", error);
+            throw new Error("Não foi possível deletar a tag.");
         }
     },
 

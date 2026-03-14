@@ -5,7 +5,7 @@ import { CreateTagDTO } from "@/schemas/tagSchema";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 
 export function useTags() {
-    const { tags, isLoading, error, setTags, addTag, setLoading, setError } = useTagStore();
+    const { tags, isLoading, error, setTags, addTag, updateTag, removeTag, setLoading, setError } = useTagStore();
 
     const fetchTags = useCallback(async (userId: string) => {
         setLoading(true);
@@ -26,12 +26,50 @@ export function useTags() {
         try {
             const newTag = await tagService.createTag(userId, data);
             addTag(newTag);
+            return newTag;
         } catch (error) {
-            setError(getErrorMessage(error));
+            const secureMessage = getErrorMessage(error);
+            setError(secureMessage);
+            throw new Error(secureMessage);
         } finally {
             setLoading(false);
         }
     }, [addTag, setError, setLoading]);
+
+    const editTag = useCallback(async (
+        userId: string,
+        tagId: string,
+        data: { title: string; color?: string },
+    ) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const updatedTag = await tagService.updateTag(userId, tagId, data);
+            updateTag(updatedTag);
+            return updatedTag;
+        } catch (error) {
+            const secureMessage = getErrorMessage(error);
+            setError(secureMessage);
+            throw new Error(secureMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, [setError, setLoading, updateTag]);
+
+    const deleteTag = useCallback(async (tagId: string) => {
+        setLoading(true);
+        setError(null);
+        try {
+            await tagService.deleteTag(tagId);
+            removeTag(tagId);
+        } catch (error) {
+            const secureMessage = getErrorMessage(error);
+            setError(secureMessage);
+            throw new Error(secureMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, [removeTag, setError, setLoading]);
 
     const applyTagToNote = useCallback(async (noteId: string, tagId: string) => {
         setLoading(true);
@@ -39,7 +77,9 @@ export function useTags() {
         try {
             await tagService.applyTagToNote(noteId, tagId);
         } catch (error) {
-            setError(getErrorMessage(error));
+            const secureMessage = getErrorMessage(error);
+            setError(secureMessage);
+            throw new Error(secureMessage);
         } finally {
             setLoading(false);
         }
@@ -51,7 +91,9 @@ export function useTags() {
         try {
             await tagService.removeTagFromNote(noteId, tagId);
         } catch (error) {
-            setError(getErrorMessage(error));
+            const secureMessage = getErrorMessage(error);
+            setError(secureMessage);
+            throw new Error(secureMessage);
         } finally {
             setLoading(false);
         }
@@ -63,6 +105,8 @@ export function useTags() {
         error,
         fetchTags,
         createTag,
+        editTag,
+        deleteTag,
         applyTagToNote,
         removeTagFromNote,
     };

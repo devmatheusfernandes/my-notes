@@ -2,7 +2,6 @@
 import { useSidebar } from "../ui/sidebar";
 import { Menu } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 
 export default function Header() {
@@ -25,9 +24,7 @@ export default function Header() {
         </Avatar>
       </div>
 
-      <div className="px-1 w-full">
-        <Input placeholder="Buscar nota..." />
-      </div>
+   
     </header>
   );
 }

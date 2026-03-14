@@ -1,11 +1,20 @@
 "use client";
 
-import { FilePlus2, FolderPlus, Loader2, LucideIcon } from "lucide-react";
+import {
+  FilePlus2,
+  FolderPlus,
+  Loader2,
+  LucideIcon,
+  Pencil,
+  Tag,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useFolders } from "@/hooks/use-folders";
 import { useNotes } from "@/hooks/use-notes";
+import { useTags } from "@/hooks/use-tags";
 import {
   Drawer,
   DrawerClose,
@@ -17,7 +26,9 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { tagColors } from "@/lib/tag-colors";
 import { useFolderId } from "@/utils/searchParams";
+import type { Tag as TagModel } from "@/schemas/tagSchema";
 
 interface MenuItem {
   icon: LucideIcon;
@@ -32,6 +43,10 @@ interface CreateButtonProps {
   isLoading?: boolean;
   handleCreateNewNote: () => Promise<void>;
   handleCreateNewFolder: (title: string) => Promise<void>;
+  tags?: TagModel[];
+  handleCreateNewTag?: (title: string, color?: string) => Promise<void>;
+  handleEditTag?: (tagId: string, title: string, color?: string) => Promise<void>;
+  handleDeleteTag?: (tagId: string) => Promise<void>;
 }
 
 function GooFilter() {
@@ -152,11 +167,25 @@ export default function CreateButton({
   isLoading = false,
   handleCreateNewNote,
   handleCreateNewFolder,
+  tags = [],
+  handleCreateNewTag,
+  handleEditTag,
+  handleDeleteTag,
 }: CreateButtonProps) {
   const [open, setOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [isSubmittingFolder, setIsSubmittingFolder] = useState(false);
+
+  const [isTagDrawerOpen, setIsTagDrawerOpen] = useState(false);
+  const [tagName, setTagName] = useState("");
+  const [tagColor, setTagColor] = useState<string>(tagColors[0]);
+  const [isSubmittingTag, setIsSubmittingTag] = useState(false);
+  const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [editingTagTitle, setEditingTagTitle] = useState("");
+  const [editingTagColor, setEditingTagColor] = useState<string>(tagColors[0]);
+  const [isSavingTag, setIsSavingTag] = useState(false);
+  const [deletingTagId, setDeletingTagId] = useState<string | null>(null);
 
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -185,12 +214,26 @@ export default function CreateButton({
       openDelay: "0ms",
       closeDelay: "50ms",
     },
+    ...(handleCreateNewTag
+      ? ([
+          {
+            icon: Tag,
+            label: "Criar tag",
+            action: () => {
+              setIsTagDrawerOpen(true);
+            },
+            offsetY: 152,
+            openDelay: "60ms",
+            closeDelay: "0ms",
+          },
+        ] satisfies MenuItem[])
+      : []),
     {
       icon: FilePlus2,
       label: "Criar nota",
       action: handleCreateNewNote,
-      offsetY: 152,
-      openDelay: "60ms",
+      offsetY: handleCreateNewTag ? 222 : 152,
+      openDelay: handleCreateNewTag ? "120ms" : "60ms",
       closeDelay: "0ms",
     },
   ];
@@ -211,6 +254,65 @@ export default function CreateButton({
     } catch {
     } finally {
       setIsSubmittingFolder(false);
+    }
+  };
+
+  const onSubmitTag = async () => {
+    if (!handleCreateNewTag) return;
+    if (!tagName.trim()) return;
+
+    setIsSubmittingTag(true);
+    try {
+      await handleCreateNewTag(tagName, tagColor);
+      setTagName("");
+      setTagColor(tagColors[0]);
+    } catch {
+    } finally {
+      setIsSubmittingTag(false);
+    }
+  };
+
+  const onStartEditTag = (tag: TagModel) => {
+    setEditingTagId(tag.id);
+    setEditingTagTitle(tag.title);
+    setEditingTagColor(tag.color ?? tagColors[0]);
+  };
+
+  const onCancelEditTag = () => {
+    setEditingTagId(null);
+    setEditingTagTitle("");
+    setEditingTagColor(tagColors[0]);
+  };
+
+  const onSaveTag = async () => {
+    if (!handleEditTag) return;
+    if (!editingTagId) return;
+    if (!editingTagTitle.trim()) return;
+
+    setIsSavingTag(true);
+    try {
+      await handleEditTag(editingTagId, editingTagTitle, editingTagColor);
+      setEditingTagId(null);
+      setEditingTagTitle("");
+      setEditingTagColor(tagColors[0]);
+    } catch {
+    } finally {
+      setIsSavingTag(false);
+    }
+  };
+
+  const onDeleteTag = async (tagId: string) => {
+    if (!handleDeleteTag) return;
+    setDeletingTagId(tagId);
+    try {
+      await handleDeleteTag(tagId);
+      if (editingTagId === tagId) {
+        setEditingTagId(null);
+        setEditingTagTitle("");
+      }
+    } catch {
+    } finally {
+      setDeletingTagId(null);
     }
   };
 
@@ -313,6 +415,202 @@ export default function CreateButton({
         </DrawerContent>
       </Drawer>
 
+      <Drawer
+        open={isTagDrawerOpen}
+        onOpenChange={(value) => {
+          setIsTagDrawerOpen(value);
+          if (!value) {
+            setTagName("");
+            setTagColor(tagColors[0]);
+            setEditingTagId(null);
+            setEditingTagTitle("");
+            setEditingTagColor(tagColors[0]);
+          }
+        }}
+      >
+        <DrawerContent>
+          <div className="mx-auto w-full max-w-sm">
+            <DrawerHeader>
+              <DrawerTitle>Tags</DrawerTitle>
+              <DrawerDescription>
+                Crie, edite e delete tags para organizar suas notas.
+              </DrawerDescription>
+            </DrawerHeader>
+
+            <div className="p-4 pb-0">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={tagName}
+                  onChange={(e) => setTagName(e.target.value)}
+                  placeholder="Ex: Teologia"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && tagName.trim()) {
+                      onSubmitTag();
+                    }
+                  }}
+                />
+                <Button
+                  onClick={onSubmitTag}
+                  disabled={!tagName.trim() || isSubmittingTag}
+                  className="bg-[#111] text-white hover:bg-black"
+                >
+                  {isSubmittingTag ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    "Adicionar"
+                  )}
+                </Button>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {tagColors.map((color) => {
+                  const selected = color === tagColor;
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setTagColor(color)}
+                      className={[
+                        "size-7 rounded-full border",
+                        color,
+                        selected
+                          ? "ring-2 ring-foreground ring-offset-2 ring-offset-background"
+                          : "border-border",
+                      ].join(" ")}
+                      aria-label={`Cor ${color}`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="p-4">
+              <div className="flex flex-col gap-2">
+                {tags.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">
+                    Nenhuma tag criada ainda.
+                  </div>
+                ) : (
+                  tags.map((tag) => {
+                    const isEditing = editingTagId === tag.id;
+                    return (
+                      <div
+                        key={tag.id}
+                        className="flex items-center gap-2 rounded-lg border px-3 py-2"
+                      >
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
+                          {isEditing ? (
+                            <div className="flex w-full flex-col gap-2">
+                              <Input
+                                value={editingTagTitle}
+                                onChange={(e) =>
+                                  setEditingTagTitle(e.target.value)
+                                }
+                                onKeyDown={(e) => {
+                                  if (
+                                    e.key === "Enter" &&
+                                    editingTagTitle.trim()
+                                  ) {
+                                    onSaveTag();
+                                  }
+                                  if (e.key === "Escape") {
+                                    onCancelEditTag();
+                                  }
+                                }}
+                              />
+                              <div className="flex flex-wrap items-center gap-2">
+                                {tagColors.map((color) => {
+                                  const selected = color === editingTagColor;
+                                  return (
+                                    <button
+                                      key={color}
+                                      type="button"
+                                      onClick={() => setEditingTagColor(color)}
+                                      className={[
+                                        "size-6 rounded-full border",
+                                        color,
+                                        selected
+                                          ? "ring-2 ring-foreground ring-offset-2 ring-offset-background"
+                                          : "border-border",
+                                      ].join(" ")}
+                                      aria-label={`Cor ${color}`}
+                                    />
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <span
+                                className={[
+                                  "size-2 shrink-0 rounded-full",
+                                  tag.color ?? "bg-muted",
+                                ].join(" ")}
+                              />
+                              <div className="truncate text-sm font-medium">
+                                {tag.title}
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        {isEditing ? (
+                          <>
+                            <Button
+                              variant="outline"
+                              onClick={onCancelEditTag}
+                              disabled={isSavingTag}
+                            >
+                              Cancelar
+                            </Button>
+                            <Button
+                              onClick={onSaveTag}
+                              disabled={!editingTagTitle.trim() || isSavingTag}
+                              className="bg-[#111] text-white hover:bg-black"
+                            >
+                              {isSavingTag ? (
+                                <Loader2 className="size-4 animate-spin" />
+                              ) : (
+                                "Salvar"
+                              )}
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => onStartEditTag(tag)}
+                              aria-label={`Editar ${tag.title}`}
+                            >
+                              <Pencil className="size-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => onDeleteTag(tag.id)}
+                              disabled={deletingTagId === tag.id}
+                              aria-label={`Deletar ${tag.title}`}
+                            >
+                              {deletingTagId === tag.id ? (
+                                <Loader2 className="size-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="size-4" />
+                              )}
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
       <style>{`
         @keyframes fab-spin {
           from { transform: rotate(0deg); }
@@ -331,14 +629,26 @@ export function SmartCreateButton({
   const router = useRouter();
   const { createNote, isLoading: isNotesLoading } = useNotes();
   const { createFolder, isLoading: isFoldersLoading } = useFolders();
+  const {
+    tags,
+    fetchTags,
+    createTag,
+    editTag,
+    deleteTag,
+    isLoading: isTagsLoading,
+  } = useTags();
   const activeFolderId = useFolderId();
-  const isLoading = isNotesLoading || isFoldersLoading;
+  const isLoading = isNotesLoading || isFoldersLoading || isTagsLoading;
+
+  useEffect(() => {
+    fetchTags(userId);
+  }, [fetchTags, userId]);
 
   const handleCreateFolder = async (folderName: string) => {
     try {
       await createFolder(userId, {
         title: folderName,
-        parentId: activeFolderId ?? '',
+        parentId: activeFolderId ?? "",
       });
       toast.success("Pasta criada!");
     } catch (error) {
@@ -352,7 +662,7 @@ export function SmartCreateButton({
       const newNote = await createNote(userId, {
         title: "Nota nova",
         content: "",
-        folderId: activeFolderId ?? 'Raiz',
+        folderId: activeFolderId ?? "Raiz",
       });
       toast.success("Nota criada!");
       router.push(`/hub/notes/${newNote.id}`);
@@ -362,11 +672,45 @@ export function SmartCreateButton({
     }
   };
 
+  const handleCreateTag = async (title: string, color?: string) => {
+    try {
+      await createTag(userId, { title: title.trim(), ...(color ? { color } : {}) });
+      toast.success("Tag criada!");
+    } catch (error) {
+      console.log("Erro ao criar tag:", error);
+      toast.error("Erro ao criar tag!");
+    }
+  };
+
+  const handleEditTag = async (tagId: string, title: string, color?: string) => {
+    try {
+      await editTag(userId, tagId, { title: title.trim(), ...(color ? { color } : {}) });
+      toast.success("Tag editada!");
+    } catch (error) {
+      console.log("Erro ao editar tag:", error);
+      toast.error("Erro ao editar tag!");
+    }
+  };
+
+  const handleDeleteTag = async (tagId: string) => {
+    try {
+      await deleteTag(tagId);
+      toast.success("Tag deletada!");
+    } catch (error) {
+      console.log("Erro ao deletar tag:", error);
+      toast.error("Erro ao deletar tag!");
+    }
+  };
+
   return (
     <CreateButton
       isLoading={isLoading}
       handleCreateNewNote={handleCreateNote}
       handleCreateNewFolder={handleCreateFolder}
+      tags={tags}
+      handleCreateNewTag={handleCreateTag}
+      handleEditTag={handleEditTag}
+      handleDeleteTag={handleDeleteTag}
     />
   );
 }

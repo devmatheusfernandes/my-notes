@@ -17,13 +17,13 @@ export type HubSidebarItem = {
 
 export const hubSidebarItems: HubSidebarItem[] = [
   {
-    label: "Dashboard",
+    label: "Início",
     tooltip: "Dashboard",
     icon: LayoutGridIcon,
     href: "/hub/notes",
   },
   {
-    label: "Notas",
+    label: "Todas as notas",
     tooltip: "Notas",
     icon: BookOpenIcon,
     href: "/hub/notes",
