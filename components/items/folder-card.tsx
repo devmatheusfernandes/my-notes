@@ -18,7 +18,7 @@ export default function FolderCard({
 
   return (
     <article
-      onClick={() => router.push(`/hub/folders/${folder.id}`)}
+      onClick={() => router.push(`/hub/items/${folder.id}`)}
       className={cn(
         "group flex cursor-pointer flex-col overflow-hidden rounded-2xl bg-card p-5 text-foreground transition-all duration-300 hover:bg-muted active:scale-[0.98]",
         getBentoClasses(index),

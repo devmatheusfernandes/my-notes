@@ -20,13 +20,13 @@ export const hubSidebarItems: HubSidebarItem[] = [
     label: "Início",
     tooltip: "Dashboard",
     icon: LayoutGridIcon,
-    href: "/hub/notes",
+    href: "/hub/items",
   },
   {
     label: "Todas as notas",
     tooltip: "Notas",
     icon: BookOpenIcon,
-    href: "/hub/notes",
+    href: "/hub/items",
   },
   {
     label: "Favoritas",

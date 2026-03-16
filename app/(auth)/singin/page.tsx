@@ -11,7 +11,7 @@ export default function SingIn() {
         <p className="text-zinc-500 dark:text-zinc-400">
           Welcome back!
         </p>
-        <Link href="/hub/notes">
+        <Link href="/hub/items">
           <Button variant="default" size="lg">
             Sign In with Google
           </Button>

@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect } from "react";
 import { useNotes } from "@/hooks/use-notes";
 import { useFolders } from "@/hooks/use-folders";
@@ -7,15 +8,18 @@ import { SmartCreateButton } from "@/components/items/create-button";
 import TagChips from "@/components/items/tag-chips";
 import { Input } from "@/components/ui/input";
 
-export default function FolderPage() {
+export default function HubItemsPage({
+  userId = "user_teste_123",
+}: {
+  userId?: string;
+}) {
   const { fetchNotes, notes } = useNotes();
   const { fetchFolders, folders } = useFolders();
-  const userId = "user_teste_123";
 
   useEffect(() => {
     fetchNotes(userId);
     fetchFolders(userId);
-  }, [fetchFolders, fetchNotes, userId]);
+  }, [fetchNotes, fetchFolders, userId]);
 
   return (
     <main>
