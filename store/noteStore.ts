@@ -8,6 +8,7 @@ interface NoteState {
 
   setNotes: (notes: Note[]) => void;
   addNote: (note: Note) => void;
+  removeNote: (noteId: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
@@ -17,8 +18,9 @@ export const useNoteStore = create<NoteState>((set) => ({
   isLoading: false,
   error: null,
 
-  setNotes: (notes) => set({ notes: notes }),
+  setNotes: (notes) => set({ notes }),
   addNote: (note) => set((state) => ({ notes: [note, ...state.notes] })),
-  setLoading: (isLoading) => set({ isLoading: isLoading }),
-  setError: (error) => set({ error: error }),
+  removeNote: (noteId) => set((state) => ({ notes: state.notes.filter((n) => n.id !== noteId) })),
+  setLoading: (isLoading) => set({ isLoading }),
+  setError: (error) => set({ error }),
 }));

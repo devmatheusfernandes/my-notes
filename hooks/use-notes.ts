@@ -5,7 +5,7 @@ import { CreateNoteDTO } from "@/schemas/noteSchema";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 
 export function useNotes() {
-  const { notes, isLoading, error, setNotes, addNote, setLoading, setError } =
+  const { notes, isLoading, error, setNotes, addNote, removeNote, setLoading, setError } =
     useNoteStore();
 
   const fetchNotes = useCallback(
@@ -42,11 +42,28 @@ export function useNotes() {
       setLoading(false);
     }
   };
+  const deleteNote = async (noteId: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      await noteService.deleteNote(noteId);
+      removeNote(noteId);
+    } catch (error) {
+      const secureMessage = getErrorMessage(error);
+      setError(secureMessage);
+      throw new Error(secureMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     notes,
     isLoading,
     error,
     fetchNotes,
     createNote,
+    deleteNote,
   };
 }

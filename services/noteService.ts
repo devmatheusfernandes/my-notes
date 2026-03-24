@@ -5,6 +5,7 @@ import {
   getDocs,
   query,
   where,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { note, Note, CreateNoteDTO } from "@/schemas/noteSchema";
@@ -50,6 +51,16 @@ export const noteService = {
     } catch (error) {
       console.error("Erro ao buscar notas:", error);
       throw new Error("Não foi possível carregar suas notas.");
+    }
+  },
+
+  async deleteNote(noteId: string): Promise<void> {
+    try {
+      const noteRef = doc(db, NOTES_COLLECTION_NAME, noteId);
+      await deleteDoc(noteRef);
+    } catch (error) {
+      console.error("Erro ao deletar nota no Firebase:", error);
+      throw new Error("Não foi possível excluir a nota.");
     }
   },
 };
