@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
+import { useSelection } from "@/components/hub/selection-context";
 import type { Folder } from "@/schemas/folderSchema";
 import type { Note } from "@/schemas/noteSchema";
 import { useNotesSearch } from "@/hooks/use-notes-search";
@@ -29,6 +30,8 @@ export function ItemsBentoGrid({
   folders?: Folder[];
 }) {
   const folderId = useFolderId();
+  const { setVisibleItems } = useSelection();
+
   const folderFilteredNotes = useMemo(() => {
     return filterNotesByFolder(notes, folderId);
   }, [folderId, notes]);
@@ -46,6 +49,15 @@ export function ItemsBentoGrid({
       folderId,
     });
   }, [folderId, sortedFolders, sortedNotes]);
+
+  const noteIdsStr = gridItems.filter(i => i.kind === "note").map(i => i.note.id).join(",");
+  const folderIdsStr = gridItems.filter(i => i.kind === "folder").map(i => i.folder.id).join(",");
+
+  useEffect(() => {
+    const visibleNoteIds = noteIdsStr ? noteIdsStr.split(",") : [];
+    const visibleFolderIds = folderIdsStr ? folderIdsStr.split(",") : [];
+    setVisibleItems(visibleNoteIds, visibleFolderIds);
+  }, [noteIdsStr, folderIdsStr, setVisibleItems]);
 
   return (
     <BentoGrid>
