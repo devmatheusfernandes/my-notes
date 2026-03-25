@@ -101,7 +101,7 @@ export default function Header() {
       </div>
 
       {breadcrumbItems.length > 1 ? (
-        <Breadcrumb>
+        <Breadcrumb className="mx-2">
           <BreadcrumbList>
             {breadcrumbItems.map((item, index) => {
               const isLast = index === breadcrumbItems.length - 1;

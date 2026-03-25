@@ -10,9 +10,12 @@ import { useNotes } from "@/hooks/use-notes";
 import { toast } from "sonner";
 import { useState } from "react";
 
+import { useFolders } from "@/hooks/use-folders";
+
 export function SelectionActionBar() {
   const { isSelectionActive, selectedNoteIds, selectedFolderIds, selectAll, clearSelection } = useSelection();
   const { deleteNote } = useNotes();
+  const { deleteFolder } = useFolders();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -27,7 +30,7 @@ export function SelectionActionBar() {
     let successCount = 0;
     let errorCount = 0;
 
-    const deletePromises = Array.from(selectedNoteIds).map(async (noteId) => {
+    const deleteNotePromises = Array.from(selectedNoteIds).map(async (noteId) => {
       try {
         await deleteNote(noteId);
         successCount++;
@@ -36,28 +39,33 @@ export function SelectionActionBar() {
       }
     });
 
-    toast.promise(Promise.all(deletePromises), {
-      loading: "Excluindo notas selecionadas...",
+    const deleteFolderPromises = Array.from(selectedFolderIds).map(async (folderId) => {
+      try {
+        await deleteFolder(folderId);
+        successCount++;
+      } catch {
+        errorCount++;
+      }
+    });
+
+    toast.promise(Promise.all([...deleteNotePromises, ...deleteFolderPromises]), {
+      loading: "Excluindo itens selecionados...",
       success: () => {
         setIsDeleting(false);
         clearSelection();
         if (errorCount > 0) {
-          return `${successCount} nota(s) excluída(s), ${errorCount} erro(s).`;
+          return `${successCount} item(s) excluído(s), ${errorCount} erro(s).`;
         }
-        return `${successCount} nota(s) excluída(s) com sucesso.`;
+        return `${successCount} item(s) excluído(s) com sucesso.`;
       },
       error: () => {
         setIsDeleting(false);
-        return "Erro ao excluir algumas notas.";
+        return "Erro ao excluir alguns itens.";
       }
     });
   };
 
   const attemptDelete = () => {
-    if (selectedFolderIds.size > 0) {
-      toast.info("A deleção de pastas será implementada futuramente.");
-      if (selectedNoteIds.size === 0) return;
-    }
     setIsDrawerOpen(true);
   };
 
@@ -155,7 +163,7 @@ export function SelectionActionBar() {
             <DrawerHeader>
               <DrawerTitle>Excluir itens?</DrawerTitle>
               <DrawerDescription>
-                Tem certeza que deseja excluir {selectedNoteIds.size} nota(s)? Essa ação não pode ser desfeita.
+                Tem certeza que deseja excluir {selectedCount} iten(s)? Essa ação não pode ser desfeita.
               </DrawerDescription>
             </DrawerHeader>
             <DrawerFooter>

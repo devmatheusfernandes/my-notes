@@ -11,6 +11,7 @@ export function useFolders() {
     error,
     setFolders,
     addFolder,
+    removeFolder,
     setLoading,
     setError,
   } = useFolderStore();
@@ -49,11 +50,28 @@ export function useFolders() {
       setLoading(false);
     }
   };
+  const deleteFolder = async (folderId: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      await folderService.deleteFolder(folderId);
+      removeFolder(folderId);
+    } catch (error) {
+      const secureMessage = getErrorMessage(error);
+      setError(secureMessage);
+      throw new Error(secureMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     folders,
     isLoading,
     error,
     fetchFolders,
     createFolder,
+    deleteFolder,
   };
 }

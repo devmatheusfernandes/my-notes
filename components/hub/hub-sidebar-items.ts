@@ -29,11 +29,6 @@ export const hubSidebarItems: HubSidebarItem[] = [
     href: "/hub/items",
   },
   {
-    label: "Favoritas",
-    tooltip: "Favoritas",
-    icon: StarIcon,
-  },
-  {
     label: "Arquivadas",
     tooltip: "Arquivadas",
     icon: ArchiveIcon,
