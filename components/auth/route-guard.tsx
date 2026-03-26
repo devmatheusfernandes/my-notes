@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
+import { Loading } from "../ui/loading";
 
 export function RouteGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthStore();
@@ -10,7 +11,6 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Apenas redireciona se não estiver carregando, não houver usuário logado, e não for a tela de signin
     if (!loading && !user && !pathname.startsWith("/signin")) {
       router.push("/signin");
     }
@@ -18,14 +18,12 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
-        <div className="text-zinc-500">Verificando sessão...</div>
-      </div>
+      <Loading />
     );
   }
 
   if (!user && !pathname.startsWith("/signin")) {
-    return null; // Evita piscar a tela protegida antes do redirecionamento
+    return null;
   }
 
   return <>{children}</>;
