@@ -143,6 +143,7 @@ function DropdownMenuContent({
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
   const { isMobile } = useDropdownMenuContext();
+  const { forceMount, ...restProps } = props as any;
   if (isMobile) {
     return (
       <DrawerContent className="flex flex-col items-center">
@@ -153,7 +154,7 @@ function DropdownMenuContent({
             "flex flex-col items-center justify-center px-4 pb-8 pt-2 mt-2 max-h-[80vh] overflow-y-auto",
             className
           )}
-          {...(props as React.HTMLAttributes<HTMLDivElement>)}
+          {...(restProps as React.HTMLAttributes<HTMLDivElement>)}
         >
           <div className="w-full max-w-sm mx-auto flex flex-col">
             {children}
@@ -171,7 +172,8 @@ function DropdownMenuContent({
           "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border p-1 shadow-md",
           className
         )}
-        {...props}
+        forceMount={forceMount}
+        {...restProps}
       >
         {children}
       </DropdownMenuPrimitive.Content>
@@ -589,13 +591,14 @@ function DropdownMenuSubContent({
 }: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
   const { isMobile } = useDropdownMenuContext();
   const sub = useMobileSubMenuContext();
+  const { forceMount, ...restProps } = props as any;
   if (isMobile) {
     if (!sub?.open) return null;
     return (
       <div
         data-slot="dropdown-menu-sub-content"
         className={cn("ml-3 border-l pl-3", className)}
-        {...(props as React.HTMLAttributes<HTMLDivElement>)}
+        {...(restProps as React.HTMLAttributes<HTMLDivElement>)}
       >
         {children}
       </div>
@@ -608,7 +611,8 @@ function DropdownMenuSubContent({
         "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-md border p-1 shadow-lg",
         className
       )}
-      {...props}
+      forceMount={forceMount}
+      {...restProps}
     >
       {children}
     </DropdownMenuPrimitive.SubContent>
