@@ -140,10 +140,10 @@ function DropdownMenuContent({
   className,
   children,
   sideOffset = 4,
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+  forceMount,
+  ...restProps
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Content> & { forceMount?: boolean }) {
   const { isMobile } = useDropdownMenuContext();
-  const { forceMount, ...restProps } = props as any;
   if (isMobile) {
     return (
       <DrawerContent className="flex flex-col items-center">
@@ -587,11 +587,11 @@ function DropdownMenuSubTrigger({
 function DropdownMenuSubContent({
   className,
   children,
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
+  forceMount,
+  ...restProps
+}: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent> & { forceMount?: boolean }) {
   const { isMobile } = useDropdownMenuContext();
   const sub = useMobileSubMenuContext();
-  const { forceMount, ...restProps } = props as any;
   if (isMobile) {
     if (!sub?.open) return null;
     return (
