@@ -12,7 +12,7 @@ export default function HubLayout({ children }: { children: ReactNode }) {
         <SidebarInset className="min-h-svh">
           <div className="sm:mx-8 mx-2 mt-2">
             <Header />
-              {children}
+            {children}
           </div>
         </SidebarInset>
       </SidebarProvider>

@@ -1,7 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Folder } from "@/schemas/folderSchema";
 import { formatDateToLocale } from "@/utils/dates";
-import { getBentoClasses } from "@/utils/items";
 import { FolderIcon, MoreVertical } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSelection } from "@/components/hub/selection-context";
@@ -65,7 +64,7 @@ export default function FolderCard({
   const handleConfirmDelete = async () => {
     setIsDrawerOpen(false);
     setIsDeleting(true);
-    
+
     const promise = isTrashPage ? deleteFolder(folder.id) : updateFolder(folder.id, { trashed: true });
 
     toast.promise(promise, {
@@ -105,79 +104,88 @@ export default function FolderCard({
             onClick={handleClick}
             {...longPressProps}
             className={cn(
-              "group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl bg-card p-5 text-foreground transition-all duration-300 hover:bg-muted active:scale-[0.98]",
-              isSelected ? "ring-2 ring-primary bg-muted/80" : "",
+              "group relative flex items-center gap-3 cursor-pointer overflow-hidden rounded-2xl p-3 pr-2 transition-all duration-200 active:scale-[0.98]",
+              "bg-card border hover:bg-muted/80",
+              isSelected
+                ? "border-primary/50 bg-primary/10 hover:bg-primary/15"
+                : "border-transparent bg-muted/30 hover:border-border",
               isDeleting ? "opacity-50 pointer-events-none" : "",
-              getBentoClasses(index),
-              className,
+              className
             )}
           >
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="flex items-center gap-2">
-                <div
-                  className={cn(
-                    "flex items-center justify-center transition-opacity border border-transparent rounded",
-                    isSelected ? "opacity-100" : "opacity-0 md:group-hover:opacity-100 hover:border-border"
-                  )}
-                  onClick={handleCheckboxClick}
-                >
-                  <Checkbox checked={isSelected} className="pointer-events-none" />
-                </div>
-                <div className="text-xs font-bold tracking-wider text-zinc-400 uppercase">
-                  {formatDateToLocale(folder.createdAt)}
-                </div>
+            {/* Ícone da pasta e Checkbox em sobreposição */}
+            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
+              <div
+                className={cn(
+                  "absolute inset-0 z-10 flex items-center justify-center rounded-md bg-background/95 transition-opacity backdrop-blur-sm",
+                  isSelected ? "opacity-100" : "opacity-0 hover:opacity-100 md:group-hover:opacity-100"
+                )}
+                onClick={handleCheckboxClick}
+              >
+                <Checkbox checked={isSelected} className="pointer-events-none" />
               </div>
-              <div className="flex items-center gap-2">
-                <FolderIcon className="h-4 w-4 text-zinc-400 transition-colors group-hover:text-foreground hidden md:block" />
-                <div className="md:hidden block" onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="p-1 -mr-2 -mt-1 rounded-full hover:bg-background/80 transition-colors">
-                        <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleToggle(); }}>
-                        {isSelected ? "Desmarcar" : "Selecionar"}
-                      </DropdownMenuItem>
-                      
-                      {!isTrashPage && (
-                        <DropdownMenuItem onClick={handleArchive}>
-                          {isArchivedPage ? "Desarquivar" : "Arquivar"}
-                        </DropdownMenuItem>
-                      )}
 
-                      {isTrashPage && (
-                        <DropdownMenuItem onClick={handleRestore}>
-                          Restaurar
-                        </DropdownMenuItem>
-                      )}
-
-                      <DropdownMenuItem>Compartilhar</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); attemptDelete(); }}>
-                        {isTrashPage ? "Excluir Definitivamente" : "Mover para Lixeira"}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
+              {/* O truque do Google Drive é usar um ícone preenchido e com uma cor suave */}
+              <FolderIcon
+                className={cn(
+                  "h-6 w-6 transition-colors",
+                  isSelected ? "text-primary fill-primary/20" : "text-zinc-600 dark:text-zinc-400 fill-zinc-600/80 dark:fill-zinc-400/80"
+                )}
+              />
             </div>
 
-            <h3 className="mb-2 text-base font-bold leading-tight tracking-tight md:text-lg line-clamp-2">
-              {folder.title}
-            </h3>
-            <p className="mt-auto text-xs leading-relaxed text-zinc-500 md:text-sm">
-              Abrir pasta
-            </p>
+            {/* Informações da pasta */}
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <h3 className="truncate text-sm font-medium leading-tight text-foreground">
+                {folder.title}
+              </h3>
+              {/* Mantive a data bem sutil embaixo, caso você precise dessa informação */}
+              <span className="truncate text-[11px] text-muted-foreground">
+                {formatDateToLocale(folder.createdAt)}
+              </span>
+            </div>
+
+            {/* Botão de Opções */}
+            <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-foreground/10 hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleToggle(); }}>
+                    {isSelected ? "Desmarcar" : "Selecionar"}
+                  </DropdownMenuItem>
+
+                  {!isTrashPage && (
+                    <DropdownMenuItem onClick={handleArchive}>
+                      {isArchivedPage ? "Desarquivar" : "Arquivar"}
+                    </DropdownMenuItem>
+                  )}
+
+                  {isTrashPage && (
+                    <DropdownMenuItem onClick={handleRestore}>
+                      Restaurar
+                    </DropdownMenuItem>
+                  )}
+
+                  <DropdownMenuItem>Compartilhar</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onClick={(e) => { e.stopPropagation(); attemptDelete(); }}>
+                    {isTrashPage ? "Excluir Definitivamente" : "Mover para Lixeira"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </article>
         </ContextMenuTrigger>
-        
-        <ContextMenuContent>
+
+        <ContextMenuContent className="w-48">
           <ContextMenuItem onClick={handleToggle}>
             {isSelected ? "Desmarcar" : "Selecionar"}
           </ContextMenuItem>
-          
+
           {!isTrashPage && (
             <ContextMenuItem onClick={handleArchive}>
               {isArchivedPage ? "Desarquivar" : "Arquivar"}
@@ -193,7 +201,7 @@ export default function FolderCard({
           <ContextMenuItem>Mover para</ContextMenuItem>
           <ContextMenuItem>Baixar</ContextMenuItem>
           <ContextMenuSeparator />
-          <ContextMenuItem className="text-destructive" onClick={attemptDelete}>
+          <ContextMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onClick={attemptDelete}>
             {isTrashPage ? "Excluir Definitivamente" : "Mover para Lixeira"}
           </ContextMenuItem>
         </ContextMenuContent>
@@ -205,7 +213,7 @@ export default function FolderCard({
             <DrawerHeader>
               <DrawerTitle>{isTrashPage ? "Excluir Definitivamente?" : "Mover para a Lixeira?"}</DrawerTitle>
               <DrawerDescription>
-                {isTrashPage 
+                {isTrashPage
                   ? `Tem certeza que deseja excluir permanentemente "${folder.title}"? Essa ação não pode ser desfeita.`
                   : `Tem certeza que deseja mover "${folder.title}" para a lixeira? Tudo dentro da pasta poderá ser perdido senão existir mecanismo de restauração em massa.`}
               </DrawerDescription>
