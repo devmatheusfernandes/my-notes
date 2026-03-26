@@ -13,10 +13,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { usePathname } from "next/navigation";
+import { getPageTitle } from "@/lib/utils";
 
 export default function Header() {
   const { toggleSidebar } = useSidebar();
   const { user } = useAuthStore();
+  const pathname = usePathname();
 
   const handleLogout = async () => {
     await authService.logOut();
@@ -33,7 +36,7 @@ export default function Header() {
         >
           <Menu className="w-5 h-5" />
         </Button>
-        <h1 className="md:text-2xl text-xl font-bold">My Notes</h1>
+        <h1 className="md:text-2xl text-xl font-bold">{getPageTitle(pathname)}</h1>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">

@@ -1,7 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
   ArchiveIcon,
-  BookOpenIcon,
   LayoutGridIcon,
   SettingsIcon,
   Trash2Icon,
@@ -22,20 +21,16 @@ export const hubSidebarItems: HubSidebarItem[] = [
     href: "/hub/items",
   },
   {
-    label: "Todas as notas",
-    tooltip: "Notas",
-    icon: BookOpenIcon,
-    href: "/hub/items",
-  },
-  {
     label: "Arquivadas",
     tooltip: "Arquivadas",
     icon: ArchiveIcon,
+    href: "/hub/archived",
   },
   {
     label: "Lixeira",
     tooltip: "Lixeira",
     icon: Trash2Icon,
+    href: "/hub/trash",
   },
 ];
 
@@ -44,5 +39,6 @@ export const hubSidebarFooterItems: HubSidebarItem[] = [
     label: "Configurações",
     tooltip: "Configurações",
     icon: SettingsIcon,
+    href: "/hub/settings",
   },
 ];
