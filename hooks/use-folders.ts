@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useFolderStore } from "@/store/folderStore";
 import { folderService } from "@/services/folderService";
-import { CreateFolderDTO } from "@/schemas/folderSchema";
+import { CreateFolderDTO, Folder } from "@/schemas/folderSchema";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 
 export function useFolders() {
@@ -12,6 +12,7 @@ export function useFolders() {
     setFolders,
     addFolder,
     removeFolder,
+    updateFolder,
     setLoading,
     setError,
   } = useFolderStore();
@@ -66,6 +67,21 @@ export function useFolders() {
     }
   };
 
+  const updateFolderStore = async (folderId: string, data: Partial<Folder>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await folderService.updateFolder(folderId, data);
+      updateFolder(folderId, data);
+    } catch (error) {
+      const secureMessage = getErrorMessage(error);
+      setError(secureMessage);
+      throw new Error(secureMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     folders,
     isLoading,
@@ -73,5 +89,6 @@ export function useFolders() {
     fetchFolders,
     createFolder,
     deleteFolder,
+    updateFolder: updateFolderStore,
   };
 }

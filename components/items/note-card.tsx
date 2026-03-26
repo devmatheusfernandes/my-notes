@@ -2,11 +2,11 @@ import { cn } from "@/lib/utils";
 import { Note } from "@/schemas/noteSchema";
 import { formatDateToLocale } from "@/utils/dates";
 import { getBentoClasses, getNotePreview } from "@/utils/items";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSelection } from "@/components/hub/selection-context";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuSeparator } from "@/components/ui/context-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { useLongPress } from "@/hooks/use-long-press";
@@ -25,11 +25,15 @@ export default function NoteCard({
   index?: number;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isTrashPage = pathname === "/hub/trash";
+  const isArchivedPage = pathname === "/hub/archived";
+
   const { selectedNoteIds, toggleNote, isSelectionActive } = useSelection();
-  const { deleteNote } = useNotes();
+  const { deleteNote, updateNote } = useNotes();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-
+  
   const isSelected = selectedNoteIds.has(note.id);
 
   const handleToggle = () => toggleNote(note.id);
@@ -61,13 +65,35 @@ export default function NoteCard({
   const handleConfirmDelete = async () => {
     setIsDrawerOpen(false);
     setIsDeleting(true);
-    toast.promise(deleteNote(note.id), {
-      loading: "Excluindo nota...",
-      success: () => "Nota excluída com sucesso.",
+    
+    const promise = isTrashPage ? deleteNote(note.id) : updateNote(note.id, { trashed: true });
+    
+    toast.promise(promise, {
+      loading: isTrashPage ? "Excluindo nota..." : "Movendo nota para a lixeira...",
+      success: () => isTrashPage ? "Nota excluída com sucesso." : "Nota movida para a lixeira.",
       error: () => {
         setIsDeleting(false);
-        return "Não foi possível excluir a nota.";
+        return isTrashPage ? "Não foi possível excluir a nota." : "Não foi possível mover a nota.";
       }
+    });
+  };
+
+  const handleArchive = async (e?: Event | React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const isUnarchiving = isArchivedPage;
+    toast.promise(updateNote(note.id, { archived: !isUnarchiving }), {
+      loading: isUnarchiving ? "Desarquivando nota..." : "Arquivando nota...",
+      success: () => isUnarchiving ? "Nota desarquivada." : "Nota arquivada com sucesso.",
+      error: () => "Falha ao processar nota."
+    });
+  };
+
+  const handleRestore = async (e?: Event | React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    toast.promise(updateNote(note.id, { trashed: false }), {
+      loading: "Restaurando nota...",
+      success: () => "Nota restaurada com sucesso.",
+      error: () => "Falha ao restaurar nota."
     });
   };
 
@@ -101,7 +127,6 @@ export default function NoteCard({
                   {formatDateToLocale(note.createdAt)}
                 </div>
               </div>
-
               <div className="md:hidden block" onClick={(e) => e.stopPropagation()}>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -113,9 +138,23 @@ export default function NoteCard({
                     <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleToggle(); }}>
                       {isSelected ? "Desmarcar" : "Selecionar"}
                     </DropdownMenuItem>
+                    
+                    {!isTrashPage && (
+                      <DropdownMenuItem onClick={handleArchive}>
+                        {isArchivedPage ? "Desarquivar" : "Arquivar"}
+                      </DropdownMenuItem>
+                    )}
+                    
+                    {isTrashPage && (
+                      <DropdownMenuItem onClick={handleRestore}>
+                        Restaurar
+                      </DropdownMenuItem>
+                    )}
+
                     <DropdownMenuItem>Compartilhar</DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); attemptDelete(); }}>
-                      Excluir
+                      {isTrashPage ? "Excluir Definitivamente" : "Mover para Lixeira"}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -130,16 +169,30 @@ export default function NoteCard({
             </p>
           </article>
         </ContextMenuTrigger>
-
+        
         <ContextMenuContent>
           <ContextMenuItem onClick={handleToggle}>
             {isSelected ? "Desmarcar" : "Selecionar"}
           </ContextMenuItem>
+
+          {!isTrashPage && (
+            <ContextMenuItem onClick={handleArchive}>
+              {isArchivedPage ? "Desarquivar" : "Arquivar"}
+            </ContextMenuItem>
+          )}
+
+          {isTrashPage && (
+            <ContextMenuItem onClick={handleRestore}>
+              Restaurar
+            </ContextMenuItem>
+          )}
+
           <ContextMenuItem>Mover para</ContextMenuItem>
           <ContextMenuItem>Fixar</ContextMenuItem>
           <ContextMenuItem>Baixar</ContextMenuItem>
+          <ContextMenuSeparator />
           <ContextMenuItem className="text-destructive" onClick={attemptDelete}>
-            Excluir
+            {isTrashPage ? "Excluir Definitivamente" : "Mover para Lixeira"}
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
@@ -148,13 +201,17 @@ export default function NoteCard({
         <DrawerContent>
           <div className="mx-auto w-full max-w-sm">
             <DrawerHeader>
-              <DrawerTitle>Excluir Nota?</DrawerTitle>
+              <DrawerTitle>{isTrashPage ? "Excluir Definitivamente?" : "Mover para a Lixeira?"}</DrawerTitle>
               <DrawerDescription>
-                Tem certeza que deseja excluir &quot;{note.title || "Sem Título"}&quot;? Essa ação não pode ser desfeita.
+                {isTrashPage 
+                  ? `Tem certeza que deseja excluir permanentemente "${note.title || "Sem Título"}"? Essa ação não pode ser desfeita.`
+                  : `Tem certeza que deseja mover "${note.title || "Sem Título"}" para a lixeira? Você poderá restaurá-la mais tarde.`}
               </DrawerDescription>
             </DrawerHeader>
             <DrawerFooter>
-              <Button variant="destructive" onClick={handleConfirmDelete}>Confirmar Exclusão</Button>
+              <Button variant="destructive" onClick={handleConfirmDelete}>
+                {isTrashPage ? "Confirmar Exclusão" : "Mover para Lixeira"}
+              </Button>
               <DrawerClose asChild>
                 <Button variant="outline">Cancelar</Button>
               </DrawerClose>

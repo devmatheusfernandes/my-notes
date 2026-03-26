@@ -6,6 +6,7 @@ import {
   query,
   where,
   deleteDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { note, Note, CreateNoteDTO } from "@/schemas/noteSchema";
@@ -61,6 +62,19 @@ export const noteService = {
     } catch (error) {
       console.error("Erro ao deletar nota no Firebase:", error);
       throw new Error("Não foi possível excluir a nota.");
+    }
+  },
+
+  async updateNote(noteId: string, data: Partial<Note>): Promise<void> {
+    try {
+      const noteRef = doc(db, NOTES_COLLECTION_NAME, noteId);
+      await updateDoc(noteRef, {
+        ...data,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar nota no Firebase:", error);
+      throw new Error("Não foi possível atualizar a nota.");
     }
   },
 };

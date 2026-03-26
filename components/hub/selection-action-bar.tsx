@@ -11,12 +11,18 @@ import { toast } from "sonner";
 import { useState } from "react";
 
 import { useFolders } from "@/hooks/use-folders";
+import { usePathname } from "next/navigation";
 
 export function SelectionActionBar() {
+  const pathname = usePathname();
+  const isTrashPage = pathname === "/hub/trash";
+  const isArchivedPage = pathname === "/hub/archived";
+
   const { isSelectionActive, selectedNoteIds, selectedFolderIds, selectAll, clearSelection } = useSelection();
-  const { deleteNote } = useNotes();
-  const { deleteFolder } = useFolders();
+  const { deleteNote, updateNote } = useNotes();
+  const { deleteFolder, updateFolder } = useFolders();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
@@ -32,7 +38,11 @@ export function SelectionActionBar() {
 
     const deleteNotePromises = Array.from(selectedNoteIds).map(async (noteId) => {
       try {
-        await deleteNote(noteId);
+        if (isTrashPage) {
+          await deleteNote(noteId);
+        } else {
+          await updateNote(noteId, { trashed: true });
+        }
         successCount++;
       } catch {
         errorCount++;
@@ -41,7 +51,11 @@ export function SelectionActionBar() {
 
     const deleteFolderPromises = Array.from(selectedFolderIds).map(async (folderId) => {
       try {
-        await deleteFolder(folderId);
+        if (isTrashPage) {
+          await deleteFolder(folderId);
+        } else {
+          await updateFolder(folderId, { trashed: true });
+        }
         successCount++;
       } catch {
         errorCount++;
@@ -49,18 +63,60 @@ export function SelectionActionBar() {
     });
 
     toast.promise(Promise.all([...deleteNotePromises, ...deleteFolderPromises]), {
-      loading: "Excluindo itens selecionados...",
+      loading: isTrashPage ? "Excluindo itens definitivamente..." : "Movendo para a lixeira...",
       success: () => {
         setIsDeleting(false);
         clearSelection();
         if (errorCount > 0) {
-          return `${successCount} item(s) excluído(s), ${errorCount} erro(s).`;
+          return `${successCount} item(s) processado(s), ${errorCount} erro(s).`;
         }
-        return `${successCount} item(s) excluído(s) com sucesso.`;
+        return isTrashPage ? `${successCount} item(s) excluído(s) com sucesso.` : `${successCount} item(s) movidos para a lixeira.`;
       },
       error: () => {
         setIsDeleting(false);
-        return "Erro ao excluir alguns itens.";
+        return "Erro ao processar alguns itens.";
+      }
+    });
+  };
+
+  const handleArchive = async () => {
+    setIsArchiving(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    const isUnarchiving = isArchivedPage;
+
+    const notePromises = Array.from(selectedNoteIds).map(async (noteId) => {
+      try {
+        await updateNote(noteId, { archived: !isUnarchiving });
+        successCount++;
+      } catch {
+        errorCount++;
+      }
+    });
+
+    const folderPromises = Array.from(selectedFolderIds).map(async (folderId) => {
+      try {
+        await updateFolder(folderId, { archived: !isUnarchiving });
+        successCount++;
+      } catch {
+        errorCount++;
+      }
+    });
+
+    toast.promise(Promise.all([...notePromises, ...folderPromises]), {
+      loading: isUnarchiving ? "Desarquivando itens..." : "Arquivando itens...",
+      success: () => {
+        setIsArchiving(false);
+        clearSelection();
+        if (errorCount > 0) {
+          return `${successCount} item(s) processado(s), ${errorCount} erro(s).`;
+        }
+        return isUnarchiving ? `${successCount} item(s) desarquivado(s).` : `${successCount} item(s) arquivado(s).`;
+      },
+      error: () => {
+        setIsArchiving(false);
+        return "Erro ao processar os itens.";
       }
     });
   };
@@ -126,13 +182,21 @@ export function SelectionActionBar() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground"><Archive className="h-4 w-4" /></Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-muted-foreground"
+                  onClick={handleArchive}
+                  disabled={isDeleting || isArchiving}
+                >
+                  <Archive className="h-4 w-4" />
+                </Button>
               </TooltipTrigger>
-              <TooltipContent>Arquivar</TooltipContent>
+              <TooltipContent>{isArchivedPage ? "Desarquivar" : "Arquivar"}</TooltipContent>
             </Tooltip>
-
+             
             <Separator orientation="vertical" className="h-5 mx-1" />
-
+            
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground"><Share2 className="h-4 w-4" /></Button>
@@ -161,13 +225,17 @@ export function SelectionActionBar() {
         <DrawerContent>
           <div className="mx-auto w-full max-w-sm">
             <DrawerHeader>
-              <DrawerTitle>Excluir itens?</DrawerTitle>
+              <DrawerTitle>{isTrashPage ? "Excluir Definitivamente?" : "Mover para a lixeira?"}</DrawerTitle>
               <DrawerDescription>
-                Tem certeza que deseja excluir {selectedCount} iten(s)? Essa ação não pode ser desfeita.
+                {isTrashPage
+                  ? `Tem certeza que deseja excluir permanentemente ${selectedCount} iten(s)? Essa ação não pode ser desfeita.`
+                  : `Tem certeza que deseja mover ${selectedCount} iten(s) para a lixeira? Eles podem ser restaurados depois.`}
               </DrawerDescription>
             </DrawerHeader>
             <DrawerFooter>
-              <Button variant="destructive" onClick={handleConfirmDelete}>Confirmar Exclusão</Button>
+              <Button variant="destructive" onClick={handleConfirmDelete}>
+                {isTrashPage ? "Excluir Permanentemente" : "Mover para a lixeira"}
+              </Button>
               <DrawerClose asChild>
                 <Button variant="outline">Cancelar</Button>
               </DrawerClose>

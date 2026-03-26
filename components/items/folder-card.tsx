@@ -3,11 +3,11 @@ import { Folder } from "@/schemas/folderSchema";
 import { formatDateToLocale } from "@/utils/dates";
 import { getBentoClasses } from "@/utils/items";
 import { FolderIcon, MoreVertical } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSelection } from "@/components/hub/selection-context";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuSeparator } from "@/components/ui/context-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { useLongPress } from "@/hooks/use-long-press";
@@ -25,8 +25,12 @@ export default function FolderCard({
   index?: number;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isTrashPage = pathname === "/hub/trash";
+  const isArchivedPage = pathname === "/hub/archived";
+
   const { selectedFolderIds, toggleFolder, isSelectionActive } = useSelection();
-  const { deleteFolder } = useFolders();
+  const { deleteFolder, updateFolder } = useFolders();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
@@ -61,13 +65,35 @@ export default function FolderCard({
   const handleConfirmDelete = async () => {
     setIsDrawerOpen(false);
     setIsDeleting(true);
-    toast.promise(deleteFolder(folder.id), {
-      loading: "Excluindo pasta...",
-      success: () => "Pasta excluída com sucesso.",
+    
+    const promise = isTrashPage ? deleteFolder(folder.id) : updateFolder(folder.id, { trashed: true });
+
+    toast.promise(promise, {
+      loading: isTrashPage ? "Excluindo pasta..." : "Movendo pasta para a lixeira...",
+      success: () => isTrashPage ? "Pasta excluída com sucesso." : "Pasta movida para a lixeira.",
       error: () => {
         setIsDeleting(false);
-        return "Não foi possível excluir a pasta.";
+        return isTrashPage ? "Não foi possível excluir a pasta." : "Não foi possível mover a pasta.";
       }
+    });
+  };
+
+  const handleArchive = async (e?: Event | React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const isUnarchiving = isArchivedPage;
+    toast.promise(updateFolder(folder.id, { archived: !isUnarchiving }), {
+      loading: isUnarchiving ? "Desarquivando pasta..." : "Arquivando pasta...",
+      success: () => isUnarchiving ? "Pasta desarquivada." : "Pasta arquivada com sucesso.",
+      error: () => "Falha ao processar pasta."
+    });
+  };
+
+  const handleRestore = async (e?: Event | React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    toast.promise(updateFolder(folder.id, { trashed: false }), {
+      loading: "Restaurando pasta...",
+      success: () => "Pasta restaurada com sucesso.",
+      error: () => "Falha ao restaurar pasta."
     });
   };
 
@@ -101,7 +127,6 @@ export default function FolderCard({
                   {formatDateToLocale(folder.createdAt)}
                 </div>
               </div>
-
               <div className="flex items-center gap-2">
                 <FolderIcon className="h-4 w-4 text-zinc-400 transition-colors group-hover:text-foreground hidden md:block" />
                 <div className="md:hidden block" onClick={(e) => e.stopPropagation()}>
@@ -115,8 +140,24 @@ export default function FolderCard({
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleToggle(); }}>
                         {isSelected ? "Desmarcar" : "Selecionar"}
                       </DropdownMenuItem>
+                      
+                      {!isTrashPage && (
+                        <DropdownMenuItem onClick={handleArchive}>
+                          {isArchivedPage ? "Desarquivar" : "Arquivar"}
+                        </DropdownMenuItem>
+                      )}
+
+                      {isTrashPage && (
+                        <DropdownMenuItem onClick={handleRestore}>
+                          Restaurar
+                        </DropdownMenuItem>
+                      )}
+
                       <DropdownMenuItem>Compartilhar</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); attemptDelete(); }}>Excluir</DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); attemptDelete(); }}>
+                        {isTrashPage ? "Excluir Definitivamente" : "Mover para Lixeira"}
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -131,14 +172,30 @@ export default function FolderCard({
             </p>
           </article>
         </ContextMenuTrigger>
-
+        
         <ContextMenuContent>
           <ContextMenuItem onClick={handleToggle}>
             {isSelected ? "Desmarcar" : "Selecionar"}
           </ContextMenuItem>
+          
+          {!isTrashPage && (
+            <ContextMenuItem onClick={handleArchive}>
+              {isArchivedPage ? "Desarquivar" : "Arquivar"}
+            </ContextMenuItem>
+          )}
+
+          {isTrashPage && (
+            <ContextMenuItem onClick={handleRestore}>
+              Restaurar
+            </ContextMenuItem>
+          )}
+
           <ContextMenuItem>Mover para</ContextMenuItem>
           <ContextMenuItem>Baixar</ContextMenuItem>
-          <ContextMenuItem className="text-destructive" onClick={attemptDelete}>Excluir</ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem className="text-destructive" onClick={attemptDelete}>
+            {isTrashPage ? "Excluir Definitivamente" : "Mover para Lixeira"}
+          </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
 
@@ -146,13 +203,17 @@ export default function FolderCard({
         <DrawerContent>
           <div className="mx-auto w-full max-w-sm">
             <DrawerHeader>
-              <DrawerTitle>Excluir Pasta?</DrawerTitle>
+              <DrawerTitle>{isTrashPage ? "Excluir Definitivamente?" : "Mover para a Lixeira?"}</DrawerTitle>
               <DrawerDescription>
-                Tem certeza que deseja excluir &quot;{folder.title}&quot;? Essa ação não pode ser desfeita. Tudo dentro da pasta poderá ser perdido (Verifique a lixeira futuramente).
+                {isTrashPage 
+                  ? `Tem certeza que deseja excluir permanentemente "${folder.title}"? Essa ação não pode ser desfeita.`
+                  : `Tem certeza que deseja mover "${folder.title}" para a lixeira? Tudo dentro da pasta poderá ser perdido senão existir mecanismo de restauração em massa.`}
               </DrawerDescription>
             </DrawerHeader>
             <DrawerFooter>
-              <Button variant="destructive" onClick={handleConfirmDelete}>Confirmar Exclusão</Button>
+              <Button variant="destructive" onClick={handleConfirmDelete}>
+                {isTrashPage ? "Confirmar Exclusão" : "Mover para Lixeira"}
+              </Button>
               <DrawerClose asChild>
                 <Button variant="outline">Cancelar</Button>
               </DrawerClose>

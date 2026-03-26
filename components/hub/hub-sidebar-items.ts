@@ -4,7 +4,6 @@ import {
   BookOpenIcon,
   LayoutGridIcon,
   SettingsIcon,
-  StarIcon,
   Trash2Icon,
 } from "lucide-react";
 

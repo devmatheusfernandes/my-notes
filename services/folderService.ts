@@ -6,6 +6,7 @@ import {
   query,
   where,
   deleteDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { folder, Folder, CreateFolderDTO } from "@/schemas/folderSchema";
@@ -61,6 +62,19 @@ export const folderService = {
     } catch (error) {
       console.error("Erro ao deletar pasta:", error);
       throw new Error("Não foi possível excluir a pasta.");
+    }
+  },
+
+  async updateFolder(folderId: string, data: Partial<Folder>): Promise<void> {
+    try {
+      const folderRef = doc(db, FOLDERS_COLLECTION_NAME, folderId);
+      await updateDoc(folderRef, {
+        ...data,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar pasta no Firebase:", error);
+      throw new Error("Não foi possível atualizar a pasta.");
     }
   },
 };

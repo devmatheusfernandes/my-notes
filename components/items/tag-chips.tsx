@@ -1,6 +1,7 @@
 import { useTags } from "@/hooks/use-tags";
 import { cn } from "@/lib/utils";
 import { useEffect } from "react";
+import { useAuthStore } from "@/store/authStore";
 
 export default function TagChips({
   value,
@@ -9,7 +10,8 @@ export default function TagChips({
   value: string;
   onChange: (tag: string) => void;
 }) {
-    const userId = "user_teste_123";
+    const { user } = useAuthStore();
+    const userId = user?.uid || "";
     const { fetchTags, tags } = useTags();
     useEffect(() => {
       fetchTags(userId);

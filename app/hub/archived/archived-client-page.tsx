@@ -4,14 +4,11 @@ import { useEffect } from "react";
 import { useNotes } from "@/hooks/use-notes";
 import { useFolders } from "@/hooks/use-folders";
 import { ItemsBentoGrid } from "@/components/items/bento-grid";
-import { SmartCreateButton } from "@/components/items/create-button";
-import TagChips from "@/components/items/tag-chips";
-import { Input } from "@/components/ui/input";
 import { SelectionProvider } from "@/components/hub/selection-context";
 import { SelectionActionBar } from "@/components/hub/selection-action-bar";
 import { useAuthStore } from "@/store/authStore";
 
-export default function HubItemsPage() {
+export default function ArchivedClientPage() {
   const { user } = useAuthStore();
   const userId = user?.uid || "";
   const { fetchNotes, notes } = useNotes();
@@ -22,19 +19,20 @@ export default function HubItemsPage() {
     fetchFolders(userId);
   }, [fetchNotes, fetchFolders, userId]);
 
-  const activeNotes = notes.filter((n) => !n.archived && !n.trashed);
-  const activeFolders = folders.filter((f) => !f.archived && !f.trashed);
+  const archivedNotes = notes.filter((n) => n.archived && !n.trashed);
+  const archivedFolders = folders.filter((f) => f.archived && !f.trashed);
 
   return (
     <SelectionProvider>
       <main>
-        <div className="w-full mb-3 flex flex-col justify-start items-start gap-2">
-          <Input placeholder="Buscar nota..." className="mb-1" />
-          <TagChips value={"undefined"} onChange={() => { }} />
+        <div className="w-full mb-6">
+          <h1 className="text-2xl font-bold">Itens Arquivados</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Seus itens arquivados não aparecem na tela inicial.
+          </p>
           <SelectionActionBar />
         </div>
-        <SmartCreateButton />
-        <ItemsBentoGrid notes={activeNotes} folders={activeFolders} />
+        <ItemsBentoGrid notes={archivedNotes} folders={archivedFolders} />
       </main>
     </SelectionProvider>
   );

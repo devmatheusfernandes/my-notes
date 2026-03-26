@@ -1,11 +1,11 @@
 import { useCallback } from "react";
 import { useNoteStore } from "@/store/noteStore";
 import { noteService } from "@/services/noteService";
-import { CreateNoteDTO } from "@/schemas/noteSchema";
+import { CreateNoteDTO, Note } from "@/schemas/noteSchema";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 
 export function useNotes() {
-  const { notes, isLoading, error, setNotes, addNote, removeNote, setLoading, setError } =
+  const { notes, isLoading, error, setNotes, addNote, removeNote, updateNote, setLoading, setError } =
     useNoteStore();
 
   const fetchNotes = useCallback(
@@ -58,6 +58,24 @@ export function useNotes() {
     }
   };
 
+  const updateNoteStore = async (noteId: string, data: Partial<Note>) => {
+    // We update state immediately for snappy UI (optimistic update effect)
+    // But since Zustand expects synchronous calls, we'll just handle error if it fails
+    // Alternatively wait for DB and then update UI.
+    setLoading(true);
+    setError(null);
+    try {
+      await noteService.updateNote(noteId, data);
+      updateNote(noteId, data);
+    } catch (error) {
+      const secureMessage = getErrorMessage(error);
+      setError(secureMessage);
+      throw new Error(secureMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     notes,
     isLoading,
@@ -65,5 +83,6 @@ export function useNotes() {
     fetchNotes,
     createNote,
     deleteNote,
+    updateNote: updateNoteStore,
   };
 }

@@ -4,6 +4,7 @@ import { Poppins } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/components/auth/auth-provider";
 
 import "./globals.css";
 
@@ -31,7 +32,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <TooltipProvider>{children}</TooltipProvider>
+          <AuthProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </AuthProvider>
         </ThemeProvider>
         <Toaster />
       </body>

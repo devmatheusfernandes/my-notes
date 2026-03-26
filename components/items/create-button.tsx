@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { tagColors } from "@/lib/tag-colors";
 import { useFolderId } from "@/utils/searchParams";
 import type { Tag as TagModel } from "@/schemas/tagSchema";
+import { useAuthStore } from "@/store/authStore";
 
 interface MenuItem {
   icon: LucideIcon;
@@ -621,11 +622,9 @@ export default function CreateButton({
   );
 }
 
-export function SmartCreateButton({
-  userId = "user_teste_123",
-}: {
-  userId?: string;
-}) {
+export function SmartCreateButton() {
+  const { user } = useAuthStore();
+  const userId = user?.uid || "";
   const router = useRouter();
   const { createNote, isLoading: isNotesLoading } = useNotes();
   const { createFolder, isLoading: isFoldersLoading } = useFolders();
