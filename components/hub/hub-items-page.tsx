@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { SelectionProvider } from "@/components/hub/selection-context";
 import { SelectionActionBar } from "@/components/hub/selection-action-bar";
 import { useAuthStore } from "@/store/authStore";
+import HubBreadcrumb from "./hub-breadcrumb";
 
 export default function HubItemsPage() {
   const { user } = useAuthStore();
@@ -29,6 +30,7 @@ export default function HubItemsPage() {
     <SelectionProvider>
       <main>
         <div className="w-full mb-3 flex flex-col justify-start items-start gap-2">
+          <HubBreadcrumb />
           <Input placeholder="Buscar nota..." className="mb-1" />
           <TagChips value={"undefined"} onChange={() => { }} />
           <SelectionActionBar />

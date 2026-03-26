@@ -17,11 +17,9 @@ import { toast } from "sonner";
 export default function FolderCard({
   folder,
   className,
-  index = 0,
 }: {
   folder: Folder;
   className?: string;
-  index?: number;
 }) {
   const router = useRouter();
   const pathname = usePathname();

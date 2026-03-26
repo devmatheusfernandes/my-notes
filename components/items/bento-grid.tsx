@@ -61,18 +61,16 @@ export function ItemsBentoGrid({
 
   return (
     <BentoGrid>
-      {gridItems.map((item, index) =>
+      {gridItems.map((item) =>
         item.kind === "note" ? (
           <NoteCard
             key={`note-${item.note.id}`}
             note={item.note}
-            index={index}
           />
         ) : (
           <FolderCard
             key={`folder-${item.folder.id}`}
             folder={item.folder}
-            index={index}
           />
         ),
       )}

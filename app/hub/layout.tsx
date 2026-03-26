@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
-import Header from "@/components/hub/hub-header";
 import HubSidebar from "@/components/hub/hub-sidebar";
+import Header from "@/components/hub/hub-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { RouteGuard } from "@/components/auth/route-guard";
 

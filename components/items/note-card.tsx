@@ -18,11 +18,9 @@ import { useState } from "react";
 export default function NoteCard({
   note,
   className,
-  index = 0,
 }: {
   note: Note;
   className?: string;
-  index?: number;
 }) {
   const router = useRouter();
   const pathname = usePathname();
