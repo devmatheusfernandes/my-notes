@@ -2,6 +2,7 @@
 
 import {
   FilePlus2,
+  FileText,
   FolderPlus,
   Loader2,
   LucideIcon,
@@ -9,7 +10,7 @@ import {
   Tag,
   Trash2,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useFolders } from "@/hooks/use-folders";
@@ -30,6 +31,7 @@ import { tagColors } from "@/lib/tag-colors";
 import { useFolderId } from "@/utils/searchParams";
 import type { Tag as TagModel } from "@/schemas/tagSchema";
 import { useAuthStore } from "@/store/authStore";
+import { storageService } from "@/services/storageService";
 
 interface MenuItem {
   icon: LucideIcon;
@@ -44,9 +46,14 @@ interface CreateButtonProps {
   isLoading?: boolean;
   handleCreateNewNote: () => Promise<void>;
   handleCreateNewFolder: (title: string) => Promise<void>;
+  handleUploadPdf?: (file: File) => Promise<void>;
   tags?: TagModel[];
   handleCreateNewTag?: (title: string, color?: string) => Promise<void>;
-  handleEditTag?: (tagId: string, title: string, color?: string) => Promise<void>;
+  handleEditTag?: (
+    tagId: string,
+    title: string,
+    color?: string,
+  ) => Promise<void>;
   handleDeleteTag?: (tagId: string) => Promise<void>;
 }
 
@@ -168,6 +175,7 @@ export default function CreateButton({
   isLoading = false,
   handleCreateNewNote,
   handleCreateNewFolder,
+  handleUploadPdf,
   tags = [],
   handleCreateNewTag,
   handleEditTag,
@@ -189,6 +197,7 @@ export default function CreateButton({
   const [deletingTagId, setDeletingTagId] = useState<string | null>(null);
 
   const wrapRef = useRef<HTMLDivElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {
@@ -203,6 +212,13 @@ export default function CreateButton({
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [open]);
+
+  const onPdfSelected = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    e.target.value = "";
+    if (!file || !handleUploadPdf) return;
+    await handleUploadPdf(file);
+  };
 
   const menuItems: MenuItem[] = [
     {
@@ -237,11 +253,25 @@ export default function CreateButton({
       openDelay: handleCreateNewTag ? "120ms" : "60ms",
       closeDelay: "0ms",
     },
+    ...(handleUploadPdf
+      ? ([
+          {
+            icon: FileText,
+            label: "Enviar PDF",
+            action: () => {
+              pdfInputRef.current?.click();
+            },
+            offsetY: handleCreateNewTag ? 292 : 222,
+            openDelay: handleCreateNewTag ? "180ms" : "120ms",
+            closeDelay: "0ms",
+          },
+        ] satisfies MenuItem[])
+      : []),
   ];
 
   function handleItemSelect(item: MenuItem) {
     void item.action();
-    setOpen(false); 
+    setOpen(false);
   }
 
   const onSubmitFolder = async () => {
@@ -320,6 +350,14 @@ export default function CreateButton({
   return (
     <>
       <GooFilter />
+      <input
+        ref={pdfInputRef}
+        type="file"
+        accept="application/pdf,.pdf"
+        onChange={onPdfSelected}
+        style={{ display: "none" }}
+        disabled={isLoading}
+      />
       <div
         ref={wrapRef}
         style={{
@@ -328,6 +366,7 @@ export default function CreateButton({
           right: 24,
           width: 68,
           height: 68,
+          zIndex: 50,
           filter: "url(#fab-goo)",
         }}
       >
@@ -626,7 +665,12 @@ export function SmartCreateButton() {
   const { user } = useAuthStore();
   const userId = user?.uid || "";
   const router = useRouter();
-  const { createNote, isLoading: isNotesLoading } = useNotes();
+  const {
+    createNote,
+    updateNote,
+    deleteNote,
+    isLoading: isNotesLoading,
+  } = useNotes();
   const { createFolder, isLoading: isFoldersLoading } = useFolders();
   const {
     tags,
@@ -671,9 +715,58 @@ export function SmartCreateButton() {
     }
   };
 
+  const handleUploadPdf = async (file: File) => {
+    const isPdf =
+      file.type === "application/pdf" ||
+      file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdf) {
+      toast.error("Envie um arquivo PDF.");
+      return;
+    }
+
+    const MAX_SINGLE_UPLOAD_BYTES = 10 * 1024 * 1024;
+    if (file.size > MAX_SINGLE_UPLOAD_BYTES) {
+      toast.error("O PDF precisa ter no máximo 10 MB.");
+      return;
+    }
+
+    const rawTitle = file.name.replace(/\.pdf$/i, "").trim();
+    const title = (rawTitle || "PDF").slice(0, 20);
+
+    let createdNoteId: string | null = null;
+    try {
+      const newNote = await createNote(userId, {
+        title,
+        content: null,
+        folderId: activeFolderId ?? "Raiz",
+        type: "pdf",
+      });
+      createdNoteId = newNote.id;
+
+      const url = await storageService.uploadFile(
+        userId,
+        `pdf/${newNote.id}.pdf`,
+        file,
+      );
+      await updateNote(newNote.id, { fileUrl: url });
+
+      toast.success("PDF enviado!");
+      router.push(`/hub/notes/${newNote.id}`);
+    } catch (error) {
+      if (createdNoteId) {
+        await deleteNote(createdNoteId).catch(() => {});
+      }
+      console.log("Erro ao enviar PDF:", error);
+      toast.error("Erro ao enviar PDF!");
+    }
+  };
+
   const handleCreateTag = async (title: string, color?: string) => {
     try {
-      await createTag(userId, { title: title.trim(), ...(color ? { color } : {}) });
+      await createTag(userId, {
+        title: title.trim(),
+        ...(color ? { color } : {}),
+      });
       toast.success("Tag criada!");
     } catch (error) {
       console.log("Erro ao criar tag:", error);
@@ -681,9 +774,16 @@ export function SmartCreateButton() {
     }
   };
 
-  const handleEditTag = async (tagId: string, title: string, color?: string) => {
+  const handleEditTag = async (
+    tagId: string,
+    title: string,
+    color?: string,
+  ) => {
     try {
-      await editTag(userId, tagId, { title: title.trim(), ...(color ? { color } : {}) });
+      await editTag(userId, tagId, {
+        title: title.trim(),
+        ...(color ? { color } : {}),
+      });
       toast.success("Tag editada!");
     } catch (error) {
       console.log("Erro ao editar tag:", error);
@@ -706,6 +806,7 @@ export function SmartCreateButton() {
       isLoading={isLoading}
       handleCreateNewNote={handleCreateNote}
       handleCreateNewFolder={handleCreateFolder}
+      handleUploadPdf={handleUploadPdf}
       tags={tags}
       handleCreateNewTag={handleCreateTag}
       handleEditTag={handleEditTag}

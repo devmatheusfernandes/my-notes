@@ -79,9 +79,37 @@ export default function NotePage({
           {note.isLocked ? <span className="ml-1 text-base">🔒</span> : null}
         </h1>
         {!isBlocked ? (
-          <pre className="mt-4 whitespace-pre-wrap rounded-xl border bg-card p-4 text-sm text-foreground">
-            {contentText || "Nota vazia..."}
-          </pre>
+          note.type === "pdf" ? (
+            note.fileUrl ? (
+              <div className="mt-4 flex flex-col gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="outline" asChild>
+                    <a href={note.fileUrl} target="_blank" rel="noreferrer">
+                      Abrir PDF
+                    </a>
+                  </Button>
+                  <Button asChild>
+                    <a href={note.fileUrl} target="_blank" rel="noreferrer">
+                      Baixar
+                    </a>
+                  </Button>
+                </div>
+                <iframe
+                  title={note.title || "PDF"}
+                  src={note.fileUrl}
+                  className="h-[75vh] w-full rounded-xl border bg-card"
+                />
+              </div>
+            ) : (
+              <div className="mt-4 rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+                PDF sem arquivo.
+              </div>
+            )
+          ) : (
+            <pre className="mt-4 whitespace-pre-wrap rounded-xl border bg-card p-4 text-sm text-foreground">
+              {contentText || "Nota vazia..."}
+            </pre>
+          )
         ) : (
           <div className="mt-4 rounded-xl border bg-card p-4 text-sm text-muted-foreground">
             Conteúdo protegido.

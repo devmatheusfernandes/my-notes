@@ -38,6 +38,7 @@ import { useNoteStore } from "@/store/noteStore";
 import { UnlockDrawer } from "@/components/modals/unlock-drawer";
 import { useAuthStore } from "@/store/authStore";
 import { useSettings } from "@/hooks/use-settings";
+import { storageService } from "@/services/storageService";
 
 export default function NoteCard({
   note,
@@ -104,7 +105,12 @@ export default function NoteCard({
     setIsDeleting(true);
 
     const promise = isTrashPage
-      ? deleteNote(note.id)
+      ? (async () => {
+          if (note.type === "pdf" && userId) {
+            await storageService.deleteFile(userId, `pdf/${note.id}.pdf`);
+          }
+          await deleteNote(note.id);
+        })()
       : updateNote(note.id, { trashed: true });
 
     toast.promise(promise, {

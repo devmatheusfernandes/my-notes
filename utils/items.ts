@@ -9,23 +9,18 @@ export function getNotePreview(content: Content) {
 }
 
 export function getBentoClasses(index: number) {
-  const pattern = index % 6;
-  switch (pattern) {
-    case 0:
-      return "col-span-2 row-span-2 md:col-span-2 md:row-span-2";
-    case 1:
-      return "col-span-1 row-span-1 md:col-span-1 md:row-span-1";
-    case 2:
-      return "col-span-1 row-span-2 md:col-span-1 md:row-span-2";
-    case 3:
-      return "col-span-2 row-span-1 md:col-span-1 md:row-span-1";
-    case 4:
-      return "col-span-1 row-span-1 md:col-span-2 md:row-span-1";
-    case 5:
-      return "col-span-1 row-span-1 md:col-span-1 md:row-span-1";
-    default:
-      return "col-span-1 row-span-1";
+  const p = index % 10;
+  if (p === 0 || p === 6) {
+    return "col-span-2 row-span-2 md:col-span-2 md:row-span-2";
   }
+  if (p === 2 || p === 8) {
+    return "col-span-1 row-span-2 md:col-span-1 md:row-span-2";
+  }
+  return "col-span-1 row-span-1 md:col-span-1 md:row-span-1";
+}
+
+export function getFolderBentoClasses() {
+  return "col-span-1 row-span-1 md:col-span-1 md:row-span-1";
 }
 
 export function getCreatedAtTime(createdAt?: string) {
@@ -74,13 +69,14 @@ export function buildNotesGridItems({
     note,
     createdAt: note.createdAt,
   }));
-  const folderItems: NotesGridItem[] = filterFoldersByParent(folders, folderId).map(
-    (folder) => ({
-      kind: "folder",
-      folder,
-      createdAt: folder.createdAt,
-    }),
-  );
+  const folderItems: NotesGridItem[] = filterFoldersByParent(
+    folders,
+    folderId,
+  ).map((folder) => ({
+    kind: "folder",
+    folder,
+    createdAt: folder.createdAt,
+  }));
 
   return sortByCreatedAtDesc([...folderItems, ...noteItems]);
 }

@@ -17,6 +17,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { settingsService } from "@/services/settingsService";
 import { useNoteStore } from "@/store/noteStore";
 import { useFolderStore } from "@/store/folderStore";
+import { hasWebAuthn } from "@/lib/utils";
 
 type UnlockDrawerProps = {
   open: boolean;
@@ -24,14 +25,6 @@ type UnlockDrawerProps = {
   item: { kind: "note"; id: string } | { kind: "folder"; id: string };
   onUnlocked: () => void;
 };
-
-function hasWebAuthn() {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.PublicKeyCredential !== "undefined" &&
-    !!navigator.credentials
-  );
-}
 
 export function UnlockDrawer({
   open,

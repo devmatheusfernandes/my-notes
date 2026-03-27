@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { useAuthStore } from "@/store/authStore";
 import { useSettings } from "@/hooks/use-settings";
 import { Input } from "@/components/ui/input";
@@ -8,19 +9,16 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { settingsService } from "@/services/settingsService";
-
-function isValidPin(pin: string) {
-  return /^\d{4,8}$/.test(pin);
-}
-
-function hasWebAuthn() {
-  return typeof window !== "undefined" && typeof window.PublicKeyCredential !== "undefined" && !!navigator.credentials;
-}
+import { hasWebAuthn, isValidPin } from "@/lib/utils";
+import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
+import { Loading } from "@/components/ui/loading";
+import { StorageWidget } from "@/components/hub/storage-widget";
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
   const userId = user?.uid ?? "";
-  const { settings, isLoading, fetchSettings, setPin, updateBiometric } = useSettings();
+  const { settings, isLoading, fetchSettings, setPin, updateBiometric } =
+    useSettings();
 
   const [pinInput, setPinInput] = useState("");
   const [isBiometricBusy, setIsBiometricBusy] = useState(false);
@@ -42,7 +40,7 @@ export default function SettingsPage() {
       toast.error("PIN inválido. Use 4 a 8 dígitos.");
       return;
     }
-    await toast.promise(setPin(userId, pin), {
+    toast.promise(setPin(userId, pin), {
       loading: "Salvando PIN...",
       success: "PIN salvo com sucesso.",
       error: "Não foi possível salvar o PIN.",
@@ -64,7 +62,7 @@ export default function SettingsPage() {
     if (!userId) return;
 
     if (!enabled) {
-      await toast.promise(updateBiometric(userId, false, null), {
+      toast.promise(updateBiometric(userId, false, null), {
         loading: "Desativando biometria...",
         success: "Biometria desativada.",
         error: "Não foi possível desativar a biometria.",
@@ -104,7 +102,7 @@ export default function SettingsPage() {
       }
 
       const credentialId = settingsService.encodeCredentialId(credential.rawId);
-      await toast.promise(updateBiometric(userId, true, credentialId), {
+      toast.promise(updateBiometric(userId, true, credentialId), {
         loading: "Ativando biometria...",
         success: "Biometria ativada.",
         error: "Não foi possível ativar a biometria.",
@@ -117,24 +115,52 @@ export default function SettingsPage() {
     }
   };
 
-  return (
-    <main className="w-full max-w-xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Configurações</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Configure PIN e preferências de desbloqueio.
-        </p>
+  // Previne a renderização do layout antes de buscar as configurações iniciais
+  const isInitializing = isLoading && !settings;
+
+  if (isInitializing) {
+    return (
+      <div className="flex min-h-[50vh] w-full items-center justify-center">
+        <Loading />
       </div>
+    );
+  }
 
-      <div className="space-y-6">
-        <section className="rounded-xl border bg-card p-4">
-          <h2 className="text-base font-semibold">PIN</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Use um PIN numérico para trancar/destrancar notas.
-          </p>
+  return (
+    <motion.main
+      className="mx-auto w-full max-w-2xl px-4 sm:px-6 py-6 sm:py-8"
+      variants={pageContainerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div variants={itemFadeInUpVariants} className="mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          Configurações
+        </h1>
+        <p className="mt-2 text-sm sm:text-base text-muted-foreground">
+          Configure seu PIN de segurança e preferências de desbloqueio do
+          aplicativo.
+        </p>
+      </motion.div>
 
-          <div className="mt-4 flex gap-2">
+      <div className="space-y-6 sm:space-y-8">
+        {/* Sessão de PIN */}
+        <motion.section
+          variants={itemFadeInUpVariants}
+          className="rounded-2xl border bg-card p-5 sm:p-6 shadow-sm transition-all hover:shadow-md"
+        >
+          <div className="mb-5">
+            <h2 className="text-lg font-semibold text-foreground">
+              PIN de Acesso
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Use um PIN numérico para proteger suas anotações sensíveis.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
             <Input
+              className="flex-1"
               value={pinInput}
               onChange={(e) => setPinInput(e.target.value)}
               placeholder="Digite um PIN (4 a 8 dígitos)"
@@ -143,24 +169,44 @@ export default function SettingsPage() {
               autoComplete="new-password"
               disabled={isLoading || !userId}
             />
-            <Button onClick={handleSavePin} disabled={isLoading || !userId}>
-              Salvar
+            <Button
+              className="w-full sm:w-auto"
+              onClick={handleSavePin}
+              disabled={isLoading || !userId}
+            >
+              Salvar PIN
             </Button>
           </div>
 
-          <div className="mt-3 text-xs text-muted-foreground">
-            {hasPin ? "PIN configurado." : "Nenhum PIN configurado."}
+          <div className="mt-4 flex items-center gap-2 text-sm">
+            <span
+              className={`flex h-2 w-2 rounded-full ${hasPin ? "bg-emerald-500" : "bg-amber-500"}`}
+            />
+            <span className="text-muted-foreground font-medium">
+              {hasPin
+                ? "PIN atualmente configurado e ativo."
+                : "Nenhum PIN configurado no momento."}
+            </span>
           </div>
-        </section>
+        </motion.section>
 
-        <section className="rounded-xl border bg-card p-4">
-          <h2 className="text-base font-semibold">Biometria</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Use biometria do dispositivo para destrancar notas.
-          </p>
+        {/* Sessão de Biometria */}
+        <motion.section
+          variants={itemFadeInUpVariants}
+          className="rounded-2xl border bg-card p-5 sm:p-6 shadow-sm transition-all hover:shadow-md"
+        >
+          <div className="mb-5">
+            <h2 className="text-lg font-semibold text-foreground">Biometria</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Utilize o Face ID, Touch ID ou a biometria do seu dispositivo para
+              um desbloqueio rápido.
+            </p>
+          </div>
 
-          <div className="mt-4 flex items-center gap-3">
+          <div className="flex items-start gap-4 rounded-xl border border-dashed p-4">
             <Checkbox
+              id="biometric-toggle"
+              className="mt-1"
               checked={biometricEnabled}
               disabled={!userId || isLoading || isBiometricBusy || !hasPin}
               onCheckedChange={(checked) => {
@@ -168,21 +214,32 @@ export default function SettingsPage() {
                 handleToggleBiometric(enabled).catch(() => {});
               }}
             />
-            <div className="flex flex-col">
-              <span className="text-sm">Ativar desbloqueio por biometria</span>
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="biometric-toggle"
+                className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Ativar desbloqueio por biometria
+              </label>
+
               {!hasPin ? (
-                <span className="text-xs text-muted-foreground">
-                  Defina um PIN antes de ativar.
+                <span className="text-xs text-destructive font-medium mt-1">
+                  * É necessário definir um PIN antes de ativar.
                 </span>
               ) : !hasWebAuthn() ? (
-                <span className="text-xs text-muted-foreground">
-                  WebAuthn indisponível neste dispositivo.
+                <span className="text-xs text-amber-500 font-medium mt-1">
+                  * WebAuthn indisponível neste navegador/dispositivo.
                 </span>
-              ) : null}
+              ) : (
+                <span className="text-xs text-muted-foreground mt-1">
+                  Requer confirmação no dispositivo ao ativar.
+                </span>
+              )}
             </div>
           </div>
-        </section>
+        </motion.section>
+        <StorageWidget />
       </div>
-    </main>
+    </motion.main>
   );
 }

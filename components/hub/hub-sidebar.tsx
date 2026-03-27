@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { StorageWidget } from "./storage-widget";
 import {
   Sidebar,
   SidebarContent,
@@ -74,7 +73,6 @@ export default function HubSidebar() {
             );
           })}
         </SidebarMenu>
-        <StorageWidget />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

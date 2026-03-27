@@ -12,3 +12,15 @@ export const getPageTitle = (pathname: string) => {
   if (pathname.includes("/settings")) return "Configurações";
   return "My Notes";
 };
+
+export function isValidPin(pin: string) {
+  return /^\d{4,8}$/.test(pin);
+}
+
+export function hasWebAuthn() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.PublicKeyCredential !== "undefined" &&
+    !!navigator.credentials
+  );
+}

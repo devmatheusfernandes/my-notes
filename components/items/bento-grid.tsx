@@ -10,13 +10,16 @@ import FolderCard from "@/components/items/folder-card";
 import {
   buildNotesGridItems,
   filterNotesByFolder,
+  getBentoClasses,
+  getFolderBentoClasses,
   sortByCreatedAtDesc,
 } from "@/utils/items";
 import { useFolderId } from "@/utils/searchParams";
+import { cn } from "@/lib/utils";
 
 export default function BentoGrid({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-2 grid-flow-dense auto-rows-[120px] gap-3 md:grid-cols-4 md:auto-rows-[140px]">
+    <div className="grid grid-flow-dense auto-rows-[170px] grid-cols-2 gap-3 md:auto-rows-[190px] md:grid-cols-4">
       {children}
     </div>
   );
@@ -50,8 +53,14 @@ export function ItemsBentoGrid({
     });
   }, [folderId, sortedFolders, sortedNotes]);
 
-  const noteIdsStr = gridItems.filter(i => i.kind === "note").map(i => i.note.id).join(",");
-  const folderIdsStr = gridItems.filter(i => i.kind === "folder").map(i => i.folder.id).join(",");
+  const noteIdsStr = gridItems
+    .filter((i) => i.kind === "note")
+    .map((i) => i.note.id)
+    .join(",");
+  const folderIdsStr = gridItems
+    .filter((i) => i.kind === "folder")
+    .map((i) => i.folder.id)
+    .join(",");
 
   useEffect(() => {
     const visibleNoteIds = noteIdsStr ? noteIdsStr.split(",") : [];
@@ -61,19 +70,25 @@ export function ItemsBentoGrid({
 
   return (
     <BentoGrid>
-      {gridItems.map((item) =>
-        item.kind === "note" ? (
+      {gridItems.map((item, index) => {
+        const bentoClasses =
+          item.kind === "note"
+            ? cn(getBentoClasses(index), "h-full")
+            : cn(getFolderBentoClasses(), "h-full");
+        return item.kind === "note" ? (
           <NoteCard
             key={`note-${item.note.id}`}
             note={item.note}
+            className={bentoClasses}
           />
         ) : (
           <FolderCard
             key={`folder-${item.folder.id}`}
             folder={item.folder}
+            className={bentoClasses}
           />
-        ),
-      )}
+        );
+      })}
     </BentoGrid>
   );
 }

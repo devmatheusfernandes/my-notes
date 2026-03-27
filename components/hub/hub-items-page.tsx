@@ -20,46 +20,22 @@ import {
 } from "@/components/ui/empty";
 import { useFolderId } from "@/utils/searchParams";
 import { useFolderStore } from "@/store/folderStore";
-import { UnlockDrawer } from "@/components/modals/unlock-drawer";
-import { useRouter } from "next/navigation";
 import { SelectionActionBar } from "./selection-action-bar";
-
-function LockedFolderGate({ folderId }: { folderId: string }) {
-  const router = useRouter();
-  const [unlockOpen, setUnlockOpen] = useState(true);
-
-  return (
-    <>
-      <div className="mt-6 rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-        Pasta trancada. Destranque para acessar o conteúdo.
-      </div>
-      <UnlockDrawer
-        open={unlockOpen}
-        onOpenChange={(open) => {
-          if (open) {
-            setUnlockOpen(true);
-            return;
-          }
-
-          setUnlockOpen(false);
-          router.push("/hub/items");
-        }}
-        item={{ kind: "folder", id: folderId }}
-        onUnlocked={() => {}}
-      />
-    </>
-  );
-}
+import { toast } from "sonner";
+import { storageService } from "@/services/storageService";
+import LockedFolderGate from "@/components/hub/locked-folder-gate";
 
 export default function HubItemsPage() {
   const { user } = useAuthStore();
   const userId = user?.uid || "";
-  const { fetchNotes, notes } = useNotes();
+  const { fetchNotes, notes, createNote, updateNote, deleteNote } = useNotes();
   const { fetchFolders, folders } = useFolders();
   const folderId = useFolderId();
   const unlockedFolders = useFolderStore((s) => s.unlockedFolders);
 
   const lastFetchedUserIdRef = useRef<string | null>(null);
+  const dragDepthRef = useRef(0);
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -119,9 +95,120 @@ export default function HubItemsPage() {
   const shouldShowEmptyResults =
     hasQuery && filteredNotes.length === 0 && displayedFolders.length === 0;
 
+  const uploadPdfFile = async (file: File) => {
+    const isPdf =
+      file.type === "application/pdf" ||
+      file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdf) {
+      toast.error("Envie um arquivo PDF.");
+      return;
+    }
+
+    const MAX_SINGLE_UPLOAD_BYTES = 10 * 1024 * 1024;
+    if (file.size > MAX_SINGLE_UPLOAD_BYTES) {
+      toast.error("O PDF precisa ter no máximo 10 MB.");
+      return;
+    }
+
+    const rawTitle = file.name.replace(/\.pdf$/i, "").trim();
+    const title = (rawTitle || "PDF").slice(0, 20);
+
+    let createdNoteId: string | null = null;
+    try {
+      const newNote = await createNote(userId, {
+        title,
+        content: null,
+        folderId: folderId ?? "Raiz",
+        type: "pdf",
+      });
+      createdNoteId = newNote.id;
+
+      const url = await storageService.uploadFile(
+        userId,
+        `pdf/${newNote.id}.pdf`,
+        file,
+      );
+      await updateNote(newNote.id, { fileUrl: url });
+      toast.success(`PDF enviado: ${title}`);
+    } catch (error) {
+      if (createdNoteId) {
+        await deleteNote(createdNoteId).catch(() => {});
+      }
+      console.log("Erro ao enviar PDF:", error);
+      toast.error("Erro ao enviar PDF!");
+    }
+  };
+
   return (
     <SelectionProvider>
-      <main>
+      <main
+        className="relative"
+        onDragEnter={(e) => {
+          if (!e.dataTransfer.types.includes("Files")) return;
+          e.preventDefault();
+          dragDepthRef.current += 1;
+          setIsDraggingFiles(true);
+        }}
+        onDragOver={(e) => {
+          if (!e.dataTransfer.types.includes("Files")) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+          setIsDraggingFiles(true);
+        }}
+        onDragLeave={(e) => {
+          if (!e.dataTransfer.types.includes("Files")) return;
+          e.preventDefault();
+          dragDepthRef.current -= 1;
+          if (dragDepthRef.current <= 0) {
+            dragDepthRef.current = 0;
+            setIsDraggingFiles(false);
+          }
+        }}
+        onDrop={async (e) => {
+          if (!e.dataTransfer.types.includes("Files")) return;
+          e.preventDefault();
+          dragDepthRef.current = 0;
+          setIsDraggingFiles(false);
+
+          if (!userId) {
+            toast.error("Faça login para enviar arquivos.");
+            return;
+          }
+
+          if (isFolderBlocked) {
+            toast.error("Pasta trancada. Destranque para enviar PDFs.");
+            return;
+          }
+
+          const files = Array.from(e.dataTransfer.files ?? []);
+          if (files.length === 0) return;
+
+          const pdfs = files.filter(
+            (f) =>
+              f.type === "application/pdf" ||
+              f.name.toLowerCase().endsWith(".pdf"),
+          );
+
+          if (pdfs.length === 0) {
+            toast.error("Arraste um arquivo PDF.");
+            return;
+          }
+
+          for (const file of pdfs) {
+            await uploadPdfFile(file);
+          }
+        }}
+      >
+        {isDraggingFiles ? (
+          <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-background/70">
+            <div className="mx-4 w-full max-w-lg rounded-2xl border bg-card p-6 text-center">
+              <div className="text-lg font-semibold">Solte para enviar PDF</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                O upload cria uma nota do tipo PDF na pasta atual.
+              </div>
+            </div>
+          </div>
+        ) : null}
         <div className="w-full mb-3 flex flex-col justify-start items-start gap-2">
           <HubBreadcrumb />
           <Input

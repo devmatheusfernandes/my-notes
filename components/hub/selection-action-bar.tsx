@@ -25,6 +25,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useSettings } from "@/hooks/use-settings";
 import { useNoteStore } from "@/store/noteStore";
 import { useFolderStore } from "@/store/folderStore";
+import { storageService } from "@/services/storageService";
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -99,6 +100,10 @@ export function SelectionActionBar() {
       async (noteId) => {
         try {
           if (isTrashPage) {
+            const note = notes.find((n) => n.id === noteId) ?? null;
+            if (note?.type === "pdf" && userId) {
+              await storageService.deleteFile(userId, `pdf/${noteId}.pdf`);
+            }
             await deleteNote(noteId);
           } else {
             await updateNote(noteId, { trashed: true });

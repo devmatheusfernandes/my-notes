@@ -22,23 +22,31 @@ export function StorageWidget() {
 
   const usedBytes = usage.totalBytesUsed;
   const percentage = Math.min(100, Math.max(0, (usedBytes / limitBytes) * 100));
-  
-  const formattedUsed = bytes(usedBytes, { decimalPlaces: 1, unitSeparator: ' ' });
-  const formattedLimit = bytes(limitBytes, { decimalPlaces: 0, unitSeparator: ' ' });
+
+  const formattedUsed = bytes(usedBytes, {
+    decimalPlaces: 1,
+    unitSeparator: " ",
+  });
+  const formattedLimit = bytes(limitBytes, {
+    decimalPlaces: 0,
+    unitSeparator: " ",
+  });
 
   return (
-    <div className="flex flex-col gap-2 p-4 mt-4 bg-muted/20 mx-2 rounded-lg border shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <Cloud className="w-4 h-4 text-muted-foreground" />
-          <span>Armazenamento</span>
+    <div className="rounded-2xl border bg-card p-5 sm:p-6 shadow-sm transition-all hover:shadow-md">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Cloud className="h-5 w-5 text-muted-foreground" />
+          <span className="text-lg font-semibold text-foreground">
+            Armazenamento
+          </span>
         </div>
-        <span className="text-xs text-muted-foreground font-medium">
+        <span className="text-sm text-muted-foreground font-medium">
           {percentage.toFixed(0)}%
         </span>
       </div>
       <Progress value={percentage} className="h-2" />
-      <p className="text-xs text-muted-foreground">
+      <p className="mt-2 text-sm text-muted-foreground">
         {formattedUsed} de {formattedLimit} utilizados
       </p>
     </div>
