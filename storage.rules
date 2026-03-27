@@ -1,9 +1,21 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Padrão de segurança: permitir upload e leitura apenas no próprio diretório do usuário ({userId})
+    // Padrão de segurança: permitir upload e leitura apenas no próprio diretório do usuário
     match /users/{userId}/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // Regra de Upload com limite de cota:
+      // 1. O usuário precisa estar autenticado como dono da pasta
+      // 2. O arquivo não pode passar de 10 MB (evita uploads abusivos de uma vez)
+      // 3. A soma do tamanho atual em bytes do usuário (lido no Firestore) com o arquivo novo, não pode exceder 200 MB
+      allow write: if request.auth != null 
+                   && request.auth.uid == userId
+                   && request.resource.size <= 10 * 1024 * 1024
+                   && (
+                     (firestore.get(/databases/(default)/documents/usage/$(userId)) == null ? 0 : firestore.get(/databases/(default)/documents/usage/$(userId)).data.totalBytesUsed)
+                     + request.resource.size 
+                   ) <= 200 * 1024 * 1024;
     }
   }
 }

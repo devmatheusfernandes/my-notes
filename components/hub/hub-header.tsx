@@ -1,6 +1,6 @@
 "use client";
 import { useSidebar } from "../ui/sidebar";
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, Sun, Moon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { useAuthStore } from "@/store/authStore";
@@ -15,11 +15,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { usePathname } from "next/navigation";
 import { getPageTitle } from "@/lib/utils";
+import { useTheme } from "next-themes";
 
 export default function Header() {
   const { toggleSidebar } = useSidebar();
   const { user } = useAuthStore();
   const pathname = usePathname();
+  const { theme, setTheme, resolvedTheme } = useTheme();
 
   const handleLogout = async () => {
     await authService.logOut();
@@ -54,6 +56,17 @@ export default function Header() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={() => setTheme(resolvedTheme === "dark" || theme === "dark" ? "light" : "dark")} 
+              className="cursor-pointer"
+            >
+              <div className="relative mr-4 flex h-4 w-4 items-center justify-center">
+                <Sun className="absolute h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              </div>
+              <span className="dark:hidden">Modo Escuro</span>
+              <span className="hidden dark:inline">Modo Claro</span>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
               <span>Sair</span>

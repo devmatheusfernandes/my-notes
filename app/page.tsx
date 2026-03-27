@@ -11,7 +11,7 @@ export default function Home() {
         <p className="text-zinc-500 dark:text-zinc-400">
           A simple note-taking app
         </p>
-        <Link href="/singin">
+        <Link href="/signin">
           <Button variant="default" size="lg">
             Get Started
           </Button>
