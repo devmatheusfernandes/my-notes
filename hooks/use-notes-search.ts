@@ -16,6 +16,9 @@ export function useNotesSearch(notes: Note[]) {
 
   const sortedNotes = useMemo(() => {
     return [...filteredNotes].sort((a, b) => {
+      const aPinned = a.pinned ? 1 : 0;
+      const bPinned = b.pinned ? 1 : 0;
+      if (aPinned !== bPinned) return bPinned - aPinned;
       const aTime = new Date(a.createdAt).getTime();
       const bTime = new Date(b.createdAt).getTime();
       return bTime - aTime;

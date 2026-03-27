@@ -5,15 +5,39 @@ import { getNotePreview } from "@/utils/items"; // Note que removi o getBentoCla
 import { usePathname, useRouter } from "next/navigation";
 import { useSelection } from "@/components/hub/selection-context";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuSeparator } from "@/components/ui/context-menu";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  ContextMenuSeparator,
+} from "@/components/ui/context-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerClose,
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { useLongPress } from "@/hooks/use-long-press";
 import { MoreVertical } from "lucide-react";
 import { useNotes } from "@/hooks/use-notes";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useNoteStore } from "@/store/noteStore";
+import { UnlockDrawer } from "@/components/modals/unlock-drawer";
+import { useAuthStore } from "@/store/authStore";
+import { useSettings } from "@/hooks/use-settings";
 
 export default function NoteCard({
   note,
@@ -29,10 +53,17 @@ export default function NoteCard({
 
   const { selectedNoteIds, toggleNote, isSelectionActive } = useSelection();
   const { deleteNote, updateNote } = useNotes();
+  const { user } = useAuthStore();
+  const userId = user?.uid ?? "";
+  const { settings, fetchSettings } = useSettings();
+  const { unlockedNotes, lockNote } = useNoteStore();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isUnlockDrawerOpen, setIsUnlockDrawerOpen] = useState(false);
 
   const isSelected = selectedNoteIds.has(note.id);
+  const isUnlockedInSession = unlockedNotes.has(note.id);
+  const isMasked = note.isLocked && !isUnlockedInSession;
 
   const handleToggle = () => toggleNote(note.id);
 
@@ -45,6 +76,14 @@ export default function NoteCard({
       e.preventDefault();
       e.stopPropagation();
       handleToggle();
+      return;
+    }
+
+    if (isMasked) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsUnlockDrawerOpen(true);
+      return;
     } else {
       router.push(`/hub/notes/${note.id}`);
     }
@@ -64,15 +103,24 @@ export default function NoteCard({
     setIsDrawerOpen(false);
     setIsDeleting(true);
 
-    const promise = isTrashPage ? deleteNote(note.id) : updateNote(note.id, { trashed: true });
+    const promise = isTrashPage
+      ? deleteNote(note.id)
+      : updateNote(note.id, { trashed: true });
 
     toast.promise(promise, {
-      loading: isTrashPage ? "Excluindo nota..." : "Movendo nota para a lixeira...",
-      success: () => isTrashPage ? "Nota excluída com sucesso." : "Nota movida para a lixeira.",
+      loading: isTrashPage
+        ? "Excluindo nota..."
+        : "Movendo nota para a lixeira...",
+      success: () =>
+        isTrashPage
+          ? "Nota excluída com sucesso."
+          : "Nota movida para a lixeira.",
       error: () => {
         setIsDeleting(false);
-        return isTrashPage ? "Não foi possível excluir a nota." : "Não foi possível mover a nota.";
-      }
+        return isTrashPage
+          ? "Não foi possível excluir a nota."
+          : "Não foi possível mover a nota.";
+      },
     });
   };
 
@@ -81,8 +129,9 @@ export default function NoteCard({
     const isUnarchiving = isArchivedPage;
     toast.promise(updateNote(note.id, { archived: !isUnarchiving }), {
       loading: isUnarchiving ? "Desarquivando nota..." : "Arquivando nota...",
-      success: () => isUnarchiving ? "Nota desarquivada." : "Nota arquivada com sucesso.",
-      error: () => "Falha ao processar nota."
+      success: () =>
+        isUnarchiving ? "Nota desarquivada." : "Nota arquivada com sucesso.",
+      error: () => "Falha ao processar nota.",
     });
   };
 
@@ -91,7 +140,50 @@ export default function NoteCard({
     toast.promise(updateNote(note.id, { trashed: false }), {
       loading: "Restaurando nota...",
       success: () => "Nota restaurada com sucesso.",
-      error: () => "Falha ao restaurar nota."
+      error: () => "Falha ao restaurar nota.",
+    });
+  };
+
+  const handleTogglePin = async (e?: Event | React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const nextPinned = !note.pinned;
+    toast.promise(updateNote(note.id, { pinned: nextPinned }), {
+      loading: nextPinned ? "Fixando nota..." : "Desafixando nota...",
+      success: () => (nextPinned ? "Nota fixada." : "Nota desafixada."),
+      error: () => "Falha ao atualizar nota.",
+    });
+  };
+
+  const ensureSettingsLoaded = async () => {
+    if (!userId) return null;
+    if (settings) return settings;
+    try {
+      return await fetchSettings(userId);
+    } catch {
+      return null;
+    }
+  };
+
+  const handleToggleLock = async (e?: Event | React.MouseEvent) => {
+    if (e) e.stopPropagation();
+
+    const nextLocked = !note.isLocked;
+    if (nextLocked) {
+      const s = await ensureSettingsLoaded();
+      const hasPin = !!s?.pinHash && !!s?.pinSalt;
+      if (!hasPin) {
+        toast.error("Defina um PIN em Configurações antes de trancar notas.");
+        router.push("/hub/settings");
+        return;
+      }
+    }
+
+    if (nextLocked) lockNote(note.id);
+
+    toast.promise(updateNote(note.id, { isLocked: nextLocked }), {
+      loading: nextLocked ? "Trancando nota..." : "Destrancando nota...",
+      success: () => (nextLocked ? "Nota trancada." : "Nota destrancada."),
+      error: () => "Falha ao atualizar nota.",
     });
   };
 
@@ -109,14 +201,16 @@ export default function NoteCard({
                 ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20"
                 : "border-border/40",
               isDeleting ? "opacity-50 pointer-events-none" : "",
-              className
+              className,
             )}
           >
             {/* Checkbox em overlay flutuante (Google Keep style) */}
             <div
               className={cn(
                 "absolute top-3 right-3 z-10 flex h-7 w-7 items-center justify-center rounded-md bg-background/90 backdrop-blur-sm transition-all shadow-sm",
-                isSelected ? "opacity-100 scale-100" : "opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100"
+                isSelected
+                  ? "opacity-100 scale-100"
+                  : "opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100",
               )}
               onClick={handleCheckboxClick}
             >
@@ -126,10 +220,22 @@ export default function NoteCard({
             {/* Conteúdo da Nota */}
             <div className="flex flex-col gap-2 mb-4">
               <h3 className="text-base font-semibold leading-tight tracking-tight text-foreground pr-8 line-clamp-2">
-                {note.title || "Sem Título"}
+                {note.title || "Sem Título"}{" "}
+                {note.pinned ? <span className="text-sm">📌</span> : null}
+                {note.isLocked ? (
+                  <span className="ml-1 text-sm">🔒</span>
+                ) : null}
               </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground line-clamp-4">
-                {getNotePreview(note.content || "") || "Nenhum conteúdo adicional..."}
+              <p
+                className={cn(
+                  "text-sm leading-relaxed text-muted-foreground line-clamp-4",
+                  isMasked ? "select-none blur-sm" : "",
+                )}
+              >
+                {isMasked
+                  ? "Conteúdo protegido..."
+                  : getNotePreview(note.content || "") ||
+                    "Nenhum conteúdo adicional..."}
               </p>
             </div>
 
@@ -147,7 +253,12 @@ export default function NoteCard({
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleToggle(); }}>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggle();
+                      }}
+                    >
                       {isSelected ? "Desmarcar" : "Selecionar"}
                     </DropdownMenuItem>
 
@@ -164,11 +275,26 @@ export default function NoteCard({
                     )}
 
                     <DropdownMenuItem>Compartilhar</DropdownMenuItem>
-                    <DropdownMenuItem>Fixar</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleTogglePin}>
+                      {note.pinned ? "Desafixar" : "Fixar"}
+                    </DropdownMenuItem>
+                    {!isTrashPage ? (
+                      <DropdownMenuItem onClick={handleToggleLock}>
+                        {note.isLocked ? "Destrancar" : "Trancar"}
+                      </DropdownMenuItem>
+                    ) : null}
                     <DropdownMenuItem>Baixar</DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onClick={(e) => { e.stopPropagation(); attemptDelete(); }}>
-                      {isTrashPage ? "Excluir Definitivamente" : "Mover para Lixeira"}
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        attemptDelete();
+                      }}
+                    >
+                      {isTrashPage
+                        ? "Excluir Definitivamente"
+                        : "Mover para Lixeira"}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -189,16 +315,24 @@ export default function NoteCard({
           )}
 
           {isTrashPage && (
-            <ContextMenuItem onClick={handleRestore}>
-              Restaurar
-            </ContextMenuItem>
+            <ContextMenuItem onClick={handleRestore}>Restaurar</ContextMenuItem>
           )}
 
           <ContextMenuItem>Mover para</ContextMenuItem>
-          <ContextMenuItem>Fixar</ContextMenuItem>
+          <ContextMenuItem onClick={handleTogglePin}>
+            {note.pinned ? "Desafixar" : "Fixar"}
+          </ContextMenuItem>
+          {!isTrashPage ? (
+            <ContextMenuItem onClick={handleToggleLock}>
+              {note.isLocked ? "Destrancar" : "Trancar"}
+            </ContextMenuItem>
+          ) : null}
           <ContextMenuItem>Baixar</ContextMenuItem>
           <ContextMenuSeparator />
-          <ContextMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onClick={attemptDelete}>
+          <ContextMenuItem
+            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+            onClick={attemptDelete}
+          >
             {isTrashPage ? "Excluir Definitivamente" : "Mover para Lixeira"}
           </ContextMenuItem>
         </ContextMenuContent>
@@ -208,7 +342,11 @@ export default function NoteCard({
         <DrawerContent>
           <div className="mx-auto w-full max-w-sm">
             <DrawerHeader>
-              <DrawerTitle>{isTrashPage ? "Excluir Definitivamente?" : "Mover para a Lixeira?"}</DrawerTitle>
+              <DrawerTitle>
+                {isTrashPage
+                  ? "Excluir Definitivamente?"
+                  : "Mover para a Lixeira?"}
+              </DrawerTitle>
               <DrawerDescription>
                 {isTrashPage
                   ? `Tem certeza que deseja excluir permanentemente "${note.title || "Sem Título"}"? Essa ação não pode ser desfeita.`
@@ -226,6 +364,16 @@ export default function NoteCard({
           </div>
         </DrawerContent>
       </Drawer>
+
+      <UnlockDrawer
+        open={isUnlockDrawerOpen}
+        onOpenChange={setIsUnlockDrawerOpen}
+        item={{ kind: "note", id: note.id }}
+        onUnlocked={() => {
+          setIsUnlockDrawerOpen(false);
+          router.push(`/hub/notes/${note.id}`);
+        }}
+      />
     </>
   );
 }
