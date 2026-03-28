@@ -1,20 +1,17 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useNotes } from "@/hooks/use-notes";
 import { useNoteStore } from "@/store/noteStore";
 import { UnlockDrawer } from "@/components/modals/unlock-drawer";
 import { Button } from "@/components/ui/button";
+import { useId } from "@/utils/searchParams";
 
-export default function NotePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function NotePage() {
   const router = useRouter();
-  const { id: noteId } = use(params);
+  const noteId = useId();
 
   const { user } = useAuthStore();
   const userId = user?.uid ?? "";
@@ -23,10 +20,10 @@ export default function NotePage({
   const unlockedNotes = useNoteStore((s) => s.unlockedNotes);
 
   const note = useMemo(
-    () => notes.find((n) => n.id === noteId) ?? null,
+    () => (noteId ? (notes.find((n) => n.id === noteId) ?? null) : null),
     [noteId, notes],
   );
-  const isUnlockedInSession = unlockedNotes.has(noteId);
+  const isUnlockedInSession = !!noteId && unlockedNotes.has(noteId);
   const isBlocked = !!note?.isLocked && !isUnlockedInSession;
 
   const [unlockOpen, setUnlockOpen] = useState(isBlocked);
@@ -41,6 +38,21 @@ export default function NotePage({
 
     fetchNotes(userId).catch(() => {});
   }, [fetchNotes, notes.length, userId]);
+
+  if (!noteId) {
+    return (
+      <main className="w-full">
+        <div className="flex items-center justify-between">
+          <Button variant="outline" onClick={() => router.push("/hub/items")}>
+            Voltar
+          </Button>
+        </div>
+        <div className="mt-6 text-sm text-muted-foreground">
+          Nota não encontrada.
+        </div>
+      </main>
+    );
+  }
 
   if (!note) {
     return (

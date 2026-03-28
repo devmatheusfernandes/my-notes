@@ -1,19 +1,22 @@
 import { useParams } from "next/navigation";
 
+function getFirstParamValue(value?: string | string[] | null) {
+  if (!value) return null;
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value;
+}
+
 export function useFolderId() {
   const params = useParams<{ folderId?: string | string[] }>();
-  const folderId = params?.folderId;
-
-  if (!folderId) return null;
-  if (Array.isArray(folderId)) return folderId[0] ?? null;
-  return folderId;
+  return getFirstParamValue(params?.folderId);
 }
 
 export function useNoteId() {
   const params = useParams<{ noteId?: string | string[] }>();
-  const noteId = params?.noteId;
+  return getFirstParamValue(params?.noteId);
+}
 
-  if (!noteId) return null;
-  if (Array.isArray(noteId)) return noteId[0] ?? null;
-  return noteId;
+export function useId() {
+  const params = useParams<{ id?: string | string[] }>();
+  return getFirstParamValue(params?.id);
 }

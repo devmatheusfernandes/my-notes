@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Note } from "@/schemas/noteSchema";
 import { formatDateToLocale } from "@/utils/dates";
-import { getNotePreview } from "@/utils/items"; // Note que removi o getBentoClasses
+import { getNotePreview } from "@/utils/items";
 import { usePathname, useRouter } from "next/navigation";
 import { useSelection } from "@/components/hub/selection-context";
 import { Checkbox } from "@/components/ui/checkbox";

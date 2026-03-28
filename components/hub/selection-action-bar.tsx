@@ -26,6 +26,8 @@ import { useSettings } from "@/hooks/use-settings";
 import { useNoteStore } from "@/store/noteStore";
 import { useFolderStore } from "@/store/folderStore";
 import { storageService } from "@/services/storageService";
+import { useTags } from "@/hooks/use-tags";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -57,7 +59,7 @@ export function SelectionActionBar() {
     selectAll,
     clearSelection,
   } = useSelection();
-  const { deleteNote, updateNote, notes } = useNotes();
+  const { deleteNote, updateNote, notes, fetchNotes } = useNotes();
   const { deleteFolder, updateFolder, folders } = useFolders();
 
   const { user } = useAuthStore();
@@ -65,14 +67,33 @@ export function SelectionActionBar() {
   const { settings, fetchSettings } = useSettings();
 
   const lockNote = useNoteStore((s) => s.lockNote);
+  const updateNoteInStore = useNoteStore((s) => s.updateNote);
   const lockFolder = useFolderStore((s) => s.lockFolder);
+
+  const {
+    tags,
+    fetchTags,
+    applyTagToNote,
+    removeTagFromNote,
+    isLoading: isTagsLoading,
+  } = useTags();
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const [isLocking, setIsLocking] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isTagDrawerOpen, setIsTagDrawerOpen] = useState(false);
+  const [isTagging, setIsTagging] = useState(false);
 
   const selectedCount = selectedNoteIds.size + selectedFolderIds.size;
+
+  const selectedNotesForTagging = useMemo(() => {
+    return Array.from(selectedNoteIds)
+      .map((id) => notes.find((n) => n.id === id))
+      .filter((n): n is NonNullable<typeof n> => !!n);
+  }, [notes, selectedNoteIds]);
+
+  const canTag = selectedNotesForTagging.length > 0;
 
   const selectedItemsLockState = useMemo(() => {
     const selectedNotes = Array.from(selectedNoteIds)
@@ -89,6 +110,58 @@ export function SelectionActionBar() {
 
   const lockButtonMode = selectedItemsLockState.allLocked ? "unlock" : "lock";
   if (!isSelectionActive) return null;
+
+  const openTagDrawer = () => {
+    setIsTagDrawerOpen(true);
+    if (!userId) return;
+    fetchTags(userId).catch(() => {});
+  };
+
+  const handleToggleTagOnSelection = async (tagId: string) => {
+    if (!canTag) return;
+    if (isTagging) return;
+    const selected = selectedNotesForTagging;
+    const allHaveTag = selected.every((n) => (n.tagIds ?? []).includes(tagId));
+
+    const operation = async () => {
+      setIsTagging(true);
+      try {
+        await Promise.all(
+          selected.map(async (note) => {
+            const currentTagIds = note.tagIds ?? [];
+            const hasTag = currentTagIds.includes(tagId);
+
+            if (allHaveTag) {
+              if (!hasTag) return;
+              const nextTagIds = currentTagIds.filter((id) => id !== tagId);
+              updateNoteInStore(note.id, { tagIds: nextTagIds });
+              await removeTagFromNote(note.id, tagId);
+              return;
+            }
+
+            if (hasTag) return;
+            const nextTagIds = [...currentTagIds, tagId];
+            updateNoteInStore(note.id, { tagIds: nextTagIds });
+            await applyTagToNote(note.id, tagId);
+          }),
+        );
+      } finally {
+        setIsTagging(false);
+      }
+    };
+
+    toast.promise(operation(), {
+      loading: allHaveTag ? "Removendo tag..." : "Aplicando tag...",
+      success: () => {
+        clearSelection();
+        return allHaveTag ? "Tag removida." : "Tag aplicada.";
+      },
+      error: async () => {
+        if (userId) await fetchNotes(userId).catch(() => {});
+        return "Erro ao aplicar tag.";
+      },
+    });
+  };
 
   const handleConfirmDelete = async () => {
     setIsDrawerOpen(false);
@@ -410,11 +483,15 @@ export function SelectionActionBar() {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-muted-foreground"
+                  onClick={openTagDrawer}
+                  disabled={isDeleting || isTagging || isTagsLoading || !canTag}
                 >
                   <TagIcon className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Adicionar Tag</TooltipContent>
+              <TooltipContent>
+                {canTag ? "Adicionar Tag" : "Selecione ao menos uma nota"}
+              </TooltipContent>
             </Tooltip>
 
             <Separator orientation="vertical" className="h-5 mx-1" />
@@ -540,6 +617,67 @@ export function SelectionActionBar() {
                 <Button variant="outline">Cancelar</Button>
               </DrawerClose>
             </DrawerFooter>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={isTagDrawerOpen} onOpenChange={setIsTagDrawerOpen}>
+        <DrawerContent>
+          <div className="mx-auto w-full max-w-sm">
+            <DrawerHeader>
+              <DrawerTitle>Tags</DrawerTitle>
+              <DrawerDescription>
+                {selectedNotesForTagging.length} nota(s) selecionada(s)
+              </DrawerDescription>
+            </DrawerHeader>
+
+            <div className="px-4 pb-2">
+              {tags.length === 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  Nenhuma tag cadastrada.
+                </div>
+              ) : (
+                <div className="max-h-[45vh] overflow-auto flex flex-col gap-2">
+                  {tags.map((tag) => {
+                    const hasInAll = selectedNotesForTagging.every((n) =>
+                      (n.tagIds ?? []).includes(tag.id),
+                    );
+                    const hasInAny = selectedNotesForTagging.some((n) =>
+                      (n.tagIds ?? []).includes(tag.id),
+                    );
+                    const actionLabel = hasInAll
+                      ? "Remover"
+                      : hasInAny
+                        ? "Adicionar (faltando)"
+                        : "Adicionar";
+
+                    return (
+                      <Button
+                        key={tag.id}
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-between"
+                        onClick={() => handleToggleTagOnSelection(tag.id)}
+                        disabled={isTagging || isTagsLoading || !canTag}
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "size-2 rounded-full",
+                              tag.color ?? "bg-muted-foreground/40",
+                            )}
+                          />
+                          <span className="truncate">{tag.title}</span>
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {actionLabel}
+                        </span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </DrawerContent>
       </Drawer>

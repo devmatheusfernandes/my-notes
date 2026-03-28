@@ -24,18 +24,22 @@ import { SelectionActionBar } from "./selection-action-bar";
 import { toast } from "sonner";
 import { storageService } from "@/services/storageService";
 import LockedFolderGate from "@/components/hub/locked-folder-gate";
+import TagChips from "../items/tag-chips";
+import { useTags } from "@/hooks/use-tags";
 
 export default function HubItemsPage() {
   const { user } = useAuthStore();
   const userId = user?.uid || "";
   const { fetchNotes, notes, createNote, updateNote, deleteNote } = useNotes();
   const { fetchFolders, folders } = useFolders();
+  const { fetchTags, tags } = useTags();
   const folderId = useFolderId();
   const unlockedFolders = useFolderStore((s) => s.unlockedFolders);
 
   const lastFetchedUserIdRef = useRef<string | null>(null);
   const dragDepthRef = useRef(0);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -45,16 +49,36 @@ export default function HubItemsPage() {
       lastFetchedUserIdRef.current = userId;
       fetchNotes(userId).catch(() => {});
       fetchFolders(userId).catch(() => {});
+      fetchTags(userId).catch(() => {});
       return;
     }
 
     if (notes.length === 0) fetchNotes(userId).catch(() => {});
     if (folders.length === 0) fetchFolders(userId).catch(() => {});
-  }, [fetchFolders, fetchNotes, folders.length, notes.length, userId]);
+    if (tags.length === 0) fetchTags(userId).catch(() => {});
+  }, [
+    fetchFolders,
+    fetchNotes,
+    fetchTags,
+    folders.length,
+    notes.length,
+    tags.length,
+    userId,
+  ]);
 
   const activeNotes = useMemo(() => {
     return notes.filter((n) => !n.archived && !n.trashed);
   }, [notes]);
+
+  const activeTags = useMemo(() => {
+    const noteTagIds = new Set(activeNotes.flatMap((n) => n.tagIds ?? []));
+    return tags.filter((t) => noteTagIds.has(t.id));
+  }, [activeNotes, tags]);
+
+  const tagFilteredNotes = useMemo(() => {
+    if (!selectedTagId) return activeNotes;
+    return activeNotes.filter((n) => (n.tagIds ?? []).includes(selectedTagId));
+  }, [activeNotes, selectedTagId]);
 
   const activeFolders = useMemo(() => {
     return folders.filter((f) => !f.archived && !f.trashed);
@@ -77,7 +101,7 @@ export default function HubItemsPage() {
   }, [currentFolder?.isLocked, folderId, isFolderUnlockedInSession]);
 
   const { searchQuery, setSearchQuery, filteredNotes } =
-    useNotesSearch(activeNotes);
+    useNotesSearch(tagFilteredNotes);
 
   const normalizedQuery = useMemo(() => {
     return searchQuery.trim().toLowerCase();
@@ -216,6 +240,11 @@ export default function HubItemsPage() {
             className="mb-1"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <TagChips
+            tags={activeTags}
+            value={selectedTagId}
+            onChange={setSelectedTagId}
           />
           <SelectionActionBar />
         </div>
