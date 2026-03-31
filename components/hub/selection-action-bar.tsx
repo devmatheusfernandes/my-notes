@@ -86,14 +86,13 @@ export function SelectionActionBar() {
 
   const handleOpenTagDrawer = () => {
     setIsTagDrawerOpen(true);
-    actions.fetchTags().catch(() => {});
+    actions.fetchTags().catch(() => { });
   };
 
   const handleOpenMoveDrawer = () => {
     setIsMoveDrawerOpen(true);
   };
 
-  // Filter folders to exclude currently selected folders (cannot move a folder into itself)
   const availableFolders = folders.filter((f) => !selectedFolderIds.has(f.id));
 
   return (
@@ -306,8 +305,8 @@ export function SelectionActionBar() {
               </DrawerDescription>
             </DrawerHeader>
             <DrawerFooter>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={() => {
                   actions.handleConfirmDelete();
                   setIsDeleteDrawerOpen(false);
@@ -433,7 +432,7 @@ export function SelectionActionBar() {
                           setIsMoveDrawerOpen(false);
                         }}
                       >
-                        <div 
+                        <div
                           className={cn(
                             "size-8 rounded-md flex items-center justify-center text-white",
                             folder.color || "bg-primary/20 text-primary"

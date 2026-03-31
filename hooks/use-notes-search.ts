@@ -9,8 +9,8 @@ export function useNotesSearch(notes: Note[]) {
     if (!query) return notes;
     return notes.filter((note) => {
       const title = (note.title || "").toLowerCase();
-      const content = typeof note.content === "string" ? note.content : "";
-      return title.includes(query) || content.toLowerCase().includes(query);
+      const searchText = (note.searchText || "").toLowerCase();
+      return title.includes(query) || searchText.includes(query);
     });
   }, [notes, searchQuery]);
 
