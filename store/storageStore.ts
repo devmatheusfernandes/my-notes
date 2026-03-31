@@ -4,6 +4,9 @@ import { db } from "@/lib/firebase";
 
 interface StorageUsageData {
   totalBytesUsed: number;
+  imageBytesUsed: number;
+  pdfBytesUsed: number;
+  notesBytesUsed: number;
   uploadCount: number;
   lastUploadAt: Date | null;
 }
@@ -17,12 +20,15 @@ interface StorageState {
   subscribeToUsage: (userId: string) => () => void;
 }
 
-const STORAGE_LIMIT_MB = 50;
+const STORAGE_LIMIT_MB = 200;
 const STORAGE_LIMIT_BYTES = STORAGE_LIMIT_MB * 1024 * 1024;
 
 export const useStorageStore = create<StorageState>((set) => ({
   usage: {
     totalBytesUsed: 0,
+    imageBytesUsed: 0,
+    pdfBytesUsed: 0,
+    notesBytesUsed: 0,
     uploadCount: 0,
     lastUploadAt: null,
   },
@@ -45,6 +51,9 @@ export const useStorageStore = create<StorageState>((set) => ({
         set({
           usage: {
             totalBytesUsed,
+            imageBytesUsed: data.imageBytesUsed || 0,
+            pdfBytesUsed: data.pdfBytesUsed || 0,
+            notesBytesUsed: data.notesBytesUsed || 0,
             uploadCount: data.uploadCount || 0,
             lastUploadAt: data.lastUploadAt ? data.lastUploadAt.toDate() : null,
           },
@@ -57,6 +66,9 @@ export const useStorageStore = create<StorageState>((set) => ({
         set({
           usage: {
             totalBytesUsed: 0,
+            imageBytesUsed: 0,
+            pdfBytesUsed: 0,
+            notesBytesUsed: 0,
             uploadCount: 0,
             lastUploadAt: null,
           },

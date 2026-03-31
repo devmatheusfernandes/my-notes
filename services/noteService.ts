@@ -7,6 +7,7 @@ import {
   where,
   deleteDoc,
   updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { note, Note, CreateNoteDTO } from "@/schemas/noteSchema";
@@ -75,6 +76,31 @@ export const noteService = {
     } catch (error) {
       console.error("Erro ao atualizar nota no Firebase:", error);
       throw new Error("Não foi possível atualizar a nota.");
+    }
+  },
+
+  async createManyNotes(userId: string, notesData: CreateNoteDTO[]): Promise<void> {
+    try {
+      const batch = writeBatch(db);
+      
+      for (const data of notesData) {
+        const newNoteRef = doc(collection(db, NOTES_COLLECTION_NAME));
+        const rawNote = {
+          ...data,
+          id: newNoteRef.id,
+          userId: userId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        const newNote = note.parse(rawNote);
+        batch.set(newNoteRef, newNote);
+      }
+
+      await batch.commit();
+    } catch (error) {
+      console.error("Erro ao criar múltiplas notas no Firebase:", error);
+      throw new Error("Não foi possível realizar a importação em lote.");
     }
   },
 };

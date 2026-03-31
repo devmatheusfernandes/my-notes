@@ -4,6 +4,8 @@ import {
   getDownloadURL,
   deleteObject,
   getMetadata,
+  listAll,
+  StorageReference,
 } from "firebase/storage";
 import {
   doc,
@@ -12,8 +14,13 @@ import {
   setDoc,
   getDoc,
   updateDoc,
+  collection,
+  getDocs,
+  query,
+  where,
 } from "firebase/firestore";
 import { storage, db } from "@/lib/firebase";
+import { NOTES_COLLECTION_NAME, FOLDERS_COLLECTION_NAME } from "@/lib/collections-name";
 
 export const storageService = {
   /**
@@ -46,8 +53,13 @@ export const storageService = {
     const snapshot = await uploadBytes(fileRef, file);
 
     // 3. Incrementa o uso de dados no Firestore
+    const isImage = file.type.startsWith("image/");
+    const isPDF = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
     await updateDoc(usageRef, {
       totalBytesUsed: increment(file.size),
+      imageBytesUsed: isImage ? increment(file.size) : increment(0),
+      pdfBytesUsed: isPDF ? increment(file.size) : increment(0),
       uploadCount: increment(1),
       lastUploadAt: serverTimestamp(),
     });
@@ -64,9 +76,11 @@ export const storageService = {
     // Antes de deletar, precisamos do tamanho para descontar!
     try {
       let size = 0;
+      let contentType = "";
       try {
         const metadata = await getMetadata(fileRef);
         size = metadata.size || 0;
+        contentType = metadata.contentType || "";
       } catch (error) {
         const err = error as { code?: string };
         if (err?.code === "storage/object-not-found") return;
@@ -81,11 +95,16 @@ export const storageService = {
         throw error;
       }
 
+      const isImage = contentType.startsWith("image/");
+      const isPDF = contentType === "application/pdf";
+
       // Decrementa o uso no Firestore
       const usageRef = doc(db, "usage", userId);
       try {
         await updateDoc(usageRef, {
           totalBytesUsed: increment(-size),
+          imageBytesUsed: isImage ? increment(-size) : increment(0),
+          pdfBytesUsed: isPDF ? increment(-size) : increment(0),
         });
       } catch (error) {
         const err = error as { code?: string };
@@ -103,5 +122,74 @@ export const storageService = {
       console.error("Falha ao deletar arquivo ou atualizar quota", error);
       throw error;
     }
+  },
+
+  /**
+   * Recalcula o uso de armazenamento escaneando todos os arquivos do usuário.
+   */
+  async recalculateUsage(userId: string): Promise<void> {
+    const userStorageRef = ref(storage, `users/${userId}`);
+    let totalBytesUsed = 0;
+    let imageBytesUsed = 0;
+    let pdfBytesUsed = 0;
+    let uploadCount = 0;
+
+    const listRecursive = async (folderRef: StorageReference) => {
+      const res = await listAll(folderRef);
+      
+      // Process files in current folder
+      for (const item of res.items) {
+        const metadata = await getMetadata(item);
+        const size = metadata.size || 0;
+        const contentType = metadata.contentType || "";
+        
+        totalBytesUsed += size;
+        uploadCount++;
+        
+        if (contentType.startsWith("image/")) {
+          imageBytesUsed += size;
+        } else if (contentType === "application/pdf") {
+          pdfBytesUsed += size;
+        }
+      }
+      
+      // Process subfolders
+      for (const folder of res.prefixes) {
+        await listRecursive(folder);
+      }
+    };
+
+    await listRecursive(userStorageRef);
+
+    // Recalcula o uso do Firestore (Notas + Pastas)
+    let notesBytesUsed = 0;
+    try {
+      const notesQuery = query(collection(db, NOTES_COLLECTION_NAME), where("userId", "==", userId));
+      const foldersQuery = query(collection(db, FOLDERS_COLLECTION_NAME), where("userId", "==", userId));
+      
+      const [notesSnap, foldersSnap] = await Promise.all([
+        getDocs(notesQuery),
+        getDocs(foldersQuery)
+      ]);
+
+      notesSnap.forEach(doc => {
+        notesBytesUsed += JSON.stringify(doc.data()).length;
+      });
+      foldersSnap.forEach(doc => {
+        notesBytesUsed += JSON.stringify(doc.data()).length;
+      });
+    } catch (error) {
+      console.error("Erro ao calcular tamanho das notas/pastas:", error);
+    }
+
+    const usageRef = doc(db, "usage", userId);
+    await setDoc(usageRef, {
+      totalBytesUsed,
+      imageBytesUsed,
+      pdfBytesUsed,
+      notesBytesUsed,
+      uploadCount,
+      lastUploadAt: serverTimestamp(),
+    }, { merge: true });
   },
 };

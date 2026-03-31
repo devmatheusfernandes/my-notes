@@ -15,12 +15,16 @@ import { Loading } from "@/components/ui/loading";
 import { StorageWidget } from "@/components/hub/storage-widget";
 import { useBackup } from "@/hooks/use-backup";
 import {
+  AlertTriangle,
+  FileUp,
+  FileJson,
+  FileType,
+  Table,
   Cloud,
   RefreshCw,
   Link as LinkIcon,
   Clock,
-  Calendar,
-  AlertTriangle
+  Calendar
 } from "lucide-react";
 import {
   Select,
@@ -29,6 +33,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { noteService } from "@/services/noteService";
+import { CreateNoteDTO } from "@/schemas/noteSchema";
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
@@ -46,6 +52,8 @@ export default function SettingsPage() {
     restoreBackup,
     linkGoogleDrive
   } = useBackup(userId);
+
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -145,6 +153,82 @@ export default function SettingsPage() {
     } finally {
       setIsBiometricBusy(false);
     }
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+
+    setIsImporting(true);
+    const reader = new FileReader();
+
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result as string;
+        let notesToImport: CreateNoteDTO[] = [];
+
+        if (file.name.endsWith(".json")) {
+          const json = JSON.parse(text);
+          const data = Array.isArray(json) ? json : [json];
+          notesToImport = (data as Record<string, unknown>[]).map((item) => ({
+            title: (item.title as string) || "Nota Importada",
+            content: (item.content as string) || "",
+            pinned: !!item.pinned || !!item.isFavorite,
+            folderId: undefined,
+            tagIds: [],
+            isLocked: false,
+          }));
+        } else if (file.name.endsWith(".csv")) {
+          const lines = text.split(/\r?\n/).filter(line => line.trim());
+          if (lines.length < 2) throw new Error("CSV inválido ou vazio");
+
+          const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+          const titleIdx = headers.indexOf("title");
+          const contentIdx = headers.indexOf("content");
+
+          if (titleIdx === -1 || contentIdx === -1) {
+            throw new Error("CSV deve conter colunas 'title' e 'content'");
+          }
+
+          notesToImport = lines.slice(1).map(line => {
+            const cells = line.split(",");
+            return {
+              title: cells[titleIdx]?.trim() || "Sem título",
+              content: cells[contentIdx]?.trim() || "",
+              pinned: false,
+              folderId: undefined,
+              tagIds: [],
+              isLocked: false,
+            };
+          });
+        } else if (file.name.endsWith(".txt")) {
+          notesToImport = [{
+            title: file.name.replace(".txt", ""),
+            content: text,
+            pinned: false,
+            folderId: undefined,
+            tagIds: [],
+            isLocked: false,
+          }];
+        }
+
+        if (notesToImport.length === 0) {
+          toast.error("Nenhuma nota encontrada para importar.");
+          return;
+        }
+
+        await noteService.createManyNotes(userId, notesToImport);
+        toast.success(`${notesToImport.length} nota(s) importada(s) com sucesso!`);
+      } catch (err) {
+        console.error("Erro na importação:", err);
+        toast.error("Erro ao importar arquivo. Verifique o formato.");
+      } finally {
+        setIsImporting(false);
+        e.target.value = ""; // Reset input
+      }
+    };
+
+    reader.readAsText(file);
   };
 
   const isInitializing = isLoading && !settings;
@@ -417,6 +501,69 @@ export default function SettingsPage() {
               <p className="text-xs leading-relaxed">
                 <strong>Atenção:</strong> Restaurar um backup irá <strong>substituir permanentemente</strong> todas as suas notas, pastas e tags atuais. Recomendamos fazer um backup manual antes de restaurar.
               </p>
+            </div>
+          </div>
+        </motion.section>
+
+        <motion.section
+          variants={itemFadeInUpVariants}
+          className="card-section"
+        >
+          <div className="mb-5">
+            <h2 className="card-title flex items-center gap-2">
+              <FileUp className="w-5 h-5 text-primary" />
+              Importar Notas
+            </h2>
+            <p className="card-description">
+              Traga suas notas de outros aplicativos nos formatos JSON, TXT ou CSV.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="relative group">
+              <input
+                type="file"
+                accept=".json,.txt,.csv"
+                onChange={handleImportFile}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
+                disabled={isImporting}
+              />
+              <div className={`
+                flex flex-col items-center justify-center gap-3 p-6 
+                border-2 border-dashed rounded-2xl transition-all duration-300
+                ${isImporting ? 'opacity-50 bg-accent/20' : 'hover:border-primary hover:bg-primary/5 bg-accent/10 border-accent/50'}
+              `}>
+                {isImporting ? (
+                  <RefreshCw className="w-8 h-8 text-primary animate-spin" />
+                ) : (
+                  <FileUp className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
+                )}
+                <div className="text-center">
+                  <p className="text-sm font-semibold">Clique para importar</p>
+                  <p className="text-xs text-muted-foreground mt-1">JSON, TXT ou CSV (Title, Content)</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="sm:col-span-2 flex flex-col justify-center gap-4 p-4 rounded-2xl border bg-accent/5">
+              <h3 className="text-sm font-medium flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+                Formatos Suportados
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <div className="flex items-start gap-2">
+                  <FileJson className="w-4 h-4 shrink-0 text-blue-500" />
+                  <p><span className="font-bold">JSON:</span> Array de objetos com <code className="bg-accent px-1 rounded">title</code> e <code className="bg-accent px-1 rounded">content</code>.</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <FileType className="w-4 h-4 shrink-0 text-orange-500" />
+                  <p><span className="font-bold">TXT:</span> Nome do arquivo será o título e o conteúdo o texto da nota.</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Table className="w-4 h-4 shrink-0 text-emerald-500" />
+                  <p><span className="font-bold">CSV:</span> Deve conter cabeçalho com <code className="bg-accent px-1 rounded">title</code> e <code className="bg-accent px-1 rounded">content</code>.</p>
+                </div>
+              </div>
             </div>
           </div>
         </motion.section>
