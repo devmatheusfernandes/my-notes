@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
 import HubSidebar from "@/components/hub/hub-sidebar";
-import Header from "@/components/hub/hub-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -8,8 +7,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <SidebarProvider>
       <HubSidebar />
       <SidebarInset className="min-h-svh">
-        <div className="sm:mx-8 mx-2 mt-2">
-          <Header />
+        <div>
           {children}
         </div>
       </SidebarInset>

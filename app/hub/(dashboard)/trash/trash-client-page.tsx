@@ -1,10 +1,13 @@
 "use client";
+import { useMemo } from "react";
 import { useNotes } from "@/hooks/use-notes";
 import { useFolders } from "@/hooks/use-folders";
 import { ItemsBentoGrid } from "@/components/items/bento-grid";
 import { SelectionProvider } from "@/components/hub/selection-context";
 import { SelectionActionBar } from "@/components/hub/selection-action-bar";
 import { useAuthStore } from "@/store/authStore";
+import { useNotesSearch } from "@/hooks/use-notes-search";
+import Header from "@/components/hub/hub-header";
 
 import { motion } from "framer-motion";
 import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
@@ -15,11 +18,25 @@ export default function TrashClientPage() {
   const { notes } = useNotes(userId);
   const { folders } = useFolders(userId);
 
-  const trashedNotes = notes.filter((n) => n.trashed);
-  const trashedFolders = folders.filter((f) => f.trashed);
+  const trashedNotes = useMemo(() => notes.filter((n) => n.trashed), [notes]);
+  const trashedFolders = useMemo(() => folders.filter((f) => f.trashed), [folders]);
+
+  const { searchQuery, setSearchQuery, filteredNotes } = useNotesSearch(trashedNotes);
+
+  const displayedFolders = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return trashedFolders;
+    return trashedFolders.filter((f) => (f.title ?? "").toLowerCase().includes(query));
+  }, [trashedFolders, searchQuery]);
 
   return (
     <SelectionProvider>
+      <Header
+        scrollSearch
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        showBreadcrumb={false}
+      />
       <motion.main
         className="page-container"
         variants={pageContainerVariants}
@@ -30,15 +47,11 @@ export default function TrashClientPage() {
           variants={itemFadeInUpVariants}
           className="w-full mb-6"
         >
-          <h1 className="page-title">Lixeira</h1>
-          <p className="page-description">
-            Itens na lixeira podem ser excluídos permanentemente ou restaurados.
-          </p>
           <SelectionActionBar />
         </motion.div>
-        
+
         <motion.div variants={itemFadeInUpVariants}>
-          <ItemsBentoGrid notes={trashedNotes} folders={trashedFolders} />
+          <ItemsBentoGrid notes={filteredNotes} folders={displayedFolders} searchQuery={searchQuery} />
         </motion.div>
       </motion.main>
     </SelectionProvider>

@@ -10,10 +10,8 @@ import { Folder } from "@/schemas/folderSchema";
 import { Tag } from "@/schemas/tagSchema";
 import { ItemsBentoGrid } from "@/components/items/bento-grid";
 import { SmartCreateButton } from "@/components/items/create-button";
-import { Input } from "@/components/ui/input";
 import { SelectionProvider } from "@/components/hub/selection-context";
 import { useAuthStore } from "@/store/authStore";
-import HubBreadcrumb from "./hub-breadcrumb";
 import { useNotesSearch } from "@/hooks/use-notes-search";
 import { SearchX } from "lucide-react";
 import { motion } from "framer-motion";
@@ -30,7 +28,7 @@ import { useFolderStore } from "@/store/folderStore";
 import { SelectionActionBar } from "./selection-action-bar";
 import { toast } from "sonner";
 import LockedFolderGate from "@/components/hub/locked-folder-gate";
-import TagChips from "../items/tag-chips";
+import Header from "./hub-header";
 
 export default function HubItemsPage() {
   const { user } = useAuthStore();
@@ -138,6 +136,16 @@ export default function HubItemsPage() {
 
   return (
     <SelectionProvider>
+      <Header
+        scrollSearch
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        showTags
+        tags={activeTags}
+        selectedTagId={selectedTagId}
+        setSelectedTagId={setSelectedTagId}
+        showBreadcrumb
+      />
       <motion.main
         className="relative page-container"
         variants={pageContainerVariants}
@@ -211,20 +219,8 @@ export default function HubItemsPage() {
         ) : null}
         <motion.div
           variants={itemFadeInUpVariants}
-          className="w-full mb-3 flex flex-col justify-start items-start gap-2"
+          className="w-full mb-3"
         >
-          <HubBreadcrumb />
-          <Input
-            placeholder="Buscar nota ou pasta..."
-            className="mb-1"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <TagChips
-            tags={activeTags}
-            value={selectedTagId}
-            onChange={setSelectedTagId}
-          />
           <SelectionActionBar />
         </motion.div>
         <motion.div variants={itemFadeInUpVariants}>
