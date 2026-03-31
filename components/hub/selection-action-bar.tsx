@@ -63,7 +63,7 @@ export function SelectionActionBar() {
   const userId = user?.uid ?? "";
 
   const { deleteNote, updateNote, notes, fetchNotes } = useNotes(userId);
-  const { deleteFolder, updateFolder, folders } = useFolders(userId);
+  const { deleteFolder, updateFolder, folders, fetchFolders } = useFolders(userId);
   const { settings, fetchSettings } = useSettings();
 
   const lockNote = useNoteStore((s) => s.lockNote);
@@ -210,6 +210,10 @@ export function SelectionActionBar() {
           if (errorCount > 0) {
             return `${successCount} item(s) processado(s), ${errorCount} erro(s).`;
           }
+          // Revalidar os dados após exclusão em massa
+          fetchNotes().catch(() => {});
+          fetchFolders().catch(() => {});
+          
           return isTrashPage
             ? `${successCount} item(s) excluído(s) com sucesso.`
             : `${successCount} item(s) movidos para a lixeira.`;
@@ -256,6 +260,10 @@ export function SelectionActionBar() {
         if (errorCount > 0) {
           return `${successCount} item(s) processado(s), ${errorCount} erro(s).`;
         }
+        // Revalidar os dados após arquivamento/desarquivamento em massa
+        fetchNotes().catch(() => {});
+        fetchFolders().catch(() => {});
+
         return isUnarchiving
           ? `${successCount} item(s) desarquivado(s).`
           : `${successCount} item(s) arquivado(s).`;

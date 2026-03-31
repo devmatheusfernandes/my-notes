@@ -46,15 +46,15 @@ export function useFolders(userId?: string) {
       try {
         await mutate(
           cacheKey,
-          async () => {
+          async (currentFolders: Folder[] | undefined) => {
             const newFolder = await folderService.createFolder(folderUserId, data);
-            return [newFolder, ...folders];
+            return [newFolder, ...(currentFolders || [])];
           },
           {
             optimisticData: [optimisticFolder, ...folders],
             rollbackOnError: true,
             populateCache: true,
-            revalidate: false,
+            revalidate: true,
           }
         );
       } catch (error) {
@@ -77,15 +77,15 @@ export function useFolders(userId?: string) {
       try {
         await mutate(
           cacheKey,
-          async () => {
+          async (currentFolders: Folder[] | undefined) => {
             await folderService.deleteFolder(folderId);
-            return folders.filter((f) => f.id !== folderId);
+            return (currentFolders || []).filter((f) => f.id !== folderId);
           },
           {
             optimisticData: folders.filter((f) => f.id !== folderId),
             rollbackOnError: true,
             populateCache: true,
-            revalidate: false,
+            revalidate: true,
           }
         );
       } catch (error) {
@@ -108,15 +108,15 @@ export function useFolders(userId?: string) {
       try {
         await mutate(
           cacheKey,
-          async () => {
+          async (currentFolders: Folder[] | undefined) => {
             await folderService.updateFolder(folderId, data);
-            return folders.map((f) => (f.id === folderId ? { ...f, ...data, updatedAt: new Date().toISOString() } : f));
+            return (currentFolders || []).map((f) => (f.id === folderId ? { ...f, ...data, updatedAt: new Date().toISOString() } : f));
           },
           {
             optimisticData: folders.map((f) => (f.id === folderId ? { ...f, ...data } : f)),
             rollbackOnError: true,
             populateCache: true,
-            revalidate: false,
+            revalidate: true,
           }
         );
       } catch (error) {

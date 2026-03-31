@@ -52,15 +52,15 @@ export function useNotes(userId?: string) {
       try {
         const updatedNotes = await mutate(
           cacheKey,
-          async () => {
+          async (currentNotes: Note[] | undefined) => {
             const newNote = await noteService.createNote(noteUserId, data);
-            return [newNote, ...notes];
+            return [newNote, ...(currentNotes || [])];
           },
           {
             optimisticData: [optimisticNote, ...notes],
             rollbackOnError: true,
             populateCache: true,
-            revalidate: false,
+            revalidate: true,
           }
         );
         return updatedNotes?.[0] as Note;
@@ -84,15 +84,15 @@ export function useNotes(userId?: string) {
       try {
         await mutate(
           cacheKey,
-          async () => {
+          async (currentNotes: Note[] | undefined) => {
             await noteService.deleteNote(noteId);
-            return notes.filter((n) => n.id !== noteId);
+            return (currentNotes || []).filter((n) => n.id !== noteId);
           },
           {
             optimisticData: notes.filter((n) => n.id !== noteId),
             rollbackOnError: true,
             populateCache: true,
-            revalidate: false,
+            revalidate: true,
           }
         );
       } catch (error) {
@@ -115,15 +115,15 @@ export function useNotes(userId?: string) {
       try {
         await mutate(
           cacheKey,
-          async () => {
+          async (currentNotes: Note[] | undefined) => {
             await noteService.updateNote(noteId, data);
-            return notes.map((n) => (n.id === noteId ? { ...n, ...data, updatedAt: new Date().toISOString() } : n));
+            return (currentNotes || []).map((n) => (n.id === noteId ? { ...n, ...data, updatedAt: new Date().toISOString() } : n));
           },
           {
             optimisticData: notes.map((n) => (n.id === noteId ? { ...n, ...data } : n)),
             rollbackOnError: true,
             populateCache: true,
-            revalidate: false,
+            revalidate: true,
           }
         );
       } catch (error) {

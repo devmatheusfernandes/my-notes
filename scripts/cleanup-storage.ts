@@ -62,7 +62,7 @@ async function cleanupOrphanedMedia() {
       const createdAt = media.createdAt ? media.createdAt.toDate().getTime() : 0;
       const age = now - createdAt;
 
-      if (age) {
+      if (age > GRACE_PERIOD_MS) {
         console.log(`Deleting orphaned media: ${media.storagePath} (Id: ${mediaDoc.id})`);
 
         try {
