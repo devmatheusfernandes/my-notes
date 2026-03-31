@@ -29,15 +29,21 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { useLongPress } from "@/hooks/use-long-press";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, Pencil, FileText } from "lucide-react";
 import { useNotes } from "@/hooks/use-notes";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useNoteStore } from "@/store/noteStore";
 import { UnlockDrawer } from "@/components/modals/unlock-drawer";
 import { useAuthStore } from "@/store/authStore";
 import { useSettings } from "@/hooks/use-settings";
 import { storageService } from "@/services/storageService";
+import { useDraggable } from "@dnd-kit/core";
+import { Input } from "@/components/ui/input";
+import { extractNoteMetadata, toggleTaskInContent } from "@/utils/note-metadata";
+import { useTags } from "@/hooks/use-tags";
+import { motion, AnimatePresence } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
 
 export default function NoteCard({
   note,
@@ -55,15 +61,47 @@ export default function NoteCard({
   const userId = user?.uid ?? "";
   const { selectedNoteIds, toggleNote, isSelectionActive } = useSelection();
   const { deleteNote, updateNote } = useNotes(userId);
+  const { tags: allTags } = useTags(userId);
   const { settings, fetchSettings } = useSettings();
   const { unlockedNotes, lockNote } = useNoteStore();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isUnlockDrawerOpen, setIsUnlockDrawerOpen] = useState(false);
 
+  // Inline Rename State
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [newTitle, setNewTitle] = useState(note.title);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const isSelected = selectedNoteIds.has(note.id);
   const isUnlockedInSession = unlockedNotes.has(note.id);
   const isMasked = note.isLocked && !isUnlockedInSession;
+
+  const metadata = useMemo(() => extractNoteMetadata(note), [note]);
+
+  const noteTags = useMemo(() => {
+    return (note.tagIds || [])
+      .map(id => allTags.find(t => t.id === id))
+      .filter(Boolean);
+  }, [note.tagIds, allTags]);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging,
+  } = useDraggable({
+    id: `note-${note.id}`,
+    disabled: isRenaming || isSelectionActive || isMasked || isTrashPage,
+  });
+
+  const style = transform
+    ? {
+      transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      zIndex: 100,
+    }
+    : undefined;
 
   const handleToggle = () => toggleNote(note.id);
 
@@ -72,6 +110,8 @@ export default function NoteCard({
   });
 
   const handleClick = (e: React.MouseEvent) => {
+    if (isRenaming) return;
+
     if (isSelectionActive) {
       e.preventDefault();
       e.stopPropagation();
@@ -105,11 +145,11 @@ export default function NoteCard({
 
     const promise = isTrashPage
       ? (async () => {
-          if (note.type === "pdf" && userId) {
-            await storageService.deleteFile(userId, `pdf/${note.id}.pdf`);
-          }
-          await deleteNote(note.id);
-        })()
+        if (note.type === "pdf" && userId) {
+          await storageService.deleteFile(userId, `pdf/${note.id}.pdf`);
+        }
+        await deleteNote(note.id);
+      })()
       : updateNote(note.id, { trashed: true });
 
     toast.promise(promise, {
@@ -192,23 +232,82 @@ export default function NoteCard({
     });
   };
 
+  const startRenaming = (e?: Event | React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setIsRenaming(true);
+    setNewTitle(note.title);
+  };
+
+  const handleRename = async () => {
+    if (newTitle.trim() === "" || newTitle === note.title) {
+      setIsRenaming(false);
+      return;
+    }
+
+    try {
+      await updateNote(note.id, { title: newTitle.trim() });
+      toast.success("Nota renomeada!");
+    } catch {
+      toast.error("Erro ao renomear nota.");
+      setNewTitle(note.title);
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
+  const handleTaskToggle = async (e: React.MouseEvent, index: number) => {
+    e.stopPropagation();
+    if (isMasked) return;
+
+    const newContent = toggleTaskInContent(note.content, index);
+    await updateNote(note.id, { content: newContent });
+  };
+
+  useEffect(() => {
+    if (isRenaming && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isRenaming]);
+
   return (
     <>
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <article
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
             onClick={handleClick}
             {...longPressProps}
             className={cn(
-              "group relative flex flex-col justify-between overflow-hidden rounded-2xl p-5 transition-all duration-300 cursor-pointer min-h-[160px]",
+              "group relative flex flex-col justify-between overflow-hidden rounded-2xl transition-all duration-300 cursor-pointer min-h-[180px]",
               "bg-card border shadow-sm hover:shadow-md hover:border-border/80",
               isSelected
                 ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20"
                 : "border-border/40",
+              isDragging && "opacity-50 grayscale scale-[0.95] rotate-1 z-50",
               isDeleting ? "opacity-50 pointer-events-none" : "",
               className,
             )}
           >
+            {/* Capa de Imagem */}
+            <AnimatePresence>
+              {!isMasked && metadata.firstImage && (
+                <div className="relative w-full h-24 overflow-hidden shrink-0 border-b border-border/10">
+                  <motion.img
+                    src={metadata.firstImage}
+                    alt="Capa"
+                    className="w-full h-full object-cover"
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                </div>
+              )}
+            </AnimatePresence>
+
             {/* Checkbox em overlay flutuante (Google Keep style) */}
             <div
               className={cn(
@@ -222,88 +321,162 @@ export default function NoteCard({
               <Checkbox checked={isSelected} className="pointer-events-none" />
             </div>
 
-            {/* Conteúdo da Nota */}
-            <div className="flex flex-col gap-2 mb-4">
-              <h3 className="text-base font-semibold leading-tight tracking-tight text-foreground pr-8 line-clamp-2">
-                {note.title || "Sem Título"}{" "}
-                {note.pinned ? <span className="text-sm">📌</span> : null}
-                {note.isLocked ? (
-                  <span className="ml-1 text-sm">🔒</span>
-                ) : null}
-              </h3>
-              <p
-                className={cn(
-                  "text-sm leading-relaxed text-muted-foreground line-clamp-4",
-                  isMasked ? "select-none blur-sm" : "",
-                )}
-              >
-                {isMasked
-                  ? "Conteúdo protegido..."
-                  : note.searchText ||
-                    (typeof note.content === "string" ? note.content : "") ||
-                    "Nenhuma prévia disponível..."}
-              </p>
-            </div>
+            {/* Badge PDF */}
+            {note.type === "pdf" && (
+              <div className="absolute top-3 left-3 z-10">
+                <Badge variant="secondary" className="gap-1 px-1.5 py-0.5 bg-red-500/10 text-red-600 border-red-500/20">
+                  <FileText className="h-3 w-3" />
+                  <span className="text-[10px] font-bold">PDF</span>
+                </Badge>
+              </div>
+            )}
 
-            {/* Rodapé: Data e Ações */}
-            <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/40">
-              <span className="text-[11px] font-medium tracking-wider text-muted-foreground/80 uppercase">
-                {formatDateToLocale(note.createdAt)}
-              </span>
-
-              <div onClick={(e) => e.stopPropagation()} className="-mr-2 -mb-1">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                      <MoreVertical className="h-4 w-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggle();
-                      }}
-                    >
-                      {isSelected ? "Desmarcar" : "Selecionar"}
-                    </DropdownMenuItem>
-
-                    {!isTrashPage && (
-                      <DropdownMenuItem onClick={handleArchive}>
-                        {isArchivedPage ? "Desarquivar" : "Arquivar"}
-                      </DropdownMenuItem>
-                    )}
-
-                    {isTrashPage && (
-                      <DropdownMenuItem onClick={handleRestore}>
-                        Restaurar
-                      </DropdownMenuItem>
-                    )}
-
-                    <DropdownMenuItem>Compartilhar</DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleTogglePin}>
-                      {note.pinned ? "Desafixar" : "Fixar"}
-                    </DropdownMenuItem>
-                    {!isTrashPage ? (
-                      <DropdownMenuItem onClick={handleToggleLock}>
-                        {note.isLocked ? "Destrancar" : "Trancar"}
-                      </DropdownMenuItem>
+            <div className="flex flex-col p-5 pt-4 flex-1">
+              {/* Conteúdo da Nota */}
+              <div className="flex flex-col gap-2 mb-3">
+                {isRenaming ? (
+                  <Input
+                    ref={inputRef}
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    onBlur={handleRename}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleRename();
+                      if (e.key === "Escape") {
+                        setIsRenaming(false);
+                        setNewTitle(note.title);
+                      }
+                    }}
+                    className="h-7 text-base font-semibold py-0 px-1 -ml-1 border-primary focus-visible:ring-1 focus-visible:ring-primary"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <h3 className="text-base font-semibold leading-tight tracking-tight text-foreground pr-8 line-clamp-2">
+                    {note.title || "Sem Título"}{" "}
+                    {note.pinned ? <span className="text-sm">📌</span> : null}
+                    {note.isLocked ? (
+                      <span className="ml-1 text-sm">🔒</span>
                     ) : null}
-                    <DropdownMenuItem>Baixar</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        attemptDelete();
-                      }}
-                    >
-                      {isTrashPage
-                        ? "Excluir Definitivamente"
-                        : "Mover para Lixeira"}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </h3>
+                )}
+
+                {/* Checklist Preview */}
+                {!isRenaming && !isMasked && metadata.tasks.length > 0 ? (
+                  <div className="flex flex-col gap-1 my-1">
+                    {metadata.tasks.map((task, i) => (
+                      <div key={i} className="flex items-center gap-2 group/task" onClick={(e) => handleTaskToggle(e, i)}>
+                        <Checkbox checked={task.checked} className="h-3.5 w-3.5" />
+                        <span className={cn(
+                          "text-xs truncate",
+                          task.checked ? "text-muted-foreground line-through decoration-muted-foreground/50" : "text-foreground/80"
+                        )}>
+                          {task.label}
+                        </span>
+                      </div>
+                    ))}
+                    {metadata.tasks.length >= 5 && (
+                      <span className="text-[10px] text-muted-foreground/60 font-medium ml-6">
+                        + ver mais itens
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <p
+                    className={cn(
+                      "text-sm leading-relaxed text-muted-foreground line-clamp-4",
+                      isMasked ? "select-none blur-sm" : "",
+                    )}
+                  >
+                    {isMasked
+                      ? "Conteúdo protegido..."
+                      : metadata.previewText || "Nenhuma prévia disponível..."}
+                  </p>
+                )}
+              </div>
+
+              {/* Tags */}
+              {!isMasked && noteTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-1 mb-3">
+                  {noteTags.map((tag) => (
+                    tag && (
+                      <div
+                        key={tag.id}
+                        className="h-1.5 w-6 rounded-full"
+                        style={{ backgroundColor: tag.color || "#888" }}
+                        title={tag.title}
+                      />
+                    )
+                  ))}
+                </div>
+              )}
+
+              {/* Rodapé: Data e Ações */}
+              <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/40">
+                <span className="text-[11px] font-medium tracking-wider text-muted-foreground/80 uppercase">
+                  {formatDateToLocale(note.createdAt)}
+                </span>
+
+                <div onClick={(e) => e.stopPropagation()} className="-mr-2 -mb-1">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggle();
+                        }}
+                      >
+                        {isSelected ? "Desmarcar" : "Selecionar"}
+                      </DropdownMenuItem>
+
+                      {!isTrashPage && (
+                        <DropdownMenuItem onClick={handleArchive}>
+                          {isArchivedPage ? "Desarquivar" : "Arquivar"}
+                        </DropdownMenuItem>
+                      )}
+
+                      {isTrashPage && (
+                        <DropdownMenuItem onClick={handleRestore}>
+                          Restaurar
+                        </DropdownMenuItem>
+                      )}
+
+                      {!isTrashPage && (
+                        <DropdownMenuItem onClick={startRenaming}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Renomear
+                        </DropdownMenuItem>
+                      )}
+
+                      <DropdownMenuItem>Compartilhar</DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleTogglePin}>
+                        {note.pinned ? "Desafixar" : "Fixar"}
+                      </DropdownMenuItem>
+                      {!isTrashPage ? (
+                        <DropdownMenuItem onClick={handleToggleLock}>
+                          {note.isLocked ? "Destrancar" : "Trancar"}
+                        </DropdownMenuItem>
+                      ) : null}
+                      <DropdownMenuItem>Baixar</DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          attemptDelete();
+                        }}
+                      >
+                        {isTrashPage
+                          ? "Excluir Definitivamente"
+                          : "Mover para Lixeira"}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             </div>
           </article>
@@ -322,6 +495,13 @@ export default function NoteCard({
 
           {isTrashPage && (
             <ContextMenuItem onClick={handleRestore}>Restaurar</ContextMenuItem>
+          )}
+
+          {!isTrashPage && (
+            <ContextMenuItem onClick={startRenaming}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Renomear
+            </ContextMenuItem>
           )}
 
           <ContextMenuItem>Mover para</ContextMenuItem>

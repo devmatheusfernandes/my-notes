@@ -33,7 +33,9 @@ export function sortByCreatedAtDesc<T extends { createdAt?: string }>(
 }
 
 export function filterNotesByFolder(notes: Note[], folderId: string | null) {
-  if (!folderId) return notes;
+  if (!folderId) {
+    return notes.filter((note) => !note.folderId || note.folderId === "Raiz");
+  }
   return notes.filter((note) => note.folderId === folderId);
 }
 

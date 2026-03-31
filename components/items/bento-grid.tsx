@@ -24,6 +24,18 @@ import {
 } from "@/components/ui/empty";
 import { useFolderId } from "@/utils/searchParams";
 import { cn } from "@/lib/utils";
+import { 
+  DndContext, 
+  DragEndEvent, 
+  PointerSensor, 
+  useSensor, 
+  useSensors,
+  closestCenter
+} from "@dnd-kit/core";
+import { useNotes } from "@/hooks/use-notes";
+import { useFolders } from "@/hooks/use-folders";
+import { useAuthStore } from "@/store/authStore";
+import { toast } from "sonner";
 
 export default function BentoGrid({ children }: { children: React.ReactNode }) {
   return (
@@ -41,7 +53,19 @@ export function ItemsBentoGrid({
   folders?: Folder[];
 }) {
   const folderId = useFolderId();
+  const { user } = useAuthStore();
+  const userId = user?.uid || "";
   const { setVisibleItems } = useSelection();
+  const { updateNote } = useNotes(userId);
+  const { updateFolder } = useFolders(userId);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   const folderFilteredNotes = useMemo(() => {
     return filterNotesByFolder(notes, folderId);
@@ -76,6 +100,43 @@ export function ItemsBentoGrid({
     setVisibleItems(visibleNoteIds, visibleFolderIds);
   }, [noteIdsStr, folderIdsStr, setVisibleItems]);
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    // activeId format: "note-{id}" or "folder-{id}"
+    // overId format: "folder-{id}" (folders are droppable)
+
+    const [activeKind, actualActiveId] = activeId.split("-");
+    const [overKind, actualOverId] = overId.split("-");
+
+    if (overKind !== "folder") return;
+
+    if (activeKind === "note") {
+      const noteToMove = notes.find(n => n.id === actualActiveId);
+      if (!noteToMove || noteToMove.folderId === actualOverId) return;
+
+      toast.promise(updateNote(actualActiveId, { folderId: actualOverId }), {
+        loading: "Movendo nota...",
+        success: "Nota movida com sucesso!",
+        error: "Erro ao mover nota.",
+      });
+    } else if (activeKind === "folder") {
+      const folderToMove = folders.find(f => f.id === actualActiveId);
+      if (!folderToMove || folderToMove.parentId === actualOverId) return;
+
+      toast.promise(updateFolder(actualActiveId, { parentId: actualOverId }), {
+        loading: "Movendo pasta...",
+        success: "Pasta movida com sucesso!",
+        error: "Erro ao mover pasta.",
+      });
+    }
+  };
+
   if (gridItems.length === 0) {
     return (
       <Empty className="mt-8">
@@ -97,26 +158,32 @@ export function ItemsBentoGrid({
   }
 
   return (
-    <BentoGrid>
-      {gridItems.map((item, index) => {
-        const bentoClasses =
-          item.kind === "note"
-            ? cn(getBentoClasses(index), "h-full")
-            : cn(getFolderBentoClasses(), "h-full");
-        return item.kind === "note" ? (
-          <NoteCard
-            key={`note-${item.note.id}`}
-            note={item.note}
-            className={bentoClasses}
-          />
-        ) : (
-          <FolderCard
-            key={`folder-${item.folder.id}`}
-            folder={item.folder}
-            className={bentoClasses}
-          />
-        );
-      })}
-    </BentoGrid>
+    <DndContext 
+      sensors={sensors} 
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <BentoGrid>
+        {gridItems.map((item, index) => {
+          const bentoClasses =
+            item.kind === "note"
+              ? cn(getBentoClasses(index), "h-full")
+              : cn(getFolderBentoClasses(), "h-full");
+          return item.kind === "note" ? (
+            <NoteCard
+              key={`note-${item.note.id}`}
+              note={item.note}
+              className={bentoClasses}
+            />
+          ) : (
+            <FolderCard
+              key={`folder-${item.folder.id}`}
+              folder={item.folder}
+              className={bentoClasses}
+            />
+          );
+        })}
+      </BentoGrid>
+    </DndContext>
   );
 }

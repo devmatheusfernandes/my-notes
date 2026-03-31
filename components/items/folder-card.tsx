@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Folder } from "@/schemas/folderSchema";
 import { formatDateToLocale } from "@/utils/dates";
-import { FolderIcon, MoreVertical } from "lucide-react";
+import { FolderIcon, MoreVertical, Pencil } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSelection } from "@/components/hub/selection-context";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -31,11 +31,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { useLongPress } from "@/hooks/use-long-press";
 import { useFolders } from "@/hooks/use-folders";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
 import { useFolderStore } from "@/store/folderStore";
 import { UnlockDrawer } from "@/components/modals/unlock-drawer";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
+import { Input } from "@/components/ui/input";
 
 export default function FolderCard({
   folder,
@@ -58,9 +60,37 @@ export default function FolderCard({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isUnlockDrawerOpen, setIsUnlockDrawerOpen] = useState(false);
 
+  // Inline Rename State
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [newTitle, setNewTitle] = useState(folder.title);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const isSelected = selectedFolderIds.has(folder.id);
   const isUnlockedInSession = unlockedFolders.has(folder.id);
   const isMasked = folder.isLocked && !isUnlockedInSession;
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDraggableRef,
+    transform,
+    isDragging,
+  } = useDraggable({
+    id: `folder-${folder.id}`,
+    disabled: isRenaming || isSelectionActive || isMasked || isTrashPage,
+  });
+
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: `folder-${folder.id}`,
+    disabled: isTrashPage || isMasked,
+  });
+
+  const style = transform
+    ? {
+      transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      zIndex: 100,
+    }
+    : undefined;
 
   const handleToggle = () => toggleFolder(folder.id);
 
@@ -69,6 +99,8 @@ export default function FolderCard({
   });
 
   const handleClick = (e: React.MouseEvent) => {
+    if (isRenaming) return;
+
     if (isSelectionActive) {
       e.preventDefault();
       e.stopPropagation();
@@ -141,11 +173,48 @@ export default function FolderCard({
     });
   };
 
+  const startRenaming = (e?: Event | React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setIsRenaming(true);
+    setNewTitle(folder.title);
+  };
+
+  const handleRename = async () => {
+    if (newTitle.trim() === "" || newTitle === folder.title) {
+      setIsRenaming(false);
+      return;
+    }
+
+    try {
+      await updateFolder(folder.id, { title: newTitle.trim() });
+      toast.success("Pasta renomeada!");
+    } catch {
+      toast.error("Erro ao renomear pasta.");
+      setNewTitle(folder.title);
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isRenaming && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isRenaming]);
+
   return (
     <>
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <article
+            ref={(node) => {
+              setDraggableRef(node);
+              setDroppableRef(node);
+            }}
+            style={style}
+            {...attributes}
+            {...listeners}
             onClick={handleClick}
             {...longPressProps}
             className={cn(
@@ -154,6 +223,8 @@ export default function FolderCard({
               isSelected
                 ? "border-primary/50 bg-primary/10 hover:bg-primary/15"
                 : "border-transparent bg-muted/30 hover:border-border",
+              isOver && !isDragging && "ring-2 ring-primary border-primary bg-primary/5",
+              isDragging && "opacity-50 grayscale scale-[0.95] rotate-1",
               isDeleting ? "opacity-50 pointer-events-none" : "",
               className,
             )}
@@ -188,10 +259,28 @@ export default function FolderCard({
 
             {/* Informações da pasta */}
             <div className="flex flex-1 flex-col overflow-hidden">
-              <h3 className="truncate text-sm font-medium leading-tight text-foreground">
-                {folder.title}{" "}
-                {folder.isLocked ? <span className="text-sm">🔒</span> : null}
-              </h3>
+              {isRenaming ? (
+                <Input
+                  ref={inputRef}
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  onBlur={handleRename}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleRename();
+                    if (e.key === "Escape") {
+                      setIsRenaming(false);
+                      setNewTitle(folder.title);
+                    }
+                  }}
+                  className="h-7 text-sm font-medium py-0 px-1 -ml-1 border-primary focus-visible:ring-1 focus-visible:ring-primary"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <h3 className="truncate text-sm font-medium leading-tight text-foreground">
+                  {folder.title}{" "}
+                  {folder.isLocked ? <span className="text-sm">🔒</span> : null}
+                </h3>
+              )}
               {/* Mantive a data bem sutil embaixo, caso você precise dessa informação */}
               <span className="truncate text-[11px] text-muted-foreground">
                 {formatDateToLocale(folder.createdAt)}
@@ -228,6 +317,13 @@ export default function FolderCard({
                     </DropdownMenuItem>
                   )}
 
+                  {!isTrashPage && (
+                    <DropdownMenuItem onClick={startRenaming}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Renomear
+                    </DropdownMenuItem>
+                  )}
+
                   <DropdownMenuItem>Compartilhar</DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -260,6 +356,13 @@ export default function FolderCard({
 
           {isTrashPage && (
             <ContextMenuItem onClick={handleRestore}>Restaurar</ContextMenuItem>
+          )}
+
+          {!isTrashPage && (
+            <ContextMenuItem onClick={startRenaming}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Renomear
+            </ContextMenuItem>
           )}
 
           <ContextMenuItem>Mover para</ContextMenuItem>
