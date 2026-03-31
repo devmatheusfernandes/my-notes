@@ -92,94 +92,100 @@ export default function Header({
           </div>
 
           <div className="flex-grow flex justify-center items-center relative h-10 overflow-hidden">
-            {showSearch ? (
-              isDesktop ? (
-                <div className="w-full max-w-md px-2">
-                  <div className="relative group">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
-                    <Input
-                      placeholder="Buscar nota ou pasta..."
-                      className="pl-10 pr-10 h-10 bg-muted/40 border-transparent hover:bg-muted/60 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/20 w-full transition-all duration-300 rounded-xl"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery?.(e.target.value)}
-                    />
-                    <AnimatePresence>
-                      {searchQuery && (
-                        <motion.button
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          onClick={clearSearch}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                          aria-label="Limpar busca"
-                        >
-                          <X className="h-4 w-4" />
-                        </motion.button>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
+            <AnimatePresence mode="wait">
+              {!showSearch ? (
+                isScrolled && (
+                  <motion.h1
+                    key="central-title"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    className="text-lg font-bold truncate text-center w-full text-foreground/90"
+                  >
+                    {getPageTitle(pathname)}
+                  </motion.h1>
+                )
               ) : (
-                <AnimatePresence mode="wait">
-                  {!showStickySearchMobile ? (
-                    <motion.h1
-                      key="title"
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -15 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                      className="text-lg font-bold truncate text-center w-full text-foreground/90"
-                    >
-                      {getPageTitle(pathname)}
-                    </motion.h1>
-                  ) : (
-                    <motion.div
-                      key="search"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                      className="w-full px-1"
-                    >
-                      <div className="relative group">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary" />
-                        <Input
-                          placeholder="Buscar..."
-                          className="pl-9 pr-9 h-10 bg-muted/50 border-transparent focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/20 w-full rounded-xl"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery?.(e.target.value)}
-                          onFocus={() => setIsFocused(true)}
-                          onBlur={() => setIsFocused(false)}
-                          autoFocus
-                        />
-                        <AnimatePresence>
-                          {searchQuery && (
-                            <motion.button
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.8 }}
-                              onClick={clearSearch}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            >
-                              <X className="h-4 w-4" />
-                            </motion.button>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              )
-            ) : (
-              <motion.h1
-                key="central-title"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 4 }}
-                className="text-lg font-bold truncate text-center w-full text-foreground/90"
-              >
-                {getPageTitle(pathname)}
-              </motion.h1>
-            )}
+                isDesktop ? (
+                  <div key="desktop-search" className="w-full max-w-md px-2">
+                    <div className="relative group">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                      <Input
+                        placeholder="Buscar nota ou pasta..."
+                        className="pl-10 pr-10 h-10 bg-muted/40 border-transparent hover:bg-muted/60 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/20 w-full transition-all duration-300 rounded-xl"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery?.(e.target.value)}
+                      />
+                      <AnimatePresence>
+                        {searchQuery && (
+                          <motion.button
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            onClick={clearSearch}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            aria-label="Limpar busca"
+                          >
+                            <X className="h-4 w-4" />
+                          </motion.button>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                ) : (
+                  <AnimatePresence mode="wait">
+                    {!showStickySearchMobile ? (
+                      <motion.h1
+                        key="title"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        className="text-lg font-bold truncate text-center w-full text-foreground/90"
+                      >
+                        {getPageTitle(pathname)}
+                      </motion.h1>
+                    ) : (
+                      <motion.div
+                        key="search"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        className="w-full px-1"
+                      >
+                        <div className="relative group">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary" />
+                          <Input
+                            placeholder="Buscar..."
+                            className="pl-9 pr-9 h-10 bg-muted/50 border-transparent focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/20 w-full rounded-xl"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery?.(e.target.value)}
+                            onFocus={() => setIsFocused(true)}
+                            onBlur={() => setIsFocused(false)}
+                            autoFocus
+                          />
+                          <AnimatePresence>
+                            {searchQuery && (
+                              <motion.button
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                onClick={clearSearch}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                              >
+                                <X className="h-4 w-4" />
+                              </motion.button>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                )
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="flex-shrink-0 flex items-center gap-2">
