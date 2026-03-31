@@ -35,52 +35,61 @@ export function useFolders() {
     [setFolders, setLoading, setError],
   );
 
-  const createFolder = async (userId: string, data: CreateFolderDTO) => {
-    setLoading(true);
-    setError(null);
+  const createFolder = useCallback(
+    async (userId: string, data: CreateFolderDTO) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const newFolder = await folderService.createFolder(userId, data);
-      addFolder(newFolder);
-      return newFolder;
-    } catch (error) {
-      const secureMessage = getErrorMessage(error);
-      setError(secureMessage);
-      throw new Error(secureMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-  const deleteFolder = async (folderId: string) => {
-    setLoading(true);
-    setError(null);
+      try {
+        const newFolder = await folderService.createFolder(userId, data);
+        addFolder(newFolder);
+        return newFolder;
+      } catch (error) {
+        const secureMessage = getErrorMessage(error);
+        setError(secureMessage);
+        throw new Error(secureMessage);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [addFolder, setLoading, setError],
+  );
+  const deleteFolder = useCallback(
+    async (folderId: string) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      await folderService.deleteFolder(folderId);
-      removeFolder(folderId);
-    } catch (error) {
-      const secureMessage = getErrorMessage(error);
-      setError(secureMessage);
-      throw new Error(secureMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        await folderService.deleteFolder(folderId);
+        removeFolder(folderId);
+      } catch (error) {
+        const secureMessage = getErrorMessage(error);
+        setError(secureMessage);
+        throw new Error(secureMessage);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [removeFolder, setLoading, setError],
+  );
 
-  const updateFolderStore = async (folderId: string, data: Partial<Folder>) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await folderService.updateFolder(folderId, data);
-      updateFolder(folderId, data);
-    } catch (error) {
-      const secureMessage = getErrorMessage(error);
-      setError(secureMessage);
-      throw new Error(secureMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const updateFolderStore = useCallback(
+    async (folderId: string, data: Partial<Folder>) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await folderService.updateFolder(folderId, data);
+        updateFolder(folderId, data);
+      } catch (error) {
+        const secureMessage = getErrorMessage(error);
+        setError(secureMessage);
+        throw new Error(secureMessage);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [updateFolder, setLoading, setError],
+  );
 
   return {
     folders,
