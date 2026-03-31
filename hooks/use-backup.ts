@@ -25,8 +25,10 @@ export const useBackup = (userId: string) => {
       setLoading(true);
       const list = await backupService.listBackupsOnDrive();
       setBackups(list);
-    } catch {
-      // If not linked or error, just keep empty
+    } catch (err: unknown) {
+      const errorMessage = backupService.getErrorDetail(err);
+      console.warn("Could not fetch backups from Drive:", errorMessage);
+      // We don't toast on auto-fetch to avoid annoying the user if not linked
       setBackups([]);
     } finally {
       setLoading(false);

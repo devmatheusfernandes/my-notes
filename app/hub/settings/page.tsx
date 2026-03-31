@@ -33,7 +33,7 @@ import {
 export default function SettingsPage() {
   const { user } = useAuthStore();
   const userId = user?.uid ?? "";
-  const { settings, isLoading, fetchSettings, setPin, updateBiometric, updateSettings } =
+  const { settings, isLoading, error, fetchSettings, setPin, updateBiometric, updateSettings } =
     useSettings();
 
   const [pinInput, setPinInput] = useState("");
@@ -55,7 +55,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!userId) return;
-    fetchSettings(userId).catch(() => { });
+    fetchSettings(userId).catch((err) => {
+      console.error("Settings load error:", err);
+      // fetchSettings in the hook already sets the 'error' state in the store
+    });
   }, [fetchSettings, userId]);
 
   const hasPin = useMemo(() => {
@@ -146,6 +149,23 @@ export default function SettingsPage() {
   };
 
   const isInitializing = isLoading && !settings;
+
+  if (error && !settings) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <div className="p-4 rounded-full bg-destructive/10 text-destructive">
+          <AlertTriangle className="w-8 h-8" />
+        </div>
+        <div className="text-center">
+          <h3 className="text-lg font-semibold">Erro ao carregar configurações</h3>
+          <p className="text-sm text-muted-foreground max-w-[300px]">{error}</p>
+        </div>
+        <Button onClick={() => userId && fetchSettings(userId)} variant="outline" className="gap-2">
+          <RefreshCw className="w-4 h-4" /> Tentar novamente
+        </Button>
+      </div>
+    );
+  }
 
   if (isInitializing) {
     return (

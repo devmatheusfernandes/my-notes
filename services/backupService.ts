@@ -251,9 +251,20 @@ export const backupService = {
 
       return { success: true, lastBackupAt };
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return { success: false, error: errorMessage };
+      return { success: false, error: this.getErrorDetail(error) };
     }
+  },
+
+  getErrorDetail(error: unknown): string {
+    if (!error) return "Erro desconhecido";
+    if (error instanceof Error) {
+      const msg = error.message;
+      if (msg.includes("401")) return "Sessão expirada. Vincule novamente.";
+      if (msg.includes("403")) return "Sem permissão no Google Drive.";
+      if (msg.includes("storage/quota-exceeded")) return "Espaço insuficiente no Firebase Storage.";
+      return msg;
+    }
+    return String(error);
   },
 
   async listBackupsOnDrive(): Promise<DriveFile[]> {
@@ -333,8 +344,7 @@ export const backupService = {
       await importBatch.commit();
       return { success: true };
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return { success: false, error: errorMessage };
+      return { success: false, error: this.getErrorDetail(error) };
     }
   }
 };
