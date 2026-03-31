@@ -3,37 +3,112 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Default deny for safety
-    match /{document=**} {
-      allow read, write: if false;
+    // ----- FUNÇÕES AUXILIARES -----
+    
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
-    // Regras unificadas que determinam que o usuário só pode ler, criar, atualizar e excluir 
-    // documentos (notas, pastas, etc) se estiver autenticado e for o dono dos dados.
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidString(val, min, max) {
+      return val is string && val.size() >= min && val.size() <= max;
+    }
+
+    // ----- REGRAS POR COLEÇÃO -----
 
     // Coleção de Notas
     match /notes/{noteId} {
-      // Para ler/atualizar/deletar a nota precisa existir e pertencer ao uid logado
-      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-      // Para criar, a nova nota precisa estar associada ao uid logado
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, delete: if isOwner(resource.data.userId);
+      
+      allow create: if isOwner(request.resource.data.userId)
+                    && request.resource.data.id == noteId
+                    && isValidString(request.resource.data.title, 1, 20)
+                    && request.resource.data.type in ['note', 'pdf']
+                    && request.resource.data.archived is bool
+                    && request.resource.data.trashed is bool
+                    && request.resource.data.pinned is bool
+                    && request.resource.data.isLocked is bool;
+
+      allow update: if isOwner(resource.data.userId)
+                    && isOwner(request.resource.data.userId)
+                    && (request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['title', 'content', 'searchText', 'tagIds', 'folderId', 'archived', 'trashed', 'pinned', 'updatedAt', 'fileUrl', 'isLocked']))
+                    && (!request.resource.data.diff(resource.data).affectedKeys().contains('title') || isValidString(request.resource.data.title, 1, 20))
+                    && (!request.resource.data.diff(resource.data).affectedKeys().contains('archived') || request.resource.data.archived is bool)
+                    && (!request.resource.data.diff(resource.data).affectedKeys().contains('trashed') || request.resource.data.trashed is bool);
     }
 
     // Coleção de Pastas
     match /folders/{folderId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, delete: if isOwner(resource.data.userId);
+      
+      allow create: if isOwner(request.resource.data.userId)
+                    && request.resource.data.id == folderId
+                    && isValidString(request.resource.data.title, 1, 20)
+                    && request.resource.data.archived is bool
+                    && request.resource.data.trashed is bool;
+
+      allow update: if isOwner(resource.data.userId)
+                    && isOwner(request.resource.data.userId)
+                    && (request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['title', 'parentId', 'color', 'archived', 'trashed', 'updatedAt', 'isLocked']))
+                    && (!request.resource.data.diff(resource.data).affectedKeys().contains('title') || isValidString(request.resource.data.title, 1, 20));
+    }
+
+    // Coleção de Tags
+    match /tags/{tagId} {
+      allow read, delete: if isOwner(resource.data.userId);
+      
+      allow create: if isOwner(request.resource.data.userId)
+                    && request.resource.data.id == tagId
+                    && isValidString(request.resource.data.title, 1, 15);
+
+      allow update: if isOwner(resource.data.userId)
+                    && isOwner(request.resource.data.userId)
+                    && (request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['title', 'color', 'updatedAt']))
+                    && (!request.resource.data.diff(resource.data).affectedKeys().contains('title') || isValidString(request.resource.data.title, 1, 15));
     }
 
     // Coleção de Configurações do Usuário
     match /userSettings/{userId} {
-      allow read, delete: if request.auth != null && request.auth.uid == userId && resource.data.userId == userId;
-      allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.userId == userId;
-      allow update: if request.auth != null
-                    && request.auth.uid == userId
-                    && resource.data.userId == userId
-                    && request.resource.data.userId == userId;
+      allow read, delete: if isOwner(userId);
+      
+      allow create: if isOwner(userId)
+                    && request.resource.data.userId == userId
+                    && request.resource.data.autoBackupFrequency in ['daily', 'weekly', 'monthly']
+                    && request.resource.data.biometricEnabled is bool;
+
+      allow update: if isOwner(userId)
+                    && request.resource.data.userId == userId
+                    && (request.resource.data.diff(resource.data).affectedKeys()
+                        .hasAny(['pinSalt', 'pinHash', 'biometricEnabled', 'biometricCredentialId', 'autoBackupEnabled', 'autoBackupTime', 'autoBackupFrequency', 'lastBackupAt', 'driveRefreshToken', 'updatedAt']))
+                    && (!request.resource.data.diff(resource.data).affectedKeys().contains('autoBackupFrequency') || request.resource.data.autoBackupFrequency in ['daily', 'weekly', 'monthly']);
     }
 
+    // Coleção de Metadados de Mídia
+    match /media/{mediaId} {
+      allow read, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId)
+                    && request.resource.data.id == mediaId;
+      allow update: if isOwner(resource.data.userId)
+                    && isOwner(request.resource.data.userId);
+    }
+
+    // Coleção de Uso de Quota
+    match /usage/{userId} {
+      allow read: if isOwner(userId);
+      // Permitir escrita apenas se o usuário estiver autenticado e for o dono.
+      // O sistema incrementa o totalBytesUsed via storageService.
+      allow write: if isOwner(userId);
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }
