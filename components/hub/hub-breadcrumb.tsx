@@ -11,13 +11,16 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { useFolderStore } from "@/store/folderStore";
-import { useNoteStore } from "@/store/noteStore";
+import { useAuthStore } from "@/store/authStore";
+import { useNotes } from "@/hooks/use-notes";
+import { useFolders } from "@/hooks/use-folders";
 
 export default function HubBreadcrumb() {
+  const { user } = useAuthStore();
+  const userId = user?.uid || "";
   const pathname = usePathname();
-  const { folders } = useFolderStore();
-  const { notes } = useNoteStore();
+  const { folders } = useFolders(userId);
+  const { notes } = useNotes(userId);
 
   const breadcrumbItems = useMemo(() => {
     if (!pathname?.startsWith("/hub")) return [];

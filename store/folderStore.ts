@@ -1,16 +1,10 @@
 import { create } from "zustand";
-import { Folder } from "@/schemas/folderSchema";
 
 interface FolderState {
-  folders: Folder[];
   isLoading: boolean;
   error: string | null;
   unlockedFolders: Set<string>;
 
-  setFolders: (folders: Folder[]) => void;
-  addFolder: (folder: Folder) => void;
-  removeFolder: (folderId: string) => void;
-  updateFolder: (folderId: string, data: Partial<Folder>) => void;
   unlockFolder: (folderId: string) => void;
   lockFolder: (folderId: string) => void;
   resetUnlockedFolders: () => void;
@@ -19,18 +13,10 @@ interface FolderState {
 }
 
 export const useFolderStore = create<FolderState>((set) => ({
-  folders: [],
   isLoading: false,
   error: null,
   unlockedFolders: new Set(),
 
-  setFolders: (folders) => set({ folders: folders }),
-  addFolder: (folder) =>
-    set((state) => ({ folders: [folder, ...state.folders] })),
-  removeFolder: (folderId) =>
-    set((state) => ({ folders: state.folders.filter((f) => f.id !== folderId) })),
-  updateFolder: (folderId, data) =>
-    set((state) => ({ folders: state.folders.map((f) => f.id === folderId ? { ...f, ...data } : f) })),
   unlockFolder: (folderId) =>
     set((state) => {
       const next = new Set(state.unlockedFolders);

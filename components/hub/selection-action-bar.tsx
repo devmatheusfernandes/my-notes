@@ -67,7 +67,6 @@ export function SelectionActionBar() {
   const { settings, fetchSettings } = useSettings();
 
   const lockNote = useNoteStore((s) => s.lockNote);
-  const updateNoteInStore = useNoteStore((s) => s.updateNote);
   const lockFolder = useFolderStore((s) => s.lockFolder);
 
   const {
@@ -133,15 +132,11 @@ export function SelectionActionBar() {
 
             if (allHaveTag) {
               if (!hasTag) return;
-              const nextTagIds = currentTagIds.filter((id) => id !== tagId);
-              updateNoteInStore(note.id, { tagIds: nextTagIds });
               await removeTagFromNote(note.id, tagId);
               return;
             }
 
             if (hasTag) return;
-            const nextTagIds = [...currentTagIds, tagId];
-            updateNoteInStore(note.id, { tagIds: nextTagIds });
             await applyTagToNote(note.id, tagId);
           }),
         );

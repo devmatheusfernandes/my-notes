@@ -130,22 +130,30 @@ export function useTags(userId?: string) {
     const applyTagToNote = useCallback(
         async (noteId: string, tagId: string) => {
             const notesCacheKey = userId ? ["notes", userId] : null;
+            if (!notesCacheKey) return;
+
             setLoading(true);
             setError(null);
 
             try {
-                await tagService.applyTagToNote(noteId, tagId);
-                if (notesCacheKey) {
-                    mutate(
-                        notesCacheKey,
-                        (currentNotes: Note[] | undefined) => {
-                            return currentNotes?.map((n) =>
+                await mutate(
+                    notesCacheKey,
+                    async (currentNotes: Note[] | undefined) => {
+                        await tagService.applyTagToNote(noteId, tagId);
+                        return currentNotes?.map((n) =>
+                            n.id === noteId ? { ...n, tagIds: [...(n.tagIds || []), tagId] } : n
+                        );
+                    },
+                    {
+                        optimisticData: (currentNotes: Note[] | undefined) => {
+                            return (currentNotes || []).map((n) =>
                                 n.id === noteId ? { ...n, tagIds: [...(n.tagIds || []), tagId] } : n
                             );
                         },
-                        false
-                    );
-                }
+                        rollbackOnError: true,
+                        revalidate: false,
+                    }
+                );
             } catch (error) {
                 setError(getErrorMessage(error));
             } finally {
@@ -158,22 +166,30 @@ export function useTags(userId?: string) {
     const removeTagFromNote = useCallback(
         async (noteId: string, tagId: string) => {
             const notesCacheKey = userId ? ["notes", userId] : null;
+            if (!notesCacheKey) return;
+
             setLoading(true);
             setError(null);
 
             try {
-                await tagService.removeTagFromNote(noteId, tagId);
-                if (notesCacheKey) {
-                    mutate(
-                        notesCacheKey,
-                        (currentNotes: Note[] | undefined) => {
-                            return currentNotes?.map((n) =>
+                await mutate(
+                    notesCacheKey,
+                    async (currentNotes: Note[] | undefined) => {
+                        await tagService.removeTagFromNote(noteId, tagId);
+                        return currentNotes?.map((n) =>
+                            n.id === noteId ? { ...n, tagIds: n.tagIds?.filter((id) => id !== tagId) || [] } : n
+                        );
+                    },
+                    {
+                        optimisticData: (currentNotes: Note[] | undefined) => {
+                            return (currentNotes || []).map((n) =>
                                 n.id === noteId ? { ...n, tagIds: n.tagIds?.filter((id) => id !== tagId) || [] } : n
                             );
                         },
-                        false
-                    );
-                }
+                        rollbackOnError: true,
+                        revalidate: false,
+                    }
+                );
             } catch (error) {
                 setError(getErrorMessage(error));
             } finally {
