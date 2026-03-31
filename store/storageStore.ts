@@ -17,7 +17,7 @@ interface StorageState {
   subscribeToUsage: (userId: string) => () => void;
 }
 
-const STORAGE_LIMIT_MB = 200;
+const STORAGE_LIMIT_MB = 50;
 const STORAGE_LIMIT_BYTES = STORAGE_LIMIT_MB * 1024 * 1024;
 
 export const useStorageStore = create<StorageState>((set) => ({

@@ -127,7 +127,11 @@ export default function NotePage() {
                 </div>
               )
             ) : (
-              <SimpleEditor content={note.content || ""} onChange={handleUpdate} />
+              <SimpleEditor
+                content={note.content || ""}
+                userId={userId}
+                onChange={handleUpdate}
+              />
             )
           ) : (
             <div className="mt-6 rounded-2xl border bg-card p-12 text-center shadow-sm">

@@ -76,6 +76,7 @@ import "@/components/tiptap-templates/simple/simple-editor.scss"
 
 interface SimpleEditorProps {
   content: Content
+  userId: string
   onChange?: (data: { json: Content; text: string }) => void
 }
 
@@ -187,7 +188,7 @@ const MobileToolbarContent = ({
   </>
 )
 
-export function SimpleEditor({ content, onChange }: SimpleEditorProps) {
+export function SimpleEditor({ content, userId, onChange }: SimpleEditorProps) {
   const isMobile = useIsBreakpoint()
   const { height } = useWindowSize()
   const [mobileView, setMobileView] = useState<"main" | "highlighter" | "link">(
@@ -228,7 +229,7 @@ export function SimpleEditor({ content, onChange }: SimpleEditorProps) {
         accept: "image/*",
         maxSize: MAX_FILE_SIZE,
         limit: 3,
-        upload: handleImageUpload,
+        upload: (file) => handleImageUpload(file, userId),
         onError: (error) => toast.error(`Falha no upload: ${error}`),
       }),
     ],
@@ -239,7 +240,7 @@ export function SimpleEditor({ content, onChange }: SimpleEditorProps) {
         text: editor.getText(),
       })
     },
-  })
+  }, [userId])
 
   const rect = useCursorVisibility({
     editor,

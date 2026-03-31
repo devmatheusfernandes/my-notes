@@ -5,7 +5,8 @@ import {
   query,
   where,
   doc,
-  writeBatch
+  writeBatch,
+  serverTimestamp
 } from "firebase/firestore";
 import {
   ref,
@@ -19,6 +20,7 @@ import {
   reauthenticateWithPopup,
   linkWithPopup
 } from "firebase/auth";
+import type { Content } from "@tiptap/react";
 import {
   NOTES_COLLECTION_NAME,
   FOLDERS_COLLECTION_NAME,
@@ -31,9 +33,10 @@ import { settingsService } from "./settingsService";
 
 export type BackupPayload = {
   exportedAt: string;
-  notes: (Note & { fileBase64?: string })[];
+  notes: Note[];
   folders: Folder[];
   tags: Tag[];
+  media?: Record<string, string>; // Maps storage path or URL to base64
 };
 
 export type BackupResult = {
@@ -124,6 +127,54 @@ async function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
+function findImagesInContent(content: unknown): string[] {
+  const images: string[] = [];
+  if (!content) return images;
+
+  if (Array.isArray(content)) {
+    content.forEach(item => {
+      images.push(...findImagesInContent(item));
+    });
+  } else if (content && typeof content === 'object') {
+    const obj = content as Record<string, unknown>;
+    if (obj.type === 'image' && obj.attrs && typeof obj.attrs === 'object') {
+      const attrs = obj.attrs as Record<string, unknown>;
+      if (typeof attrs.src === 'string') {
+        images.push(attrs.src);
+      }
+    }
+    if (obj.content) {
+      images.push(...findImagesInContent(obj.content));
+    }
+  }
+  return images;
+}
+
+function replaceImageUrls(content: unknown, urlMap: Record<string, string>): unknown {
+  if (!content) return content;
+
+  if (Array.isArray(content)) {
+    return content.map(item => replaceImageUrls(item, urlMap));
+  } else if (content && typeof content === 'object') {
+    const newContent = { ...(content as Record<string, unknown>) };
+    if (newContent.type === 'image' && newContent.attrs && typeof newContent.attrs === 'object') {
+      const attrs = { ...(newContent.attrs as Record<string, unknown>) };
+      if (typeof attrs.src === 'string') {
+        const oldUrl = attrs.src;
+        if (urlMap[oldUrl]) {
+          attrs.src = urlMap[oldUrl];
+          newContent.attrs = attrs;
+        }
+      }
+    }
+    if (newContent.content) {
+      newContent.content = replaceImageUrls(newContent.content, urlMap);
+    }
+    return newContent;
+  }
+  return content;
+}
+
 // Adapted aggregation to use top-level collections
 async function fetchUserDataForBackup(userId: string): Promise<BackupPayload> {
   const [notesSnap, foldersSnap, tagsSnap] = await Promise.all([
@@ -136,33 +187,58 @@ async function fetchUserDataForBackup(userId: string): Promise<BackupPayload> {
   const folders = foldersSnap.docs.map((d) => d.data() as Folder);
   const tags = tagsSnap.docs.map((d) => d.data() as Tag);
 
-  // Fetch and encode PDFs
+  const mediaPayload: Record<string, string> = {};
+
+  // Fetch and encode PDFs and Tiptap Images
   const notesWithFiles = await Promise.all(rawNotes.map(async (note) => {
+    const processedNote = { ...note };
+
+    // 1. Handle PDF attachments
     if (note.type === "pdf" && note.fileUrl) {
       try {
-        // Find storage path from URL or reconstruct it if possible
-        // Actually, we can get the blob directly using the URL or ref
-        // We know it's in users/{userId}/...
         const pathMatch = note.fileUrl.match(/\/o\/([^?]+)/);
         if (pathMatch) {
           const path = decodeURIComponent(pathMatch[1]);
           const fileRef = ref(storage, path);
           const blob = await getBlob(fileRef);
           const base64 = await blobToBase64(blob);
-          return { ...note, fileBase64: base64 };
+          mediaPayload[note.fileUrl] = base64;
         }
       } catch (err) {
-        console.warn(`Could not backup file for note ${note.id}`, err);
+        console.warn(`Could not backup PDF file for note ${note.id}`, err);
       }
     }
-    return note;
+
+    // 2. Handle Images inside Tiptap content
+    if (note.type === "note" && note.content) {
+      const urls = findImagesInContent(note.content);
+      for (const url of urls) {
+        if (url.includes("firebasestorage.googleapis.com")) {
+          try {
+            const pathMatch = url.match(/\/o\/([^?]+)/);
+            if (pathMatch) {
+              const path = decodeURIComponent(pathMatch[1]);
+              const fileRef = ref(storage, path);
+              const blob = await getBlob(fileRef);
+              const base64 = await blobToBase64(blob);
+              mediaPayload[url] = base64;
+            }
+          } catch (err) {
+            console.warn(`Could not backup image ${url} for note ${note.id}`, err);
+          }
+        }
+      }
+    }
+
+    return processedNote;
   }));
 
   return {
     exportedAt: new Date().toISOString(),
     notes: notesWithFiles,
     folders,
-    tags
+    tags,
+    media: mediaPayload
   };
 }
 
@@ -320,26 +396,55 @@ export const backupService = {
         importBatch.set(doc(db, TAGS_COLLECTION_NAME, t.id), t);
       });
 
-      // Notes (handling PDFs)
-      for (const note of payload.notes) {
-        const restoredNote = { ...note };
-        delete restoredNote.fileBase64;
+      // Notes & Media Restoration
+      let totalRestoredBytes = 0;
+      const urlMap: Record<string, string> = {};
 
-        if (note.type === "pdf" && note.fileBase64) {
+      // First pass: Restore all media files to Storage
+      if (payload.media) {
+        for (const [oldUrl, base64] of Object.entries(payload.media)) {
           try {
-            const blob = await dataUrlToBlob(note.fileBase64);
-            const fileName = note.fileUrl?.split('/').pop()?.split('?')[0] || `${note.id}.pdf`;
-            const storagePath = `users/${userId}/notes/${fileName}`;
+            const blob = await dataUrlToBlob(base64);
+            // Reconstruct path: keep the same filename but ensure it's under current userId
+            const fileName = oldUrl.split('/').pop()?.split('?')[0] || `backup-${Date.now()}`;
+            // If it's a Tiptap image, it likely has /images/ in path. If PDF, /notes/ or similar.
+            const isImage = oldUrl.includes("/images/");
+            const storagePath = isImage 
+              ? `users/${userId}/images/${fileName}` 
+              : `users/${userId}/notes/${fileName}`;
+            
             const fileRef = ref(storage, storagePath);
             await uploadBytes(fileRef, blob);
             const newUrl = await getDownloadURL(fileRef);
-            restoredNote.fileUrl = newUrl;
+            urlMap[oldUrl] = newUrl;
+            totalRestoredBytes += blob.size;
           } catch (err) {
-            console.error(`Failed to restore file for note ${note.id}`, err);
+            console.error(`Failed to restore media ${oldUrl}`, err);
           }
         }
+      }
+
+      // Second pass: Save notes with updated URLs
+      for (const note of payload.notes) {
+        const restoredNote = { ...note };
+
+        if (note.type === "pdf" && note.fileUrl && urlMap[note.fileUrl]) {
+          restoredNote.fileUrl = urlMap[note.fileUrl];
+        }
+
+        if (note.type === "note" && note.content) {
+          restoredNote.content = replaceImageUrls(note.content, urlMap) as Content;
+        }
+
         importBatch.set(doc(db, NOTES_COLLECTION_NAME, note.id), restoredNote);
       }
+
+      // 4. Update user storage usage
+      const usageRef = doc(db, "usage", userId);
+      importBatch.set(usageRef, {
+        totalBytesUsed: totalRestoredBytes,
+        lastUploadAt: serverTimestamp(),
+      }, { merge: true });
 
       await importBatch.commit();
       return { success: true };

@@ -351,40 +351,46 @@ export function selectionWithinConvertibleTypes(
   return false
 }
 
+import { imageService } from "@/services/imageService"
+
 /**
  * Handles image upload with progress tracking and abort capability
  * @param file The file to upload
+ * @param userId The ID of the current user
  * @param onProgress Optional callback for tracking upload progress
  * @param abortSignal Optional AbortSignal for cancelling the upload
  * @returns Promise resolving to the URL of the uploaded image
  */
 export const handleImageUpload = async (
   file: File,
+  userId: string,
   onProgress?: (event: { progress: number }) => void,
   abortSignal?: AbortSignal
 ): Promise<string> => {
   // Validate file
   if (!file) {
-    throw new Error("No file provided")
+    throw new Error("Não foi fornecido nenhum arquivo")
   }
 
   if (file.size > MAX_FILE_SIZE) {
     throw new Error(
-      `File size exceeds maximum allowed (${MAX_FILE_SIZE / (1024 * 1024)}MB)`
+      `O tamanho do arquivo excede o máximo permitido (${MAX_FILE_SIZE / (1024 * 1024)}MB)`
     )
   }
 
-  // For demo/testing: Simulate upload progress. In production, replace the following code
-  // with your own upload implementation.
-  for (let progress = 0; progress <= 100; progress += 10) {
+  // Use the imageService for real upload
+  // Note: progress tracking and abort signal can be implemented in imageService if needed
+  // For now, we'll call the direct upload
+  try {
+    const url = await imageService.uploadImage(file, userId)
+    onProgress?.({ progress: 100 })
+    return url
+  } catch (error) {
     if (abortSignal?.aborted) {
-      throw new Error("Upload cancelled")
+      throw new Error("Upload cancelado")
     }
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    onProgress?.({ progress })
+    throw error
   }
-
-  return "/images/tiptap-ui-placeholder-image.jpg"
 }
 
 type ProtocolOptions = {
