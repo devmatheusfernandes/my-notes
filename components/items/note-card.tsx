@@ -1,7 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Note } from "@/schemas/noteSchema";
 import { formatDateToLocale } from "@/utils/dates";
-import { getNotePreview } from "@/utils/items";
 import { usePathname, useRouter } from "next/navigation";
 import { useSelection } from "@/components/hub/selection-context";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -240,8 +239,9 @@ export default function NoteCard({
               >
                 {isMasked
                   ? "Conteúdo protegido..."
-                  : getNotePreview(note.content || "") ||
-                    "Nenhum conteúdo adicional..."}
+                  : note.searchText ||
+                    (typeof note.content === "string" ? note.content : "") ||
+                    "Nenhuma prévia disponível..."}
               </p>
             </div>
 

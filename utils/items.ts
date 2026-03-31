@@ -2,11 +2,6 @@ import { Content } from "@tiptap/react";
 import type { Folder } from "@/schemas/folderSchema";
 import type { Note } from "@/schemas/noteSchema";
 
-export function getNotePreview(content: Content) {
-  if (!content) return "Nota vazia...";
-  if (typeof content === "string") return content.substring(0, 60) + "...";
-  return "Abra para ver o conteúdo...";
-}
 
 export function getBentoClasses(index: number) {
   const p = index % 10;
