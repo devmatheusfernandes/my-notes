@@ -14,6 +14,14 @@ import {
   getFolderBentoClasses,
   sortByCreatedAtDesc,
 } from "@/utils/items";
+import { SearchX, FileText } from "lucide-react";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { useFolderId } from "@/utils/searchParams";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +47,7 @@ export function ItemsBentoGrid({
     return filterNotesByFolder(notes, folderId);
   }, [folderId, notes]);
 
-  const { sortedNotes } = useNotesSearch(folderFilteredNotes);
+  const { sortedNotes, searchQuery } = useNotesSearch(folderFilteredNotes);
 
   const sortedFolders = useMemo(() => {
     return sortByCreatedAtDesc(folders);
@@ -67,6 +75,26 @@ export function ItemsBentoGrid({
     const visibleFolderIds = folderIdsStr ? folderIdsStr.split(",") : [];
     setVisibleItems(visibleNoteIds, visibleFolderIds);
   }, [noteIdsStr, folderIdsStr, setVisibleItems]);
+
+  if (gridItems.length === 0) {
+    return (
+      <Empty className="mt-8">
+        <EmptyContent>
+          <EmptyMedia variant="icon">
+            {searchQuery ? <SearchX /> : <FileText />}
+          </EmptyMedia>
+          <EmptyTitle>
+            {searchQuery ? "Nenhum resultado encontrado" : "Nenhuma nota"}
+          </EmptyTitle>
+          <EmptyDescription>
+            {searchQuery
+              ? `Sua busca por "${searchQuery}" não retornou resultados.`
+              : "Nenhuma nota encontrada nesta pasta."}
+          </EmptyDescription>
+        </EmptyContent>
+      </Empty>
+    );
+  }
 
   return (
     <BentoGrid>

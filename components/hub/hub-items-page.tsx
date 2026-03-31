@@ -124,7 +124,6 @@ export default function HubItemsPage() {
 
       if (result.success) {
         toast.success(`PDF enviado: ${result.note.title}`, { id: toastId });
-        // Sincronizando com o estado global do Zustand para atualizar a UI instantaneamente
         if (result.note) {
           addNote(result.note as Note);
         }
