@@ -38,13 +38,16 @@ import { useFolderStore } from "@/store/folderStore";
 import { UnlockDrawer } from "@/components/modals/unlock-drawer";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { Input } from "@/components/ui/input";
+import { HighlightedText } from "@/components/ui/highlighted-text";
 
 export default function FolderCard({
   folder,
   className,
+  searchQuery = "",
 }: {
   folder: Folder;
   className?: string;
+  searchQuery?: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -277,7 +280,7 @@ export default function FolderCard({
                 />
               ) : (
                 <h3 className="truncate text-sm font-medium leading-tight text-foreground">
-                  {folder.title}{" "}
+                  <HighlightedText text={folder.title} highlight={searchQuery} />{" "}
                   {folder.isLocked ? <span className="text-sm">🔒</span> : null}
                 </h3>
               )}

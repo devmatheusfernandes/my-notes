@@ -48,9 +48,11 @@ export default function BentoGrid({ children }: { children: React.ReactNode }) {
 export function ItemsBentoGrid({
   notes,
   folders = [],
+  searchQuery = "",
 }: {
   notes: Note[];
   folders?: Folder[];
+  searchQuery?: string;
 }) {
   const folderId = useFolderId();
   const { user } = useAuthStore();
@@ -71,7 +73,7 @@ export function ItemsBentoGrid({
     return filterNotesByFolder(notes, folderId);
   }, [folderId, notes]);
 
-  const { sortedNotes, searchQuery } = useNotesSearch(folderFilteredNotes);
+  const { sortedNotes, searchQuery: internalSearchQuery } = useNotesSearch(folderFilteredNotes);
 
   const sortedFolders = useMemo(() => {
     return sortByCreatedAtDesc(folders);
@@ -142,14 +144,14 @@ export function ItemsBentoGrid({
       <Empty className="mt-8">
         <EmptyContent>
           <EmptyMedia variant="icon">
-            {searchQuery ? <SearchX /> : <FileText />}
+            {searchQuery || internalSearchQuery ? <SearchX /> : <FileText />}
           </EmptyMedia>
           <EmptyTitle>
-            {searchQuery ? "Nenhum resultado encontrado" : "Nenhuma nota"}
+            {searchQuery || internalSearchQuery ? "Nenhum resultado encontrado" : "Nenhuma nota"}
           </EmptyTitle>
           <EmptyDescription>
-            {searchQuery
-              ? `Sua busca por "${searchQuery}" não retornou resultados.`
+            {searchQuery || internalSearchQuery
+              ? `Sua busca por "${searchQuery || internalSearchQuery}" não retornou resultados.`
               : "Nenhuma nota encontrada nesta pasta."}
           </EmptyDescription>
         </EmptyContent>
@@ -174,12 +176,14 @@ export function ItemsBentoGrid({
               key={`note-${item.note.id}`}
               note={item.note}
               className={bentoClasses}
+              searchQuery={searchQuery}
             />
           ) : (
             <FolderCard
               key={`folder-${item.folder.id}`}
               folder={item.folder}
               className={bentoClasses}
+              searchQuery={searchQuery}
             />
           );
         })}

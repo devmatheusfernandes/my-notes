@@ -44,13 +44,16 @@ import { extractNoteMetadata, toggleTaskInContent } from "@/utils/note-metadata"
 import { useTags } from "@/hooks/use-tags";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { HighlightedText } from "@/components/ui/highlighted-text";
 
 export default function NoteCard({
   note,
   className,
+  searchQuery = "",
 }: {
   note: Note;
   className?: string;
+  searchQuery?: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -352,7 +355,7 @@ export default function NoteCard({
                   />
                 ) : (
                   <h3 className="text-base font-semibold leading-tight tracking-tight text-foreground pr-8 line-clamp-2">
-                    {note.title || "Sem Título"}{" "}
+                    <HighlightedText text={note.title || "Sem Título"} highlight={searchQuery} />{" "}
                     {note.pinned ? <span className="text-sm">📌</span> : null}
                     {note.isLocked ? (
                       <span className="ml-1 text-sm">🔒</span>
@@ -370,7 +373,7 @@ export default function NoteCard({
                           "text-xs truncate",
                           task.checked ? "text-muted-foreground line-through decoration-muted-foreground/50" : "text-foreground/80"
                         )}>
-                          {task.label}
+                          <HighlightedText text={task.label} highlight={searchQuery} />
                         </span>
                       </div>
                     ))}
@@ -389,7 +392,7 @@ export default function NoteCard({
                   >
                     {isMasked
                       ? "Conteúdo protegido..."
-                      : metadata.previewText || "Nenhuma prévia disponível..."}
+                      : <HighlightedText text={metadata.previewText || "Nenhuma prévia disponível..."} highlight={searchQuery} />}
                   </p>
                 )}
               </div>

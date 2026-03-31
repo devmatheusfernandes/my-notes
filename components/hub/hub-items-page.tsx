@@ -246,7 +246,7 @@ export default function HubItemsPage() {
               </EmptyContent>
             </Empty>
           ) : (
-            <ItemsBentoGrid notes={filteredNotes} folders={displayedFolders} />
+            <ItemsBentoGrid notes={filteredNotes} folders={displayedFolders} searchQuery={searchQuery} />
           )}
         </motion.div>
       </motion.main>
