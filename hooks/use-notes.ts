@@ -45,6 +45,7 @@ export function useNotes() {
     },
     [addNote, setLoading, setError],
   );
+
   const deleteNote = useCallback(
     async (noteId: string) => {
       setLoading(true);
@@ -93,5 +94,6 @@ export function useNotes() {
     createNote,
     deleteNote,
     updateNote: updateNoteStore,
+    addNote,
   };
 }

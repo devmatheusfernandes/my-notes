@@ -1,4 +1,10 @@
+import { Suspense } from "react";
 import HubItemsPage from "@/components/hub/hub-items-page";
+
 export default function ItemsPage() {
-  return <HubItemsPage />;
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Carregando...</div>}>
+      <HubItemsPage />
+    </Suspense>
+  );
 }

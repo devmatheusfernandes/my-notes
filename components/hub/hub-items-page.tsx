@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNotes } from "@/hooks/use-notes";
 import { useFolders } from "@/hooks/use-folders";
+import { useTags } from "@/hooks/use-tags";
+import { uploadPdfAction } from "@/app/actions/note-actions";
+import { Note } from "@/schemas/noteSchema";
+import { Folder } from "@/schemas/folderSchema";
+import { Tag } from "@/schemas/tagSchema";
 import { ItemsBentoGrid } from "@/components/items/bento-grid";
 import { SmartCreateButton } from "@/components/items/create-button";
 import { Input } from "@/components/ui/input";
@@ -22,17 +27,17 @@ import { useFolderId } from "@/utils/searchParams";
 import { useFolderStore } from "@/store/folderStore";
 import { SelectionActionBar } from "./selection-action-bar";
 import { toast } from "sonner";
-import { storageService } from "@/services/storageService";
 import LockedFolderGate from "@/components/hub/locked-folder-gate";
 import TagChips from "../items/tag-chips";
-import { useTags } from "@/hooks/use-tags";
 
 export default function HubItemsPage() {
   const { user } = useAuthStore();
   const userId = user?.uid || "";
-  const { fetchNotes, notes, createNote, updateNote, deleteNote } = useNotes();
+
+  const { fetchNotes, notes, addNote } = useNotes();
   const { fetchFolders, folders } = useFolders();
   const { fetchTags, tags } = useTags();
+
   const folderId = useFolderId();
   const unlockedFolders = useFolderStore((s) => s.unlockedFolders);
 
@@ -47,15 +52,15 @@ export default function HubItemsPage() {
     const isNewUser = lastFetchedUserIdRef.current !== userId;
     if (isNewUser) {
       lastFetchedUserIdRef.current = userId;
-      fetchNotes(userId).catch(() => {});
-      fetchFolders(userId).catch(() => {});
-      fetchTags(userId).catch(() => {});
+      fetchNotes(userId).catch(() => { });
+      fetchFolders(userId).catch(() => { });
+      fetchTags(userId).catch(() => { });
       return;
     }
 
-    if (notes.length === 0) fetchNotes(userId).catch(() => {});
-    if (folders.length === 0) fetchFolders(userId).catch(() => {});
-    if (tags.length === 0) fetchTags(userId).catch(() => {});
+    if (notes.length === 0) fetchNotes(userId).catch(() => { });
+    if (folders.length === 0) fetchFolders(userId).catch(() => { });
+    if (tags.length === 0) fetchTags(userId).catch(() => { });
   }, [
     fetchFolders,
     fetchNotes,
@@ -67,26 +72,26 @@ export default function HubItemsPage() {
   ]);
 
   const activeNotes = useMemo(() => {
-    return notes.filter((n) => !n.archived && !n.trashed);
+    return notes.filter((n: Note) => !n.archived && !n.trashed);
   }, [notes]);
 
   const activeTags = useMemo(() => {
-    const noteTagIds = new Set(activeNotes.flatMap((n) => n.tagIds ?? []));
-    return tags.filter((t) => noteTagIds.has(t.id));
+    const noteTagIds = new Set(activeNotes.flatMap((n: Note) => n.tagIds ?? []));
+    return tags.filter((t: Tag) => noteTagIds.has(t.id));
   }, [activeNotes, tags]);
 
   const tagFilteredNotes = useMemo(() => {
     if (!selectedTagId) return activeNotes;
-    return activeNotes.filter((n) => (n.tagIds ?? []).includes(selectedTagId));
+    return activeNotes.filter((n: Note) => (n.tagIds ?? []).includes(selectedTagId));
   }, [activeNotes, selectedTagId]);
 
   const activeFolders = useMemo(() => {
-    return folders.filter((f) => !f.archived && !f.trashed);
+    return folders.filter((f: Folder) => !f.archived && !f.trashed);
   }, [folders]);
 
   const currentFolder = useMemo(() => {
     if (!folderId) return null;
-    return activeFolders.find((f) => f.id === folderId) ?? null;
+    return activeFolders.find((f: Folder) => f.id === folderId) ?? null;
   }, [activeFolders, folderId]);
 
   const isFolderUnlockedInSession = useMemo(() => {
@@ -111,7 +116,7 @@ export default function HubItemsPage() {
 
   const displayedFolders = useMemo(() => {
     if (!hasQuery) return activeFolders;
-    return activeFolders.filter((f) => {
+    return activeFolders.filter((f: Folder) => {
       return (f.title ?? "").toLowerCase().includes(normalizedQuery);
     });
   }, [activeFolders, hasQuery, normalizedQuery]);
@@ -134,32 +139,25 @@ export default function HubItemsPage() {
       return;
     }
 
-    const rawTitle = file.name.replace(/\.pdf$/i, "").trim();
-    const title = (rawTitle || "PDF").slice(0, 20);
-
-    let createdNoteId: string | null = null;
+    const toastId = toast.loading("Enviando PDF...");
     try {
-      const newNote = await createNote(userId, {
-        title,
-        content: null,
-        folderId: folderId ?? "Raiz",
-        type: "pdf",
-      });
-      createdNoteId = newNote.id;
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("userId", userId);
+      formData.append("folderId", folderId ?? "Raiz");
 
-      const url = await storageService.uploadFile(
-        userId,
-        `pdf/${newNote.id}.pdf`,
-        file,
-      );
-      await updateNote(newNote.id, { fileUrl: url });
-      toast.success(`PDF enviado: ${title}`);
-    } catch (error) {
-      if (createdNoteId) {
-        await deleteNote(createdNoteId).catch(() => {});
+      const result = await uploadPdfAction(formData);
+
+      if (result.success) {
+        toast.success(`PDF enviado: ${result.note.title}`, { id: toastId });
+        // Sincronizando com o estado global do Zustand para atualizar a UI instantaneamente
+        if (result.note) {
+          addNote(result.note as Note);
+        }
       }
-      console.log("Erro ao enviar PDF:", error);
-      toast.error("Erro ao enviar PDF!");
+    } catch (error) {
+      console.error("Erro ao enviar PDF:", error);
+      toast.error("Erro ao enviar PDF!", { id: toastId });
     }
   };
 

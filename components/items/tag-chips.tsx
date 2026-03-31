@@ -19,11 +19,11 @@ export default function TagChips({
           "shrink-0 rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-200",
           "inline-flex items-center gap-2",
           value === null
-            ? "bg-primary text-white shadow-sm"
+            ? "bg-black text-white shadow-sm"
             : "bg-muted text-accent-foreground",
         )}
       >
-        <span className={cn("size-2 rounded-full", "bg-muted-foreground/40")} />
+        <span className={cn("size-2 rounded-full", "bg-white")} />
         Todas
       </button>
       {tags.map((tag) => {
@@ -37,7 +37,7 @@ export default function TagChips({
               "shrink-0 rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-200",
               "inline-flex items-center gap-2",
               active
-                ? "bg-primary text-white shadow-sm"
+                ? "bg-primary/40 text-white shadow-sm"
                 : "bg-muted text-accent-foreground",
             )}
           >
