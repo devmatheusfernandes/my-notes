@@ -20,6 +20,7 @@
 # production
 /build
 serviceAccount.json
+FEATURE.md
 # misc
 .DS_Store
 *.pem
