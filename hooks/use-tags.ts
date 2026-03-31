@@ -1,11 +1,13 @@
 import { useCallback } from "react";
 import { useTagStore } from "@/store/tagStore";
+import { useNoteStore } from "@/store/noteStore";
 import { tagService } from "@/services/tagService";
 import { CreateTagDTO } from "@/schemas/tagSchema";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 
 export function useTags() {
     const { tags, isLoading, error, setTags, addTag, updateTag, removeTag, setLoading, setError } = useTagStore();
+    const { notes, updateNote } = useNoteStore();
 
     const fetchTags = useCallback(async (userId: string) => {
         setLoading(true);
@@ -76,6 +78,11 @@ export function useTags() {
         setError(null);
         try {
             await tagService.applyTagToNote(noteId, tagId);
+            // Atualiza tagIds da nota no store para manter a UI consistente
+            const note = notes.find((n) => n.id === noteId);
+            if (note && !note.tagIds.includes(tagId)) {
+                updateNote(noteId, { tagIds: [...note.tagIds, tagId] });
+            }
         } catch (error) {
             const secureMessage = getErrorMessage(error);
             setError(secureMessage);
@@ -83,13 +90,18 @@ export function useTags() {
         } finally {
             setLoading(false);
         }
-    }, [setError, setLoading]);
+    }, [notes, updateNote, setError, setLoading]);
 
     const removeTagFromNote = useCallback(async (noteId: string, tagId: string) => {
         setLoading(true);
         setError(null);
         try {
             await tagService.removeTagFromNote(noteId, tagId);
+            // Atualiza tagIds da nota no store para manter a UI consistente
+            const note = notes.find((n) => n.id === noteId);
+            if (note) {
+                updateNote(noteId, { tagIds: note.tagIds.filter((id) => id !== tagId) });
+            }
         } catch (error) {
             const secureMessage = getErrorMessage(error);
             setError(secureMessage);
@@ -97,7 +109,7 @@ export function useTags() {
         } finally {
             setLoading(false);
         }
-    }, [setError, setLoading]);
+    }, [notes, updateNote, setError, setLoading]);
 
     return {
         tags,
