@@ -7,8 +7,7 @@ import {
   isValidElement,
   useContext,
   useMemo,
-  useState,
-  version,
+  useState
 } from "react"
 import {
   useFloating,
@@ -164,11 +163,7 @@ export const TooltipTrigger = forwardRef<HTMLElement, TooltipTriggerProps>(
   function TooltipTrigger({ children, asChild = false, ...props }, propRef) {
     const context = useTooltipContext()
     const childrenRef = isValidElement(children)
-      ? parseInt(version, 10) >= 19
-        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (children as { props: { ref?: React.Ref<any> } }).props.ref
-        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (children as any).ref
+      ? (children.props as Record<string, unknown>)?.ref as React.Ref<HTMLElement>
       : undefined
     const ref = useMergeRefs([context.refs.setReference, propRef, childrenRef])
 
@@ -177,15 +172,15 @@ export const TooltipTrigger = forwardRef<HTMLElement, TooltipTriggerProps>(
         "data-tooltip-state": context.open ? "open" : "closed",
       }
 
-      return cloneElement(
-        children,
-        context.getReferenceProps({
-          ref,
+      // eslint-disable-next-line react-hooks/refs
+      return cloneElement(children as React.ReactElement, {
+        ...context.getReferenceProps({
           ...props,
-          ...(typeof children.props === "object" ? children.props : {}),
+          ...(children.props as Record<string, unknown>),
           ...dataAttributes,
-        })
-      )
+        }),
+        ref,
+      } as React.HTMLAttributes<HTMLElement>)
     }
 
     return (

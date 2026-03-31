@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { EditorContent, EditorContext, useEditor, type Content } from "@tiptap/react"
 
 // --- Tiptap Core Extensions ---
@@ -17,6 +17,7 @@ import { Selection } from "@tiptap/extensions"
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button"
 import { Spacer } from "@/components/tiptap-ui-primitive/spacer"
+import { toast } from "sonner"
 import {
   Toolbar,
   ToolbarGroup,
@@ -228,7 +229,7 @@ export function SimpleEditor({ content, onChange }: SimpleEditorProps) {
         maxSize: MAX_FILE_SIZE,
         limit: 3,
         upload: handleImageUpload,
-        onError: (error) => console.error("Upload failed:", error),
+        onError: (error) => toast.error(`Falha no upload: ${error}`),
       }),
     ],
     content,
@@ -242,14 +243,12 @@ export function SimpleEditor({ content, onChange }: SimpleEditorProps) {
 
   const rect = useCursorVisibility({
     editor,
-    overlayHeight: toolbarRef.current?.getBoundingClientRect().height ?? 0,
+    overlayRef: toolbarRef,
   })
 
-  useEffect(() => {
-    if (!isMobile && mobileView !== "main") {
-      setMobileView("main")
-    }
-  }, [isMobile, mobileView])
+  if (!isMobile && mobileView !== "main") {
+    setMobileView("main")
+  }
 
   return (
     <div className="simple-editor-wrapper">
@@ -259,8 +258,8 @@ export function SimpleEditor({ content, onChange }: SimpleEditorProps) {
           style={{
             ...(isMobile
               ? {
-                  bottom: `calc(100% - ${height - rect.y}px)`,
-                }
+                bottom: `calc(100% - ${height - rect.y}px)`,
+              }
               : {}),
           }}
         >

@@ -19,18 +19,21 @@ export function useTiptapEditor(providedEditor?: Editor | null): {
   const { editor: coreEditor } = useCurrentEditor()
   const mainEditor = providedEditor ?? coreEditor
 
-  const [storageEditor, setStorageEditor] = useState<Editor | null>(null)
+  const [storageEditor, setStorageEditor] = useState<Editor | null>(() =>
+    mainEditor ? getActivePageEditor(mainEditor) : null,
+  )
+
+  const [prevMainEditor, setPrevMainEditor] = useState<Editor | null>(mainEditor)
+  if (mainEditor !== prevMainEditor) {
+    setPrevMainEditor(mainEditor)
+    setStorageEditor(mainEditor ? getActivePageEditor(mainEditor) : null)
+  }
 
   useEffect(() => {
-    if (!mainEditor) {
-      setStorageEditor(null)
-      return
-    }
+    if (!mainEditor) return
 
     const updateHandler = () =>
       setStorageEditor(getActivePageEditor(mainEditor))
-
-    updateHandler()
 
     mainEditor.on("update", updateHandler)
     mainEditor.on("selectionUpdate", updateHandler)

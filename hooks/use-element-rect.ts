@@ -104,10 +104,7 @@ export function useElementRect({
   )
 
   useEffect(() => {
-    if (!enabled || !isClientSide()) {
-      setRect(initialRect)
-      return
-    }
+    if (!enabled || !isClientSide()) return
 
     const targetElement = getTargetElement()
     if (!targetElement) return

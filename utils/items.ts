@@ -1,4 +1,3 @@
-import { Content } from "@tiptap/react";
 import type { Folder } from "@/schemas/folderSchema";
 import type { Note } from "@/schemas/noteSchema";
 

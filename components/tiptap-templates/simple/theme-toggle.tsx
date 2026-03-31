@@ -13,16 +13,19 @@ export function ThemeToggle() {
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+    const initialDarkMode =
+      !!document.querySelector('meta[name="color-scheme"][content="dark"]') ||
+      mediaQuery.matches
+
+    // Sync only once on mount to avoid flash and lint warning
+    if (isDarkMode !== initialDarkMode) {
+      setIsDarkMode(initialDarkMode)
+    }
+
     const handleChange = () => setIsDarkMode(mediaQuery.matches)
     mediaQuery.addEventListener("change", handleChange)
     return () => mediaQuery.removeEventListener("change", handleChange)
-  }, [])
-
-  useEffect(() => {
-    const initialDarkMode =
-      !!document.querySelector('meta[name="color-scheme"][content="dark"]') ||
-      window.matchMedia("(prefers-color-scheme: dark)").matches
-    setIsDarkMode(initialDarkMode)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {

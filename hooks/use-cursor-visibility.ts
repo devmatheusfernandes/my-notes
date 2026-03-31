@@ -11,9 +11,13 @@ export interface CursorVisibilityOptions {
    */
   editor?: Editor | null
   /**
-   * Reference to the toolbar element that may obscure the cursor
+   * Raw height of the toolbar. Avoid passing this if it needs to be measured from a ref.
    */
   overlayHeight?: number
+  /**
+   * Reference to the toolbar element to measure its height
+   */
+  overlayRef?: React.RefObject<HTMLElement | null>
 }
 
 /**
@@ -22,11 +26,13 @@ export interface CursorVisibilityOptions {
  *
  * @param options.editor The Tiptap editor instance
  * @param options.overlayHeight Toolbar height to account for
+ * @param options.overlayRef Reference to the toolbar element
  * @returns The bounding rect of the body
  */
 export function useCursorVisibility({
   editor,
   overlayHeight = 0,
+  overlayRef,
 }: CursorVisibilityOptions) {
   const { height: windowHeight } = useWindowSize()
   const rect = useBodyRect({
@@ -46,12 +52,15 @@ export function useCursorVisibility({
       const { from } = state.selection
       const cursorCoords = view.coordsAtPos(from)
 
+      const actualOverlayHeight =
+        overlayRef?.current?.getBoundingClientRect().height ?? overlayHeight
+
       if (windowHeight < rect.height && cursorCoords) {
         const availableSpace = windowHeight - cursorCoords.top
 
         // If the cursor is hidden behind the overlay or offscreen, scroll it into view
-        if (availableSpace < overlayHeight) {
-          const targetCursorY = Math.max(windowHeight / 2, overlayHeight)
+        if (availableSpace < actualOverlayHeight) {
+          const targetCursorY = Math.max(windowHeight / 2, actualOverlayHeight)
           const currentScrollY = window.scrollY
           const cursorAbsoluteY = cursorCoords.top + currentScrollY
           const newScrollY = cursorAbsoluteY - targetCursorY
@@ -65,7 +74,7 @@ export function useCursorVisibility({
     }
 
     ensureCursorVisibility()
-  }, [editor, overlayHeight, windowHeight, rect.height])
+  }, [editor, overlayHeight, overlayRef, windowHeight, rect.height])
 
   return rect
 }
