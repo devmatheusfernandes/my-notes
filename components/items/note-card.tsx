@@ -52,10 +52,10 @@ export default function NoteCard({
   const isTrashPage = pathname === "/hub/trash";
   const isArchivedPage = pathname === "/hub/archived";
 
-  const { selectedNoteIds, toggleNote, isSelectionActive } = useSelection();
-  const { deleteNote, updateNote } = useNotes();
   const { user } = useAuthStore();
   const userId = user?.uid ?? "";
+  const { selectedNoteIds, toggleNote, isSelectionActive } = useSelection();
+  const { deleteNote, updateNote } = useNotes(userId);
   const { settings, fetchSettings } = useSettings();
   const { unlockedNotes, lockNote } = useNoteStore();
   const [isDeleting, setIsDeleting] = useState(false);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNotes } from "@/hooks/use-notes";
 import { useFolders } from "@/hooks/use-folders";
 import { useTags } from "@/hooks/use-tags";
@@ -34,42 +34,16 @@ export default function HubItemsPage() {
   const { user } = useAuthStore();
   const userId = user?.uid || "";
 
-  const { fetchNotes, notes, addNote } = useNotes();
-  const { fetchFolders, folders } = useFolders();
-  const { fetchTags, tags } = useTags();
+  const { notes, addNote } = useNotes(userId);
+  const { folders } = useFolders(userId);
+  const { tags } = useTags(userId);
 
   const folderId = useFolderId();
   const unlockedFolders = useFolderStore((s) => s.unlockedFolders);
 
-  const lastFetchedUserIdRef = useRef<string | null>(null);
   const dragDepthRef = useRef(0);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!userId) return;
-
-    const isNewUser = lastFetchedUserIdRef.current !== userId;
-    if (isNewUser) {
-      lastFetchedUserIdRef.current = userId;
-      fetchNotes(userId).catch(() => { });
-      fetchFolders(userId).catch(() => { });
-      fetchTags(userId).catch(() => { });
-      return;
-    }
-
-    if (notes.length === 0) fetchNotes(userId).catch(() => { });
-    if (folders.length === 0) fetchFolders(userId).catch(() => { });
-    if (tags.length === 0) fetchTags(userId).catch(() => { });
-  }, [
-    fetchFolders,
-    fetchNotes,
-    fetchTags,
-    folders.length,
-    notes.length,
-    tags.length,
-    userId,
-  ]);
 
   const activeNotes = useMemo(() => {
     return notes.filter((n: Note) => !n.archived && !n.trashed);

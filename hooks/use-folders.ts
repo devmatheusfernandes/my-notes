@@ -1,49 +1,62 @@
-import { useCallback } from "react";
-import { useFolderStore } from "@/store/folderStore";
+import { useCallback, useMemo } from "react";
+import useSWR, { useSWRConfig } from "swr";
 import { folderService } from "@/services/folderService";
 import { CreateFolderDTO, Folder } from "@/schemas/folderSchema";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import { useFolderStore } from "@/store/folderStore";
 
-export function useFolders() {
-  const {
-    folders,
-    isLoading,
-    error,
-    setFolders,
-    addFolder,
-    removeFolder,
-    updateFolder,
-    setLoading,
-    setError,
-  } = useFolderStore();
+export function useFolders(userId?: string) {
+  const { mutate } = useSWRConfig();
+  const cacheKey = useMemo(() => (userId ? ["folders", userId] : null), [userId]);
 
-  const fetchFolders = useCallback(
-    async (userId: string) => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const fetchedFolders = await folderService.getFoldersByUser(userId);
-        setFolders(fetchedFolders);
-      } catch (error) {
-        const secureMessage = getErrorMessage(error);
-        setError(secureMessage);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [setFolders, setLoading, setError],
+  const { data: folders = [], error: swrError, isLoading: swrLoading } = useSWR<Folder[]>(
+    cacheKey,
+    () => folderService.getFoldersByUser(userId!)
   );
+
+  const { error: storeError, isLoading: storeLoading, setError, setLoading } = useFolderStore();
+
+  const isLoading = swrLoading || storeLoading;
+  const error = swrError ? getErrorMessage(swrError) : storeError;
+
+  const fetchFolders = useCallback(async () => {
+    if (!cacheKey) return;
+    await mutate(cacheKey);
+  }, [cacheKey, mutate]);
 
   const createFolder = useCallback(
-    async (userId: string, data: CreateFolderDTO) => {
+    async (folderUserId: string, data: CreateFolderDTO) => {
+      if (!cacheKey) return;
       setLoading(true);
       setError(null);
 
+      const optimisticFolder: Folder = {
+        title: data.title || "Nova Pasta",
+        id: "temp-" + Date.now(),
+        userId: folderUserId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        archived: data.archived || false,
+        trashed: data.trashed || false,
+        isLocked: data.isLocked || false,
+        parentId: data.parentId,
+        color: data.color,
+      };
+
       try {
-        const newFolder = await folderService.createFolder(userId, data);
-        addFolder(newFolder);
-        return newFolder;
+        await mutate(
+          cacheKey,
+          async () => {
+            const newFolder = await folderService.createFolder(folderUserId, data);
+            return [newFolder, ...folders];
+          },
+          {
+            optimisticData: [optimisticFolder, ...folders],
+            rollbackOnError: true,
+            populateCache: true,
+            revalidate: false,
+          }
+        );
       } catch (error) {
         const secureMessage = getErrorMessage(error);
         setError(secureMessage);
@@ -52,16 +65,29 @@ export function useFolders() {
         setLoading(false);
       }
     },
-    [addFolder, setLoading, setError],
+    [cacheKey, mutate, folders, setError, setLoading]
   );
+
   const deleteFolder = useCallback(
     async (folderId: string) => {
+      if (!cacheKey) return;
       setLoading(true);
       setError(null);
 
       try {
-        await folderService.deleteFolder(folderId);
-        removeFolder(folderId);
+        await mutate(
+          cacheKey,
+          async () => {
+            await folderService.deleteFolder(folderId);
+            return folders.filter((f) => f.id !== folderId);
+          },
+          {
+            optimisticData: folders.filter((f) => f.id !== folderId),
+            rollbackOnError: true,
+            populateCache: true,
+            revalidate: false,
+          }
+        );
       } catch (error) {
         const secureMessage = getErrorMessage(error);
         setError(secureMessage);
@@ -70,16 +96,29 @@ export function useFolders() {
         setLoading(false);
       }
     },
-    [removeFolder, setLoading, setError],
+    [cacheKey, mutate, folders, setError, setLoading]
   );
 
   const updateFolderStore = useCallback(
     async (folderId: string, data: Partial<Folder>) => {
+      if (!cacheKey) return;
       setLoading(true);
       setError(null);
+
       try {
-        await folderService.updateFolder(folderId, data);
-        updateFolder(folderId, data);
+        await mutate(
+          cacheKey,
+          async () => {
+            await folderService.updateFolder(folderId, data);
+            return folders.map((f) => (f.id === folderId ? { ...f, ...data, updatedAt: new Date().toISOString() } : f));
+          },
+          {
+            optimisticData: folders.map((f) => (f.id === folderId ? { ...f, ...data } : f)),
+            rollbackOnError: true,
+            populateCache: true,
+            revalidate: false,
+          }
+        );
       } catch (error) {
         const secureMessage = getErrorMessage(error);
         setError(secureMessage);
@@ -88,7 +127,7 @@ export function useFolders() {
         setLoading(false);
       }
     },
-    [updateFolder, setLoading, setError],
+    [cacheKey, mutate, folders, setError, setLoading]
   );
 
   return {
@@ -101,3 +140,4 @@ export function useFolders() {
     updateFolder: updateFolderStore,
   };
 }
+

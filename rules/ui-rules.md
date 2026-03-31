@@ -50,7 +50,9 @@ Todas as animações principais devem ser importadas de `animations.ts`.
 - **Cards/Seções:** Use o `itemFadeInUpVariants` (fade in de baixo para cima) com um leve efeito _spring_ para dar uma sensação orgânica, fluida e não-robótica.
 - **Evite excessos:** Animações servem para guiar o olhar, não para distrair. Mantenha a duração curta (`stiffness: 300, damping: 24`).
 
-## ⏳ 5. Estados de Carregamento
+## ⏳ 5. Estados de Carregamento e Feedback
 
-- Nunca mostre uma tela vazia em branco ou quebrada enquanto busca os dados da API/Firebase.
-- Use a verificação `if (isLoading) return <Loading />` envolta em um container centralizado (`min-h-[50vh] flex items-center justify-center`) para garantir que o layout não "pisque" de forma brusca.
+- **SWR Patterns:** Aproveite o comportamento `stale-while-revalidate`. Se o cache já possui dados, mostre-os imediatamente enquanto revalida em background. Isso evita telas de carregamento bloqueantes.
+- **First Load:** Use skeletons ou spinners apenas no primeiro carregamento onde não há cache disponível (`if (isLoading && !data)`).
+- **Optimistic UI:** Para ações de CRUD, priorize atualizações otimistas. O usuário deve sentir que o app é instantâneo, sem spinners desnecessários.
+- **Toasts:** Use `toast.promise` para dar feedback visual de operações que levam tempo (ex: upload de PDF, exclusão).

@@ -25,25 +25,22 @@
 
 ## 3. Store (`/store/[entity]Store.ts`)
 
-- **Responsabilidade:** Gerenciamento de estado global no lado do cliente com Zustand. Funciona como cache de dados unificado.
+- **Responsabilidade:** Gerenciamento de estado **EXCLUSIVAMENTE UI-SIDE** (Ephemeral State) com Zustand.
 - **Regras:**
-  - Defina a interface `State` com dados globais explícitos: lista (`notes`), estado de carregamento (`isLoading`), e erro (`error`).
-  - Crie e exporte apenas funções síncronas para manipulação da store local (Ex: `removeNote: (id) => set(state => ({ notes: state.notes.filter(n => n.id !== id) }))`).
-  - **Proibido:** Lógica de async, promises, ou chamadas diretas a "Services". O Store é estritamente síncrono.
+  - Armazene apenas dados que não persistem no banco: modais abertos, itens selecionados, IDs desbloqueados na sessão.
+  - **Proibido:** Cache de entidades como `notes`, `folders` ou `tags` (isso agora é responsabilidade do SWR).
+  - **Proibido:** Lógica de async.
 
 ---
 
 ## 4. Hooks (`/hooks/use-[entity].ts`)
 
-- **Responsabilidade:** A camada orquestradora (BFF/Controller do client-side) que liga a UI (Visual) aos Services (Backend) e ao Store (State).
+- **Responsabilidade:** O cérebro da aplicação no cliente. Orquestra o SWR (Cache/Fetch), o Service (API) e o Store (UI).
 - **Regras:**
-  - Utilize as instâncias do respectivo Store para ler/escrever.
-  - Funções assíncronas (como `deleteNote`) devem:
-    1. Ativar loading (`setLoading(true)`) e resetar erro (`setError(null)`).
-    2. Chamar o Service em um `try` (`await noteService.deleteNote(id)`).
-    3. Sucesso: Manipular o estado local chamando funções da store (`removeNote(id)`).
-    4. Fluxo de Catch: Formatar qualquer erro usando `getErrorMessage`, setar estado (`setError(msg)`) e lançar o throw original para notificar a UI.
-    5. Finally: Encerrar o loading (`setLoading(false)`).
+  - **Fetch:** Utilize `useSWR` para buscar dados. Sempre envolva a `cacheKey` em um `useMemo`.
+  - **Mutações Otimistas:** Toda ação de escrita (`create`, `update`, `delete`) deve utilizar `mutate(cacheKey, asyncFn, { optimisticData, ... })`.
+  - **Tratamento de Erros:** Capture erros dos services, formate com `getErrorMessage` e lance para a UI ou use `rollbackOnError: true` do SWR.
+  - **Retornos:** Exportar os dados (`notes`, `isLoading`), o erro (`error`) e as funções de ação (`createNote`, etc.).
 
 ### 4.1 Regras de Uso do `useEffect`
 
@@ -54,10 +51,9 @@ O `useEffect` é um dos hooks mais mal utilizados em React. Siga as regras abaix
 | Caso de Uso | Exemplo |
 |---|---|
 | Sincronizar com um sistema externo | Inicializar uma lib JS de terceiros (ex: charts, maps) |
-| Fetch de dados na montagem do componente | Buscar dados ao carregar a página pela primeira vez |
-| Subscrições e listeners | `addEventListener`, `onSnapshot` do Firestore, WebSockets |
-| Animações imperativas | Refs DOM que precisam ser manipuladas diretamente |
-| Sincronizar estado com `localStorage` | Persistir preferências do usuário |
+| Fetch de dados REAIS em tempo real | `onSnapshot` do Firestore, WebSockets |
+| Interações imperativas | Refs DOM que precisam ser manipuladas diretamente |
+| Persistência de UI Local | Sincronizar `sessionStorage` com estado local |
 
 ```typescript
 // ✅ BOM — sincronizar com sistema externo (Firestore listener)
@@ -74,10 +70,10 @@ useEffect(() => {
 
 | Anti-pattern | Solução Correta |
 |---|---|
+| Fetch de dados na montagem do componente | Use **SWR** no Client ou fetch em Server Component |
 | Transformar/derivar dados de estado existente | Calcule direto no render ou use `useMemo` |
 | Reagir a um evento de usuário (click, submit) | Coloque a lógica direto no handler do evento |
 | Inicializar estado com base em props | Use o initializer do `useState` ou derive no render |
-| Fazer fetch em resposta a uma ação do usuário | Chame o service direto no handler, não num effect |
 | Sincronizar dois estados entre si | Unifique em um único estado ou use `useReducer` |
 
 ```typescript
@@ -183,10 +179,10 @@ useEffect(() => {
 
 ```
 [UI Component]
-     │  evento (onClick, onSubmit)
+     │  event (onClick, mutate)
      ▼
-[Custom Hook]  ◄──── lê/escreve ────►  [Zustand Store]
-     │  await
+[Custom Hook (SWR)]  ◄──── sync UI ────►  [Zustand Store] (Lock/Selection)
+     │  await mutate
      ▼
 [Service]
      │  Firestore SDK / fetch

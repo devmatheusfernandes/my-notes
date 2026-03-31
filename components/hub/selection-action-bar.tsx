@@ -59,11 +59,11 @@ export function SelectionActionBar() {
     selectAll,
     clearSelection,
   } = useSelection();
-  const { deleteNote, updateNote, notes, fetchNotes } = useNotes();
-  const { deleteFolder, updateFolder, folders } = useFolders();
-
   const { user } = useAuthStore();
   const userId = user?.uid ?? "";
+
+  const { deleteNote, updateNote, notes, fetchNotes } = useNotes(userId);
+  const { deleteFolder, updateFolder, folders } = useFolders(userId);
   const { settings, fetchSettings } = useSettings();
 
   const lockNote = useNoteStore((s) => s.lockNote);
@@ -76,7 +76,7 @@ export function SelectionActionBar() {
     applyTagToNote,
     removeTagFromNote,
     isLoading: isTagsLoading,
-  } = useTags();
+  } = useTags(userId);
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
@@ -114,7 +114,7 @@ export function SelectionActionBar() {
   const openTagDrawer = () => {
     setIsTagDrawerOpen(true);
     if (!userId) return;
-    fetchTags(userId).catch(() => {});
+    fetchTags().catch(() => {});
   };
 
   const handleToggleTagOnSelection = async (tagId: string) => {
@@ -157,7 +157,7 @@ export function SelectionActionBar() {
         return allHaveTag ? "Tag removida." : "Tag aplicada.";
       },
       error: async () => {
-        if (userId) await fetchNotes(userId).catch(() => {});
+        if (userId) await fetchNotes().catch(() => {});
         return "Erro ao aplicar tag.";
       },
     });

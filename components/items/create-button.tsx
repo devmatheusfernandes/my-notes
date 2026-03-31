@@ -670,22 +670,20 @@ export function SmartCreateButton() {
     updateNote,
     deleteNote,
     isLoading: isNotesLoading,
-  } = useNotes();
-  const { createFolder, isLoading: isFoldersLoading } = useFolders();
+  } = useNotes(userId);
+
+  const { createFolder, isLoading: isFoldersLoading } = useFolders(userId);
+
   const {
     tags,
-    fetchTags,
     createTag,
     editTag,
     deleteTag,
     isLoading: isTagsLoading,
-  } = useTags();
+  } = useTags(userId);
+
   const activeFolderId = useFolderId();
   const isLoading = isNotesLoading || isFoldersLoading || isTagsLoading;
-
-  useEffect(() => {
-    fetchTags(userId);
-  }, [fetchTags, userId]);
 
   const handleCreateFolder = async (folderName: string) => {
     try {
@@ -707,8 +705,10 @@ export function SmartCreateButton() {
         content: "",
         folderId: activeFolderId ?? "Raiz",
       });
-      toast.success("Nota criada!");
-      router.push(`/hub/notes/${newNote.id}`);
+      if (newNote) {
+        toast.success("Nota criada!");
+        router.push(`/hub/notes/${newNote.id}`);
+      }
     } catch (error) {
       console.log("Erro ao criar nota:", error);
       toast.error("Erro ao criar sua nota!");
@@ -741,6 +741,8 @@ export function SmartCreateButton() {
         folderId: activeFolderId ?? "Raiz",
         type: "pdf",
       });
+      if (!newNote) throw new Error("Falha ao criar nota para PDF");
+      
       createdNoteId = newNote.id;
 
       const url = await storageService.uploadFile(

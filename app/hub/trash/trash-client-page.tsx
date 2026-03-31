@@ -1,6 +1,4 @@
 "use client";
-
-import { useEffect } from "react";
 import { useNotes } from "@/hooks/use-notes";
 import { useFolders } from "@/hooks/use-folders";
 import { ItemsBentoGrid } from "@/components/items/bento-grid";
@@ -11,13 +9,8 @@ import { useAuthStore } from "@/store/authStore";
 export default function TrashClientPage() {
   const { user } = useAuthStore();
   const userId = user?.uid || "";
-  const { fetchNotes, notes } = useNotes();
-  const { fetchFolders, folders } = useFolders();
-
-  useEffect(() => {
-    fetchNotes(userId);
-    fetchFolders(userId);
-  }, [fetchNotes, fetchFolders, userId]);
+  const { notes } = useNotes(userId);
+  const { folders } = useFolders(userId);
 
   const trashedNotes = notes.filter((n) => n.trashed);
   const trashedFolders = folders.filter((f) => f.trashed);

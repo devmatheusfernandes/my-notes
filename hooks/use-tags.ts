@@ -1,115 +1,187 @@
-import { useCallback } from "react";
-import { useTagStore } from "@/store/tagStore";
-import { useNoteStore } from "@/store/noteStore";
+import { useCallback, useMemo } from "react";
+import useSWR, { useSWRConfig } from "swr";
 import { tagService } from "@/services/tagService";
-import { CreateTagDTO } from "@/schemas/tagSchema";
+import { CreateTagDTO, Tag } from "@/schemas/tagSchema";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import { useTagStore } from "@/store/tagStore";
+import { Note } from "@/schemas/noteSchema";
 
-export function useTags() {
-    const { tags, isLoading, error, setTags, addTag, updateTag, removeTag, setLoading, setError } = useTagStore();
-    const { notes, updateNote } = useNoteStore();
+export function useTags(userId?: string) {
+    const { mutate } = useSWRConfig();
+    const cacheKey = useMemo(() => (userId ? ["tags", userId] : null), [userId]);
 
-    const fetchTags = useCallback(async (userId: string) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const tags = await tagService.getTagsByUser(userId);
-            setTags(tags);
-        } catch (error) {
-            setError(getErrorMessage(error));
-        } finally {
-            setLoading(false);
-        }
-    }, [setTags, setError, setLoading]);
+    const { data: tags = [], error: swrError, isLoading: swrLoading } = useSWR<Tag[]>(
+        cacheKey,
+        () => tagService.getTagsByUser(userId!)
+    );
 
-    const createTag = useCallback(async (userId: string, data: CreateTagDTO) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const newTag = await tagService.createTag(userId, data);
-            addTag(newTag);
-            return newTag;
-        } catch (error) {
-            const secureMessage = getErrorMessage(error);
-            setError(secureMessage);
-            throw new Error(secureMessage);
-        } finally {
-            setLoading(false);
-        }
-    }, [addTag, setError, setLoading]);
+    const { error: storeError, isLoading: storeLoading, setError, setLoading } = useTagStore();
 
-    const editTag = useCallback(async (
-        userId: string,
-        tagId: string,
-        data: { title: string; color?: string },
-    ) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const updatedTag = await tagService.updateTag(userId, tagId, data);
-            updateTag(updatedTag);
-            return updatedTag;
-        } catch (error) {
-            const secureMessage = getErrorMessage(error);
-            setError(secureMessage);
-            throw new Error(secureMessage);
-        } finally {
-            setLoading(false);
-        }
-    }, [setError, setLoading, updateTag]);
+    const isLoading = swrLoading || storeLoading;
+    const error = swrError ? getErrorMessage(swrError) : storeError;
 
-    const deleteTag = useCallback(async (tagId: string) => {
-        setLoading(true);
-        setError(null);
-        try {
-            await tagService.deleteTag(tagId);
-            removeTag(tagId);
-        } catch (error) {
-            const secureMessage = getErrorMessage(error);
-            setError(secureMessage);
-            throw new Error(secureMessage);
-        } finally {
-            setLoading(false);
-        }
-    }, [removeTag, setError, setLoading]);
+    const fetchTags = useCallback(async () => {
+        if (!cacheKey) return;
+        await mutate(cacheKey);
+    }, [cacheKey, mutate]);
 
-    const applyTagToNote = useCallback(async (noteId: string, tagId: string) => {
-        setLoading(true);
-        setError(null);
-        try {
-            await tagService.applyTagToNote(noteId, tagId);
-            // Atualiza tagIds da nota no store para manter a UI consistente
-            const note = notes.find((n) => n.id === noteId);
-            if (note && !note.tagIds.includes(tagId)) {
-                updateNote(noteId, { tagIds: [...note.tagIds, tagId] });
+    const createTag = useCallback(
+        async (tagUserId: string, data: CreateTagDTO) => {
+            if (!cacheKey) return;
+            setLoading(true);
+            setError(null);
+
+            const optimisticTag: Tag = {
+                title: data.title,
+                color: data.color,
+                id: "temp-" + Date.now(),
+                userId: tagUserId,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
+
+            try {
+                await mutate(
+                    cacheKey,
+                    async () => {
+                        const newTag = await tagService.createTag(tagUserId, data);
+                        return [newTag, ...tags];
+                    },
+                    {
+                        optimisticData: [optimisticTag, ...tags],
+                        rollbackOnError: true,
+                        populateCache: true,
+                        revalidate: false,
+                    }
+                );
+            } catch (error) {
+                const secureMessage = getErrorMessage(error);
+                setError(secureMessage);
+                throw new Error(secureMessage);
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            const secureMessage = getErrorMessage(error);
-            setError(secureMessage);
-            throw new Error(secureMessage);
-        } finally {
-            setLoading(false);
-        }
-    }, [notes, updateNote, setError, setLoading]);
+        },
+        [cacheKey, mutate, tags, setError, setLoading]
+    );
 
-    const removeTagFromNote = useCallback(async (noteId: string, tagId: string) => {
-        setLoading(true);
-        setError(null);
-        try {
-            await tagService.removeTagFromNote(noteId, tagId);
-            // Atualiza tagIds da nota no store para manter a UI consistente
-            const note = notes.find((n) => n.id === noteId);
-            if (note) {
-                updateNote(noteId, { tagIds: note.tagIds.filter((id) => id !== tagId) });
+    const editTag = useCallback(
+        async (tagUserId: string, tagId: string, data: { title: string; color?: string }) => {
+            if (!cacheKey) return;
+            setLoading(true);
+            setError(null);
+
+            try {
+                await mutate(
+                    cacheKey,
+                    async () => {
+                        const updatedTag = await tagService.updateTag(tagUserId, tagId, data);
+                        return tags.map((t) => (t.id === tagId ? updatedTag : t));
+                    },
+                    {
+                        optimisticData: tags.map((t) => (t.id === tagId ? { ...t, ...data } : t)),
+                        rollbackOnError: true,
+                        populateCache: true,
+                        revalidate: false,
+                    }
+                );
+            } catch (error) {
+                const secureMessage = getErrorMessage(error);
+                setError(secureMessage);
+                throw new Error(secureMessage);
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            const secureMessage = getErrorMessage(error);
-            setError(secureMessage);
-            throw new Error(secureMessage);
-        } finally {
-            setLoading(false);
-        }
-    }, [notes, updateNote, setError, setLoading]);
+        },
+        [cacheKey, mutate, tags, setError, setLoading]
+    );
+
+    const deleteTag = useCallback(
+        async (tagId: string) => {
+            if (!cacheKey) return;
+            setLoading(true);
+            setError(null);
+
+            try {
+                await mutate(
+                    cacheKey,
+                    async () => {
+                        await tagService.deleteTag(tagId);
+                        return tags.filter((t) => t.id !== tagId);
+                    },
+                    {
+                        optimisticData: tags.filter((t) => t.id !== tagId),
+                        rollbackOnError: true,
+                        populateCache: true,
+                        revalidate: false,
+                    }
+                );
+            } catch (error) {
+                const secureMessage = getErrorMessage(error);
+                setError(secureMessage);
+                throw new Error(secureMessage);
+            } finally {
+                setLoading(false);
+            }
+        },
+        [cacheKey, mutate, tags, setError, setLoading]
+    );
+
+    const applyTagToNote = useCallback(
+        async (noteId: string, tagId: string) => {
+            const notesCacheKey = userId ? ["notes", userId] : null;
+            setLoading(true);
+            setError(null);
+
+            try {
+                await tagService.applyTagToNote(noteId, tagId);
+                if (notesCacheKey) {
+                    mutate(
+                        notesCacheKey,
+                        (currentNotes: Note[] | undefined) => {
+                            return currentNotes?.map((n) =>
+                                n.id === noteId ? { ...n, tagIds: [...(n.tagIds || []), tagId] } : n
+                            );
+                        },
+                        false
+                    );
+                }
+            } catch (error) {
+                setError(getErrorMessage(error));
+            } finally {
+                setLoading(false);
+            }
+        },
+        [mutate, userId, setError, setLoading]
+    );
+
+    const removeTagFromNote = useCallback(
+        async (noteId: string, tagId: string) => {
+            const notesCacheKey = userId ? ["notes", userId] : null;
+            setLoading(true);
+            setError(null);
+
+            try {
+                await tagService.removeTagFromNote(noteId, tagId);
+                if (notesCacheKey) {
+                    mutate(
+                        notesCacheKey,
+                        (currentNotes: Note[] | undefined) => {
+                            return currentNotes?.map((n) =>
+                                n.id === noteId ? { ...n, tagIds: n.tagIds?.filter((id) => id !== tagId) || [] } : n
+                            );
+                        },
+                        false
+                    );
+                }
+            } catch (error) {
+                setError(getErrorMessage(error));
+            } finally {
+                setLoading(false);
+            }
+        },
+        [mutate, userId, setError, setLoading]
+    );
 
     return {
         tags,

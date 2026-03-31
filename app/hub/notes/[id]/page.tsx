@@ -16,7 +16,7 @@ export default function NotePage() {
   const { user } = useAuthStore();
   const userId = user?.uid ?? "";
 
-  const { fetchNotes, notes, isLoading } = useNotes();
+  const { notes, isLoading } = useNotes(userId);
   const unlockedNotes = useNoteStore((s) => s.unlockedNotes);
 
   const note = useMemo(
@@ -31,13 +31,6 @@ export default function NotePage() {
   useEffect(() => {
     setUnlockOpen(isBlocked);
   }, [isBlocked]);
-
-  useEffect(() => {
-    if (!userId) return;
-    if (notes.length > 0) return;
-
-    fetchNotes(userId).catch(() => {});
-  }, [fetchNotes, notes.length, userId]);
 
   if (!noteId) {
     return (

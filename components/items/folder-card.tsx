@@ -33,6 +33,7 @@ import { useLongPress } from "@/hooks/use-long-press";
 import { useFolders } from "@/hooks/use-folders";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useAuthStore } from "@/store/authStore";
 import { useFolderStore } from "@/store/folderStore";
 import { UnlockDrawer } from "@/components/modals/unlock-drawer";
 
@@ -48,8 +49,10 @@ export default function FolderCard({
   const isTrashPage = pathname === "/hub/trash";
   const isArchivedPage = pathname === "/hub/archived";
 
+  const { user } = useAuthStore();
+  const userId = user?.uid ?? "";
   const { selectedFolderIds, toggleFolder, isSelectionActive } = useSelection();
-  const { deleteFolder, updateFolder } = useFolders();
+  const { deleteFolder, updateFolder } = useFolders(userId);
   const { unlockedFolders } = useFolderStore();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
