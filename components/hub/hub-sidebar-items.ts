@@ -1,15 +1,13 @@
-import type { LucideIcon } from "lucide-react";
-import {
-  ArchiveIcon,
-  LayoutGridIcon,
-  SettingsIcon,
-  Trash2Icon,
-} from "lucide-react";
+import { LayoutPanelTopIcon } from "../ui/layout-panel-top";
+import { ArchiveIcon } from "../ui/archive";
+import { DeleteIcon } from "../ui/delete";
+import { SettingsIcon } from "../ui/settings";
+
 
 export type HubSidebarItem = {
   label: string;
   tooltip: string;
-  icon: LucideIcon;
+  icon: React.ElementType;
   href?: string;
 };
 
@@ -17,7 +15,7 @@ export const hubSidebarItems: HubSidebarItem[] = [
   {
     label: "Início",
     tooltip: "Dashboard",
-    icon: LayoutGridIcon,
+    icon: LayoutPanelTopIcon,
     href: "/hub/items",
   },
   {
@@ -29,7 +27,7 @@ export const hubSidebarItems: HubSidebarItem[] = [
   {
     label: "Lixeira",
     tooltip: "Lixeira",
-    icon: Trash2Icon,
+    icon: DeleteIcon,
     href: "/hub/trash",
   },
 ];
