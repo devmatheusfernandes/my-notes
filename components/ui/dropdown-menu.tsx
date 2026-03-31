@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type DropdownMenuContextType = {
-  isMobile: boolean;
+  isMobile: boolean | undefined;
   open: boolean;
   setOpen: (open: boolean) => void;
 };

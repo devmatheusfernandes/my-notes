@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type SelectContextType = {
-    isMobile: boolean;
+    isMobile: boolean | undefined;
     value?: string;
     onValueChange: (value: string) => void;
     open: boolean;
