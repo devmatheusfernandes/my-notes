@@ -8,6 +8,7 @@ import { useNoteStore } from "@/store/noteStore";
 import { UnlockDrawer } from "@/components/modals/unlock-drawer";
 import { Button } from "@/components/ui/button";
 import { useId } from "@/utils/searchParams";
+import Tiptap from "@/components/tiptap/TipTap";
 
 export default function NotePage() {
   const router = useRouter();
@@ -62,64 +63,53 @@ export default function NotePage() {
     );
   }
 
-  const contentText =
-    typeof note.content === "string"
-      ? note.content
-      : note.content
-        ? JSON.stringify(note.content, null, 2)
-        : "";
-
   return (
-    <main className="w-full">
-      <div className="flex items-center justify-between gap-3">
-        <Button variant="outline" onClick={() => router.push("/hub/items")}>
-          Voltar
-        </Button>
-      </div>
+    <main className="min-h-screen bg-background">
+      <div className="mx-auto max-w-5xl">
 
-      <div className="mt-6">
-        <h1 className="text-2xl font-bold">
-          {note.title || "Sem Título"}{" "}
-          {note.pinned ? <span className="text-base">📌</span> : null}
-          {note.isLocked ? <span className="ml-1 text-base">🔒</span> : null}
-        </h1>
-        {!isBlocked ? (
-          note.type === "pdf" ? (
-            note.fileUrl ? (
-              <div className="mt-4 flex flex-col gap-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="outline" asChild>
-                    <a href={note.fileUrl} target="_blank" rel="noreferrer">
-                      Abrir PDF
-                    </a>
-                  </Button>
-                  <Button asChild>
-                    <a href={note.fileUrl} target="_blank" rel="noreferrer">
-                      Baixar
-                    </a>
-                  </Button>
+        <div className="mt-8">
+          {!isBlocked ? (
+            note.type === "pdf" ? (
+              note.fileUrl ? (
+                <div className="mt-6 flex flex-col gap-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button variant="outline" asChild>
+                      <a href={note.fileUrl} target="_blank" rel="noreferrer">
+                        Abrir PDF
+                      </a>
+                    </Button>
+                    <Button asChild>
+                      <a href={note.fileUrl} target="_blank" rel="noreferrer">
+                        Baixar
+                      </a>
+                    </Button>
+                  </div>
+                  <iframe
+                    title={note.title || "PDF"}
+                    src={note.fileUrl}
+                    className="h-[80vh] w-full rounded-2xl border bg-card shadow-lg"
+                  />
                 </div>
-                <iframe
-                  title={note.title || "PDF"}
-                  src={note.fileUrl}
-                  className="h-[75vh] w-full rounded-xl border bg-card"
-                />
-              </div>
+              ) : (
+                <div className="mt-6 rounded-2xl border bg-card p-6 text-center text-sm text-muted-foreground">
+                  PDF sem arquivo.
+                </div>
+              )
             ) : (
-              <div className="mt-4 rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-                PDF sem arquivo.
+              <div className="mt-8">
+                <Tiptap content={note.content || ""} />
               </div>
             )
           ) : (
-            <pre className="mt-4 whitespace-pre-wrap rounded-xl border bg-card p-4 text-sm text-foreground">
-              {contentText || "Nota vazia..."}
-            </pre>
-          )
-        ) : (
-          <div className="mt-4 rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-            Conteúdo protegido.
-          </div>
-        )}
+            <div className="mt-6 rounded-2xl border bg-card p-12 text-center shadow-sm">
+              <div className="text-3xl mb-4">🔒</div>
+              <p className="text-lg font-medium text-muted-foreground">Conteúdo protegido por senha.</p>
+              <Button variant="secondary" className="mt-4" onClick={() => setUnlockOpen(true)}>
+                Desbloquear
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       <UnlockDrawer

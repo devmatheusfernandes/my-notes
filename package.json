@@ -9,7 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@tiptap/react": "^3.20.1",
+    "@tiptap/pm": "^3.21.0",
+    "@tiptap/react": "^3.21.0",
+    "@tiptap/starter-kit": "^3.21.0",
     "bytes": "^3.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -35,6 +37,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/bytes": "^3.1.5",
     "@types/node": "^20",
     "@types/react": "^19",
