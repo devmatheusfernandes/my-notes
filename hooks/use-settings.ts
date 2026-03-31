@@ -15,9 +15,7 @@ export function useSettings() {
         setSettings(s);
         return s;
       } catch (err) {
-        const msg = getErrorMessage(err);
-        setError(msg);
-        throw new Error(msg);
+        setError(getErrorMessage(err));
       } finally {
         setLoading(false);
       }
