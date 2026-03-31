@@ -57,7 +57,6 @@ export default function SettingsPage() {
     if (!userId) return;
     fetchSettings(userId).catch((err) => {
       console.error("Settings load error:", err);
-      // fetchSettings in the hook already sets the 'error' state in the store
     });
   }, [fetchSettings, userId]);
 
@@ -312,7 +311,6 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-6">
-            {/* Auto Backup Settings */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border bg-accent/30">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -382,7 +380,6 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* Backups List */}
             <div className="space-y-3">
               <h3 className="text-sm font-semibold">Histórico de Backups</h3>
               {backups.length === 0 ? (
