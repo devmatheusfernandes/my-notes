@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useSettingsStore } from "@/store/settingsStore";
 import { settingsService } from "@/services/settingsService";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import type { UserSettings } from "@/schemas/userSettingsSchema";
 
 export function useSettings() {
   const { settings, isLoading, error, setSettings, setLoading, setError } = useSettingsStore();
@@ -61,6 +62,25 @@ export function useSettings() {
     [setError, setLoading, setSettings],
   );
 
+  const updateSettings = useCallback(
+    async (userId: string, partial: Partial<UserSettings>) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const s = await settingsService.updateUserSettings(userId, partial);
+        setSettings(s);
+        return s;
+      } catch (err) {
+        const msg = getErrorMessage(err);
+        setError(msg);
+        throw new Error(msg);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [setError, setLoading, setSettings],
+  );
+
   return {
     settings,
     isLoading,
@@ -68,5 +88,6 @@ export function useSettings() {
     fetchSettings,
     setPin,
     updateBiometric,
+    updateSettings,
   };
 }

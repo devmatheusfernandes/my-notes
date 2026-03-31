@@ -99,6 +99,11 @@ export const settingsService = {
           pinHash: null,
           biometricEnabled: false,
           biometricCredentialId: null,
+          autoBackupEnabled: false,
+          autoBackupTime: "02:00",
+          autoBackupFrequency: "daily",
+          lastBackupAt: null,
+          driveRefreshToken: null,
           createdAt: now,
           updatedAt: now,
         };
@@ -116,9 +121,7 @@ export const settingsService = {
 
   async updateUserSettings(
     userId: string,
-    data: Partial<
-      Pick<UserSettings, "biometricEnabled" | "biometricCredentialId">
-    >,
+    data: Partial<UserSettings>,
   ): Promise<UserSettings> {
     try {
       const ref = doc(db, USER_SETTINGS_COLLECTION_NAME, userId);

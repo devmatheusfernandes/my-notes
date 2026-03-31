@@ -6,6 +6,12 @@ export const userSettings = z.object({
   pinHash: z.string().nullable().default(null),
   biometricEnabled: z.boolean().default(false),
   biometricCredentialId: z.string().nullable().default(null),
+  // Backup Settings
+  autoBackupEnabled: z.boolean().default(false),
+  autoBackupTime: z.string().default("02:00"),
+  autoBackupFrequency: z.enum(["daily", "weekly", "monthly"]).default("daily"),
+  lastBackupAt: z.string().nullable().default(null),
+  driveRefreshToken: z.string().nullable().default(null),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
