@@ -26,55 +26,64 @@ export function useNotes() {
     [setNotes, setLoading, setError],
   );
 
-  const createNote = async (userId: string, data: CreateNoteDTO) => {
-    setLoading(true);
-    setError(null);
+  const createNote = useCallback(
+    async (userId: string, data: CreateNoteDTO) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const newNote = await noteService.createNote(userId, data);
-      addNote(newNote);
-      return newNote;
-    } catch (error) {
-      const secureMessage = getErrorMessage(error);
-      setError(secureMessage);
-      throw new Error(secureMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-  const deleteNote = async (noteId: string) => {
-    setLoading(true);
-    setError(null);
+      try {
+        const newNote = await noteService.createNote(userId, data);
+        addNote(newNote);
+        return newNote;
+      } catch (error) {
+        const secureMessage = getErrorMessage(error);
+        setError(secureMessage);
+        throw new Error(secureMessage);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [addNote, setLoading, setError],
+  );
+  const deleteNote = useCallback(
+    async (noteId: string) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      await noteService.deleteNote(noteId);
-      removeNote(noteId);
-    } catch (error) {
-      const secureMessage = getErrorMessage(error);
-      setError(secureMessage);
-      throw new Error(secureMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        await noteService.deleteNote(noteId);
+        removeNote(noteId);
+      } catch (error) {
+        const secureMessage = getErrorMessage(error);
+        setError(secureMessage);
+        throw new Error(secureMessage);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [removeNote, setLoading, setError],
+  );
 
-  const updateNoteStore = async (noteId: string, data: Partial<Note>) => {
-    // We update state immediately for snappy UI (optimistic update effect)
-    // But since Zustand expects synchronous calls, we'll just handle error if it fails
-    // Alternatively wait for DB and then update UI.
-    setLoading(true);
-    setError(null);
-    try {
-      await noteService.updateNote(noteId, data);
-      updateNote(noteId, data);
-    } catch (error) {
-      const secureMessage = getErrorMessage(error);
-      setError(secureMessage);
-      throw new Error(secureMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const updateNoteStore = useCallback(
+    async (noteId: string, data: Partial<Note>) => {
+      // We update state immediately for snappy UI (optimistic update effect)
+      // But since Zustand expects synchronous calls, we'll just handle error if it fails
+      // Alternatively wait for DB and then update UI.
+      setLoading(true);
+      setError(null);
+      try {
+        await noteService.updateNote(noteId, data);
+        updateNote(noteId, data);
+      } catch (error) {
+        const secureMessage = getErrorMessage(error);
+        setError(secureMessage);
+        throw new Error(secureMessage);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [updateNote, setLoading, setError],
+  );
 
   return {
     notes,
