@@ -16,6 +16,8 @@ import { useAuthStore } from "@/store/authStore";
 import HubBreadcrumb from "./hub-breadcrumb";
 import { useNotesSearch } from "@/hooks/use-notes-search";
 import { SearchX } from "lucide-react";
+import { motion } from "framer-motion";
+import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
 import {
   Empty,
   EmptyContent,
@@ -136,8 +138,11 @@ export default function HubItemsPage() {
 
   return (
     <SelectionProvider>
-      <main
-        className="relative"
+      <motion.main
+        className="relative page-container"
+        variants={pageContainerVariants}
+        initial="hidden"
+        animate="visible"
         onDragEnter={(e) => {
           if (!e.dataTransfer.types.includes("Files")) return;
           e.preventDefault();
@@ -204,7 +209,10 @@ export default function HubItemsPage() {
             </div>
           </div>
         ) : null}
-        <div className="w-full mb-3 flex flex-col justify-start items-start gap-2">
+        <motion.div
+          variants={itemFadeInUpVariants}
+          className="w-full mb-3 flex flex-col justify-start items-start gap-2"
+        >
           <HubBreadcrumb />
           <Input
             placeholder="Buscar nota ou pasta..."
@@ -218,26 +226,30 @@ export default function HubItemsPage() {
             onChange={setSelectedTagId}
           />
           <SelectionActionBar />
-        </div>
-        <SmartCreateButton />
-        {isFolderBlocked && folderId ? (
-          <LockedFolderGate key={folderId} folderId={folderId} />
-        ) : shouldShowEmptyResults ? (
-          <Empty className="mt-8 border-none">
-            <EmptyContent>
-              <EmptyMedia variant="icon">
-                <SearchX />
-              </EmptyMedia>
-              <EmptyTitle>Nenhum resultado encontrado</EmptyTitle>
-              <EmptyDescription>
-                Sua busca por &quot;{searchQuery}&quot; não retornou resultados.
-              </EmptyDescription>
-            </EmptyContent>
-          </Empty>
-        ) : (
-          <ItemsBentoGrid notes={filteredNotes} folders={displayedFolders} />
-        )}
-      </main>
+        </motion.div>
+        <motion.div variants={itemFadeInUpVariants}>
+          <SmartCreateButton />
+        </motion.div>
+        <motion.div variants={itemFadeInUpVariants}>
+          {isFolderBlocked && folderId ? (
+            <LockedFolderGate key={folderId} folderId={folderId} />
+          ) : shouldShowEmptyResults ? (
+            <Empty className="mt-8 border-none">
+              <EmptyContent>
+                <EmptyMedia variant="icon">
+                  <SearchX />
+                </EmptyMedia>
+                <EmptyTitle>Nenhum resultado encontrado</EmptyTitle>
+                <EmptyDescription>
+                  Sua busca por &quot;{searchQuery}&quot; não retornou resultados.
+                </EmptyDescription>
+              </EmptyContent>
+            </Empty>
+          ) : (
+            <ItemsBentoGrid notes={filteredNotes} folders={displayedFolders} />
+          )}
+        </motion.div>
+      </motion.main>
     </SelectionProvider>
   );
 }

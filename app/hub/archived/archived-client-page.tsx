@@ -6,6 +6,9 @@ import { SelectionProvider } from "@/components/hub/selection-context";
 import { SelectionActionBar } from "@/components/hub/selection-action-bar";
 import { useAuthStore } from "@/store/authStore";
 
+import { motion } from "framer-motion";
+import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
+
 export default function ArchivedClientPage() {
   const { user } = useAuthStore();
   const userId = user?.uid || "";
@@ -17,16 +20,27 @@ export default function ArchivedClientPage() {
 
   return (
     <SelectionProvider>
-      <main>
-        <div className="w-full mb-6">
-          <h1 className="text-2xl font-bold">Itens Arquivados</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+      <motion.main
+        className="page-container"
+        variants={pageContainerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div
+          variants={itemFadeInUpVariants}
+          className="w-full mb-6"
+        >
+          <h1 className="page-title">Itens Arquivados</h1>
+          <p className="page-description">
             Seus itens arquivados não aparecem na tela inicial.
           </p>
           <SelectionActionBar />
-        </div>
-        <ItemsBentoGrid notes={archivedNotes} folders={archivedFolders} />
-      </main>
+        </motion.div>
+        
+        <motion.div variants={itemFadeInUpVariants}>
+          <ItemsBentoGrid notes={archivedNotes} folders={archivedFolders} />
+        </motion.div>
+      </motion.main>
     </SelectionProvider>
   );
 }

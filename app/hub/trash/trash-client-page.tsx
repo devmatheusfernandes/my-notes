@@ -6,6 +6,9 @@ import { SelectionProvider } from "@/components/hub/selection-context";
 import { SelectionActionBar } from "@/components/hub/selection-action-bar";
 import { useAuthStore } from "@/store/authStore";
 
+import { motion } from "framer-motion";
+import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
+
 export default function TrashClientPage() {
   const { user } = useAuthStore();
   const userId = user?.uid || "";
@@ -17,16 +20,27 @@ export default function TrashClientPage() {
 
   return (
     <SelectionProvider>
-      <main>
-        <div className="w-full mb-6">
-          <h1 className="text-2xl font-bold text-destructive">Lixeira</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+      <motion.main
+        className="page-container"
+        variants={pageContainerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div
+          variants={itemFadeInUpVariants}
+          className="w-full mb-6"
+        >
+          <h1 className="page-title">Lixeira</h1>
+          <p className="page-description">
             Itens na lixeira podem ser excluídos permanentemente ou restaurados.
           </p>
           <SelectionActionBar />
-        </div>
-        <ItemsBentoGrid notes={trashedNotes} folders={trashedFolders} />
-      </main>
+        </motion.div>
+        
+        <motion.div variants={itemFadeInUpVariants}>
+          <ItemsBentoGrid notes={trashedNotes} folders={trashedFolders} />
+        </motion.div>
+      </motion.main>
     </SelectionProvider>
   );
 }
