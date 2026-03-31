@@ -10,6 +10,7 @@ export const note = z.object({
     .max(20, "O título é muito longo")
     .default("Nova Nota"),
   content: z.custom<Content>().optional().nullable(),
+  searchText: z.string().optional().nullable(),
   tagIds: z.array(z.string()).default([]),
   folderId: z.string().optional(),
   archived: z.boolean().default(false),

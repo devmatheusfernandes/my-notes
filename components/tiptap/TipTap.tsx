@@ -5,7 +5,7 @@ import StarterKit from '@tiptap/starter-kit'
 
 interface TiptapProps {
     content: Content
-    onChange?: (content: Content) => void
+    onChange?: (data: { json: Content; text: string }) => void
 }
 
 const Tiptap = ({ content, onChange }: TiptapProps) => {
@@ -15,11 +15,14 @@ const Tiptap = ({ content, onChange }: TiptapProps) => {
         immediatelyRender: false,
         editorProps: {
             attributes: {
-                class: 'prose prose-sm sm:prose-base dark:prose-invert focus:outline-none min-h-screen min-w-screen',
+                class: 'prose prose-sm sm:prose-base dark:prose-invert focus:outline-none min-h-screen min-w-screen pt-4 pb-20',
             },
         },
         onUpdate: ({ editor }) => {
-            onChange?.(editor.getJSON())
+            onChange?.({
+                json: editor.getJSON(),
+                text: editor.getText(),
+            })
         },
     })
 
