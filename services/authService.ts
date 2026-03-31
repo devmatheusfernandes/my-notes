@@ -6,6 +6,15 @@ export const authService = {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
+      const token = await result.user.getIdToken();
+
+      // Call session API to set cookie
+      await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+
       return result.user;
     } catch (error) {
       console.error("Error signing in with Google:", error);
@@ -16,6 +25,9 @@ export const authService = {
   async logOut() {
     try {
       await signOut(auth);
+
+      // Call session API to delete cookie
+      await fetch("/api/auth/session", { method: "DELETE" });
     } catch (error) {
       console.error("Error signing out:", error);
       throw error;
