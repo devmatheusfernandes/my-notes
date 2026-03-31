@@ -21,8 +21,8 @@ Este documento define as regras de consistência visual, responsividade e anima�
 
 Todas as interfaces devem ser desenhadas primariamente para telas pequenas e adaptadas para telas maiores usando os prefixos do Tailwind.
 
-- **Paddings:** Padrão `p-4` ou `p-5` no mobile, escalando para `sm:p-6` no desktop.
-- **Containers:** Use `w-full max-w-2xl mx-auto` para centralizar páginas de formulário e configurações. O conteúdo não deve esticar infinitamente em telas ultra-wide.
+- **Paddings:** O `.page-container` já define um `px-4` ou `p-5` (`py-6`) no mobile, escalando para `sm:px-6` e `sm:py-8` no desktop.
+- **Containers:** Utilize a classe utilitária `.page-container` (definida em `globals.css`) nos elementos principais (`<main>`). Ela garante o alinhamento centralizado (`mx-auto`), largura total (`w-full`) e um limite de largura confortável (`max-w-7xl`).
 - **Inputs e Botões:** Em formulários curtos, empilhe em telas pequenas (`flex-col`) e coloque lado a lado em telas médias (`sm:flex-row`). Botões no mobile costumam ter `w-full`, passando para `sm:w-auto` no desktop.
 
 ## 📏 2. Espaçamento e Tipografia
@@ -31,8 +31,9 @@ Todas as interfaces devem ser desenhadas primariamente para telas pequenas e ada
   - `gap-2` para ícone + texto.
   - `gap-3` ou `gap-4` para inputs empilhados.
   - `space-y-6` ou `space-y-8` para separar seções (Cards) de uma página.
-- **Títulos:** `text-2xl` no mobile e `sm:text-3xl font-bold tracking-tight` para títulos de página (h1). `text-lg font-semibold` para títulos de Cards (h2).
-- **Subtítulos/Apoio:** Use sempre `text-muted-foreground` com tamanho `text-sm`.
+- **Títulos e Descrições de Página:** Utilize `.page-title` para o título principal (h1) e `.page-description` para o texto de apoio logo abaixo.
+- **Títulos e Descrições de Card:** Utilize `.card-title` para o título de seção (h2) e `.card-description` para o texto explicativo dentro do card.
+- **Estilos de Apoio:** Continue usando `text-muted-foreground` quando for necessário um texto de apoio fora das classes padronizadas acima.
 
 ## 🎛️ 3. Componentes e Cards (Superfícies)
 

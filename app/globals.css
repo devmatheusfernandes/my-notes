@@ -120,6 +120,26 @@
   .card-section {
     @apply rounded-2xl border bg-card p-5 sm:p-6 shadow-sm transition-all hover:shadow-md;
   }
+
+  .page-container {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 sm:py-8;
+  }
+
+  .page-title {
+    @apply text-2xl sm:text-3xl font-bold tracking-tight text-foreground;
+  }
+
+  .page-description {
+    @apply mt-2 text-sm sm:text-base text-muted-foreground;
+  }
+
+  .card-title {
+    @apply text-lg font-semibold text-foreground;
+  }
+
+  .card-description {
+    @apply text-sm text-muted-foreground mt-1;
+  }
 }
 
 @layer base {

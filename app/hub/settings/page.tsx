@@ -125,16 +125,16 @@ export default function SettingsPage() {
 
   return (
     <motion.main
-      className="mx-auto w-full max-w-2xl px-4 sm:px-6 py-6 sm:py-8"
+      className="page-container"
       variants={pageContainerVariants}
       initial="hidden"
       animate="visible"
     >
       <motion.div variants={itemFadeInUpVariants} className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+        <h1 className="page-title">
           Configurações
         </h1>
-        <p className="mt-2 text-sm sm:text-base text-muted-foreground">
+        <p className="page-description">
           Configure seu PIN de segurança e preferências de desbloqueio do
           aplicativo.
         </p>
@@ -146,10 +146,10 @@ export default function SettingsPage() {
           className="card-section"
         >
           <div className="mb-5">
-            <h2 className="text-lg font-semibold text-foreground">
+            <h2 className="card-title">
               PIN de Acesso
             </h2>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="card-description">
               Use um PIN numérico para proteger suas anotações sensíveis.
             </p>
           </div>
@@ -191,8 +191,8 @@ export default function SettingsPage() {
           className="card-section"
         >
           <div className="mb-5">
-            <h2 className="text-lg font-semibold text-foreground">Biometria</h2>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h2 className="card-title">Biometria</h2>
+            <p className="card-description">
               Utilize o Face ID, Touch ID ou a biometria do seu dispositivo para
               um desbloqueio rápido.
             </p>
