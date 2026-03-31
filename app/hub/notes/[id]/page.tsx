@@ -8,7 +8,7 @@ import { useNoteStore } from "@/store/noteStore";
 import { UnlockDrawer } from "@/components/modals/unlock-drawer";
 import { Button } from "@/components/ui/button";
 import { useId } from "@/utils/searchParams";
-import Tiptap from "@/components/tiptap/TipTap";
+import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Content } from "@tiptap/react";
 
@@ -95,10 +95,10 @@ export default function NotePage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="mx-auto max-w-5xl">
+    <main>
+      <div>
 
-        <div className="mt-8">
+        <div>
           {!isBlocked ? (
             note.type === "pdf" ? (
               note.fileUrl ? (
@@ -127,9 +127,7 @@ export default function NotePage() {
                 </div>
               )
             ) : (
-              <div className="mt-8">
-                <Tiptap content={note.content || ""} onChange={handleUpdate} />
-              </div>
+              <SimpleEditor content={note.content || ""} onChange={handleUpdate} />
             )
           ) : (
             <div className="mt-6 rounded-2xl border bg-card p-12 text-center shadow-sm">
