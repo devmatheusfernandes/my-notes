@@ -70,7 +70,7 @@ export function useFolders(userId?: string) {
 
   const deleteFolder = useCallback(
     async (folderId: string) => {
-      if (!cacheKey) return;
+      if (!cacheKey || !userId) return;
       setLoading(true);
       setError(null);
 
@@ -78,7 +78,7 @@ export function useFolders(userId?: string) {
         await mutate(
           cacheKey,
           async (currentFolders: Folder[] | undefined) => {
-            await folderService.deleteFolder(folderId);
+            await folderService.deleteFolder(userId, folderId);
             return (currentFolders || []).filter((f) => f.id !== folderId);
           },
           {
@@ -96,7 +96,7 @@ export function useFolders(userId?: string) {
         setLoading(false);
       }
     },
-    [cacheKey, mutate, folders, setError, setLoading]
+    [cacheKey, mutate, folders, setError, setLoading, userId]
   );
 
   const updateFolderStore = useCallback(
@@ -109,7 +109,7 @@ export function useFolders(userId?: string) {
         await mutate(
           cacheKey,
           async (currentFolders: Folder[] | undefined) => {
-            await folderService.updateFolder(folderId, data);
+            await folderService.updateFolder(folderId, data, userId);
             return (currentFolders || []).map((f) => (f.id === folderId ? { ...f, ...data, updatedAt: new Date().toISOString() } : f));
           },
           {
@@ -127,7 +127,7 @@ export function useFolders(userId?: string) {
         setLoading(false);
       }
     },
-    [cacheKey, mutate, folders, setError, setLoading]
+    [cacheKey, mutate, folders, setError, setLoading, userId]
   );
 
   return {

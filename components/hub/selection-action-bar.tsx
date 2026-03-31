@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   Archive,
@@ -9,24 +9,19 @@ import {
   FolderOutput,
   Lock,
   Pin,
-  Save,
   Share2,
   Trash2,
   Unlock,
   Tag as TagIcon,
   XSquare,
+  ChevronRight,
+  Folder as FolderIcon,
 } from "lucide-react";
-import { toast } from "sonner";
 
 import { useSelection } from "./selection-context";
-import { useNotes } from "@/hooks/use-notes";
-import { useFolders } from "@/hooks/use-folders";
 import { useAuthStore } from "@/store/authStore";
-import { useSettings } from "@/hooks/use-settings";
-import { useNoteStore } from "@/store/noteStore";
-import { useFolderStore } from "@/store/folderStore";
-import { storageService } from "@/services/storageService";
-import { useTags } from "@/hooks/use-tags";
+import { useSelectionActions } from "@/hooks/use-selection-actions";
+import { useFolders } from "@/hooks/use-folders";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -46,6 +41,13 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function SelectionActionBar() {
   const pathname = usePathname();
@@ -59,372 +61,47 @@ export function SelectionActionBar() {
     selectAll,
     clearSelection,
   } = useSelection();
+
   const { user } = useAuthStore();
   const userId = user?.uid ?? "";
 
-  const { deleteNote, updateNote, notes, fetchNotes } = useNotes(userId);
-  const { deleteFolder, updateFolder, folders, fetchFolders } = useFolders(userId);
-  const { settings, fetchSettings } = useSettings();
+  const actions = useSelectionActions({
+    userId,
+    selectedNoteIds,
+    selectedFolderIds,
+    clearSelection,
+    isTrashPage,
+    isArchivedPage,
+  });
 
-  const lockNote = useNoteStore((s) => s.lockNote);
-  const lockFolder = useFolderStore((s) => s.lockFolder);
+  const { folders } = useFolders(userId);
 
-  const {
-    tags,
-    fetchTags,
-    applyTagToNote,
-    removeTagFromNote,
-    isLoading: isTagsLoading,
-  } = useTags(userId);
-
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isArchiving, setIsArchiving] = useState(false);
-  const [isLocking, setIsLocking] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
   const [isTagDrawerOpen, setIsTagDrawerOpen] = useState(false);
-  const [isTagging, setIsTagging] = useState(false);
+  const [isMoveDrawerOpen, setIsMoveDrawerOpen] = useState(false);
 
-  const selectedCount = selectedNoteIds.size + selectedFolderIds.size;
+  const lockButtonMode = actions.selectedItemsLockState.allLocked ? "unlock" : "lock";
 
-  const selectedNotesForTagging = useMemo(() => {
-    return Array.from(selectedNoteIds)
-      .map((id) => notes.find((n) => n.id === id))
-      .filter((n): n is NonNullable<typeof n> => !!n);
-  }, [notes, selectedNoteIds]);
-
-  const canTag = selectedNotesForTagging.length > 0;
-
-  const selectedItemsLockState = useMemo(() => {
-    const selectedNotes = Array.from(selectedNoteIds)
-      .map((id) => notes.find((n) => n.id === id))
-      .filter((n): n is NonNullable<typeof n> => !!n);
-    const selectedFolders = Array.from(selectedFolderIds)
-      .map((id) => folders.find((f) => f.id === id))
-      .filter((f): f is NonNullable<typeof f> => !!f);
-
-    const items = [...selectedNotes, ...selectedFolders];
-    const allLocked = items.length > 0 && items.every((i) => i.isLocked);
-    return { allLocked, hasAny: items.length > 0 };
-  }, [folders, notes, selectedFolderIds, selectedNoteIds]);
-
-  const lockButtonMode = selectedItemsLockState.allLocked ? "unlock" : "lock";
   if (!isSelectionActive) return null;
 
-  const openTagDrawer = () => {
+  const handleOpenTagDrawer = () => {
     setIsTagDrawerOpen(true);
-    if (!userId) return;
-    fetchTags().catch(() => {});
+    actions.fetchTags().catch(() => {});
   };
 
-  const handleToggleTagOnSelection = async (tagId: string) => {
-    if (!canTag) return;
-    if (isTagging) return;
-    const selected = selectedNotesForTagging;
-    const allHaveTag = selected.every((n) => (n.tagIds ?? []).includes(tagId));
-
-    const operation = async () => {
-      setIsTagging(true);
-      try {
-        await Promise.all(
-          selected.map(async (note) => {
-            const currentTagIds = note.tagIds ?? [];
-            const hasTag = currentTagIds.includes(tagId);
-
-            if (allHaveTag) {
-              if (!hasTag) return;
-              await removeTagFromNote(note.id, tagId);
-              return;
-            }
-
-            if (hasTag) return;
-            await applyTagToNote(note.id, tagId);
-          }),
-        );
-      } finally {
-        setIsTagging(false);
-      }
-    };
-
-    toast.promise(operation(), {
-      loading: allHaveTag ? "Removendo tag..." : "Aplicando tag...",
-      success: () => {
-        clearSelection();
-        return allHaveTag ? "Tag removida." : "Tag aplicada.";
-      },
-      error: async () => {
-        if (userId) await fetchNotes().catch(() => {});
-        return "Erro ao aplicar tag.";
-      },
-    });
+  const handleOpenMoveDrawer = () => {
+    setIsMoveDrawerOpen(true);
   };
 
-  const handleConfirmDelete = async () => {
-    setIsDrawerOpen(false);
-    setIsDeleting(true);
-    let successCount = 0;
-    let errorCount = 0;
-
-    const deleteNotePromises = Array.from(selectedNoteIds).map(
-      async (noteId) => {
-        try {
-          if (isTrashPage) {
-            const note = notes.find((n) => n.id === noteId) ?? null;
-            if (note?.type === "pdf" && userId) {
-              await storageService.deleteFile(userId, `pdf/${noteId}.pdf`);
-            }
-            await deleteNote(noteId);
-          } else {
-            await updateNote(noteId, { trashed: true });
-          }
-          successCount++;
-        } catch {
-          errorCount++;
-        }
-      },
-    );
-
-    const deleteFolderPromises = Array.from(selectedFolderIds).map(
-      async (folderId) => {
-        try {
-          if (isTrashPage) {
-            await deleteFolder(folderId);
-          } else {
-            await updateFolder(folderId, { trashed: true });
-          }
-          successCount++;
-        } catch {
-          errorCount++;
-        }
-      },
-    );
-
-    toast.promise(
-      Promise.all([...deleteNotePromises, ...deleteFolderPromises]),
-      {
-        loading: isTrashPage
-          ? "Excluindo itens definitivamente..."
-          : "Movendo para a lixeira...",
-        success: () => {
-          setIsDeleting(false);
-          clearSelection();
-          if (errorCount > 0) {
-            return `${successCount} item(s) processado(s), ${errorCount} erro(s).`;
-          }
-          // Revalidar os dados após exclusão em massa
-          fetchNotes().catch(() => {});
-          fetchFolders().catch(() => {});
-          
-          return isTrashPage
-            ? `${successCount} item(s) excluído(s) com sucesso.`
-            : `${successCount} item(s) movidos para a lixeira.`;
-        },
-        error: () => {
-          setIsDeleting(false);
-          return "Erro ao processar alguns itens.";
-        },
-      },
-    );
-  };
-
-  const handleArchive = async () => {
-    setIsArchiving(true);
-    let successCount = 0;
-    let errorCount = 0;
-    const isUnarchiving = isArchivedPage;
-
-    const notePromises = Array.from(selectedNoteIds).map(async (noteId) => {
-      try {
-        await updateNote(noteId, { archived: !isUnarchiving });
-        successCount++;
-      } catch {
-        errorCount++;
-      }
-    });
-
-    const folderPromises = Array.from(selectedFolderIds).map(
-      async (folderId) => {
-        try {
-          await updateFolder(folderId, { archived: !isUnarchiving });
-          successCount++;
-        } catch {
-          errorCount++;
-        }
-      },
-    );
-
-    toast.promise(Promise.all([...notePromises, ...folderPromises]), {
-      loading: isUnarchiving ? "Desarquivando itens..." : "Arquivando itens...",
-      success: () => {
-        setIsArchiving(false);
-        clearSelection();
-        if (errorCount > 0) {
-          return `${successCount} item(s) processado(s), ${errorCount} erro(s).`;
-        }
-        // Revalidar os dados após arquivamento/desarquivamento em massa
-        fetchNotes().catch(() => {});
-        fetchFolders().catch(() => {});
-
-        return isUnarchiving
-          ? `${successCount} item(s) desarquivado(s).`
-          : `${successCount} item(s) arquivado(s).`;
-      },
-      error: () => {
-        setIsArchiving(false);
-        return "Erro ao processar os itens.";
-      },
-    });
-  };
-
-  const handlePinSelected = async () => {
-    let successCount = 0;
-    let errorCount = 0;
-
-    const notePromises = Array.from(selectedNoteIds).map(async (noteId) => {
-      try {
-        await updateNote(noteId, { pinned: true });
-        successCount++;
-      } catch {
-        errorCount++;
-      }
-    });
-
-    toast.promise(Promise.all(notePromises), {
-      loading: "Fixando notas selecionadas...",
-      success: () => {
-        clearSelection();
-        if (errorCount > 0) {
-          return `${successCount} nota(s) fixada(s), ${errorCount} erro(s).`;
-        }
-        return `${successCount} nota(s) fixada(s).`;
-      },
-      error: () => "Erro ao fixar notas selecionadas.",
-    });
-  };
-
-  const ensureSettingsLoaded = async () => {
-    if (!userId) return null;
-    if (settings) return settings;
-    try {
-      return await fetchSettings(userId);
-    } catch {
-      return null;
-    }
-  };
-
-  const handleLockSelected = async () => {
-    setIsLocking(true);
-    const s = await ensureSettingsLoaded();
-    const hasPin = !!s?.pinHash && !!s?.pinSalt;
-    if (!hasPin) {
-      setIsLocking(false);
-      toast.error("Defina um PIN em Configurações antes de trancar itens.");
-      return;
-    }
-
-    Array.from(selectedNoteIds).forEach((id) => lockNote(id));
-    Array.from(selectedFolderIds).forEach((id) => lockFolder(id));
-
-    let successCount = 0;
-    let errorCount = 0;
-
-    const notePromises = Array.from(selectedNoteIds).map(async (noteId) => {
-      try {
-        await updateNote(noteId, { isLocked: true });
-        successCount++;
-      } catch {
-        errorCount++;
-      }
-    });
-
-    const folderPromises = Array.from(selectedFolderIds).map(
-      async (folderId) => {
-        try {
-          await updateFolder(folderId, { isLocked: true });
-          successCount++;
-        } catch {
-          errorCount++;
-        }
-      },
-    );
-
-    toast.promise(Promise.all([...notePromises, ...folderPromises]), {
-      loading: "Trancando itens selecionados...",
-      success: () => {
-        setIsLocking(false);
-        clearSelection();
-        if (errorCount > 0) {
-          return `${successCount} item(s) trancado(s), ${errorCount} erro(s).`;
-        }
-        return `${successCount} item(s) trancado(s).`;
-      },
-      error: () => {
-        setIsLocking(false);
-        return "Erro ao trancar itens selecionados.";
-      },
-    });
-  };
-
-  const handleUnlockSelected = async () => {
-    setIsLocking(true);
-    let successCount = 0;
-    let errorCount = 0;
-
-    const notePromises = Array.from(selectedNoteIds).map(async (noteId) => {
-      try {
-        await updateNote(noteId, { isLocked: false });
-        successCount++;
-      } catch {
-        errorCount++;
-      }
-    });
-
-    const folderPromises = Array.from(selectedFolderIds).map(
-      async (folderId) => {
-        try {
-          await updateFolder(folderId, { isLocked: false });
-          successCount++;
-        } catch {
-          errorCount++;
-        }
-      },
-    );
-
-    toast.promise(Promise.all([...notePromises, ...folderPromises]), {
-      loading: "Destrancando itens selecionados...",
-      success: () => {
-        setIsLocking(false);
-        clearSelection();
-        if (errorCount > 0) {
-          return `${successCount} item(s) destrancado(s), ${errorCount} erro(s).`;
-        }
-        return `${successCount} item(s) destrancado(s).`;
-      },
-      error: () => {
-        setIsLocking(false);
-        return "Erro ao destrancar itens selecionados.";
-      },
-    });
-  };
-
-  const handleToggleLockSelected = async () => {
-    if (!selectedItemsLockState.hasAny) return;
-    if (lockButtonMode === "unlock") {
-      await handleUnlockSelected();
-      return;
-    }
-    await handleLockSelected();
-  };
-
-  const attemptDelete = () => {
-    setIsDrawerOpen(true);
-  };
+  // Filter folders to exclude currently selected folders (cannot move a folder into itself)
+  const availableFolders = folders.filter((f) => !selectedFolderIds.has(f.id));
 
   return (
     <div className="w-full animate-in fade-in slide-in-from-top-2 duration-200 ease-in-out">
       <div className="flex w-full items-center justify-between bg-card text-card-foreground p-2 rounded-lg shadow-sm border border-border overflow-x-auto gap-2">
         <div className="flex items-center gap-1 sm:gap-2 whitespace-nowrap min-w-max">
           <span className="text-sm font-medium mr-2 px-2">
-            {selectedCount} selecionados
+            {actions.totalCount} selecionados
           </span>
 
           <Button
@@ -432,7 +109,7 @@ export function SelectionActionBar() {
             size="sm"
             onClick={selectAll}
             className="gap-2 h-8 px-2 sm:px-3"
-            disabled={isDeleting}
+            disabled={actions.isDeleting}
           >
             <CheckSquare className="h-4 w-4" />{" "}
             <span className="hidden sm:inline">Selecionar tudo</span>
@@ -443,7 +120,7 @@ export function SelectionActionBar() {
             size="sm"
             onClick={clearSelection}
             className="gap-2 h-8 px-2 sm:px-3"
-            disabled={isDeleting}
+            disabled={actions.isDeleting}
           >
             <XSquare className="h-4 w-4" />{" "}
             <span className="hidden sm:inline">Limpar</span>
@@ -452,27 +129,31 @@ export function SelectionActionBar() {
           <Separator orientation="vertical" className="h-5 mx-1" />
 
           <TooltipProvider delayDuration={200}>
+            {/* DELETE */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-destructive disabled:opacity-50"
-                  onClick={attemptDelete}
-                  disabled={isDeleting}
+                  onClick={() => setIsDeleteDrawerOpen(true)}
+                  disabled={actions.isDeleting}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Excluir</TooltipContent>
+              <TooltipContent>{isTrashPage ? "Excluir permanentemente" : "Excluir"}</TooltipContent>
             </Tooltip>
 
+            {/* MOVE TO */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-muted-foreground"
+                  onClick={handleOpenMoveDrawer}
+                  disabled={actions.isMoving}
                 >
                   <FolderOutput className="h-4 w-4" />
                 </Button>
@@ -480,32 +161,34 @@ export function SelectionActionBar() {
               <TooltipContent>Mover para</TooltipContent>
             </Tooltip>
 
+            {/* TAGS */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-muted-foreground"
-                  onClick={openTagDrawer}
-                  disabled={isDeleting || isTagging || isTagsLoading || !canTag}
+                  onClick={handleOpenTagDrawer}
+                  disabled={actions.isDeleting || actions.isTagging || !actions.canTag}
                 >
                   <TagIcon className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {canTag ? "Adicionar Tag" : "Selecione ao menos uma nota"}
+                {actions.canTag ? "Adicionar Tag" : "Selecione ao menos uma nota"}
               </TooltipContent>
             </Tooltip>
 
             <Separator orientation="vertical" className="h-5 mx-1" />
 
+            {/* PIN */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-muted-foreground"
-                  onClick={handlePinSelected}
+                  onClick={actions.handlePinSelected}
                 >
                   <Pin className="h-4 w-4" />
                 </Button>
@@ -513,14 +196,15 @@ export function SelectionActionBar() {
               <TooltipContent>Fixar</TooltipContent>
             </Tooltip>
 
+            {/* LOCK/UNLOCK */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-muted-foreground"
-                  onClick={handleToggleLockSelected}
-                  disabled={isLocking || !selectedItemsLockState.hasAny}
+                  onClick={actions.handleToggleLock}
+                  disabled={actions.isLocking || !actions.selectedItemsLockState.hasAny}
                 >
                   {lockButtonMode === "unlock" ? (
                     <Unlock className="h-4 w-4" />
@@ -534,14 +218,15 @@ export function SelectionActionBar() {
               </TooltipContent>
             </Tooltip>
 
+            {/* ARCHIVE/UNARCHIVE */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-muted-foreground"
-                  onClick={handleArchive}
-                  disabled={isDeleting || isArchiving}
+                  onClick={actions.handleArchive}
+                  disabled={actions.isDeleting || actions.isArchiving}
                 >
                   <Archive className="h-4 w-4" />
                 </Button>
@@ -553,68 +238,82 @@ export function SelectionActionBar() {
 
             <Separator orientation="vertical" className="h-5 mx-1" />
 
+            {/* SHARE */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-muted-foreground"
+                  onClick={actions.handleShare}
+                  disabled={actions.isExporting}
                 >
                   <Share2 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Compartilhar</TooltipContent>
+              <TooltipContent>Compartilhar (.txt)</TooltipContent>
             </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground"
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Baixar</TooltipContent>
-            </Tooltip>
+            {/* DOWNLOAD */}
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground"
+                      disabled={actions.isExporting}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Baixar</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => actions.handleDownload("txt")}>
+                  Texto (.txt)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => actions.handleDownload("pdf")} disabled>
+                  PDF (.pdf) <span className="ml-auto text-[10px] opacity-70">EM BREVE</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => actions.handleDownload("odt")} disabled>
+                  ODT (.odt) <span className="ml-auto text-[10px] opacity-70">EM BREVE</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => actions.handleDownload("jw")} disabled>
+                  JW (.jw) <span className="ml-auto text-[10px] opacity-70">EM BREVE</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground"
-                >
-                  <Save className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Backup</TooltipContent>
-            </Tooltip>
           </TooltipProvider>
         </div>
       </div>
 
-      <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+      {/* DELETE DRAWER */}
+      <Drawer open={isDeleteDrawerOpen} onOpenChange={setIsDeleteDrawerOpen}>
         <DrawerContent>
           <div className="mx-auto w-full max-w-sm">
             <DrawerHeader>
               <DrawerTitle>
-                {isTrashPage
-                  ? "Excluir Definitivamente?"
-                  : "Mover para a lixeira?"}
+                {isTrashPage ? "Excluir Definitivamente?" : "Mover para a lixeira?"}
               </DrawerTitle>
               <DrawerDescription>
                 {isTrashPage
-                  ? `Tem certeza que deseja excluir permanentemente ${selectedCount} iten(s)? Essa ação não pode ser desfeita.`
-                  : `Tem certeza que deseja mover ${selectedCount} iten(s) para a lixeira? Eles podem ser restaurados depois.`}
+                  ? `Tem certeza que deseja excluir permanentemente ${actions.totalCount} iten(s)? Essa ação não pode ser desfeita.`
+                  : `Tem certeza que deseja mover ${actions.totalCount} iten(s) para a lixeira? Eles podem ser restaurados depois.`}
               </DrawerDescription>
             </DrawerHeader>
             <DrawerFooter>
-              <Button variant="destructive" onClick={handleConfirmDelete}>
-                {isTrashPage
-                  ? "Excluir Permanentemente"
-                  : "Mover para a lixeira"}
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  actions.handleConfirmDelete();
+                  setIsDeleteDrawerOpen(false);
+                }}
+              >
+                {isTrashPage ? "Excluir Permanentemente" : "Mover para a lixeira"}
               </Button>
               <DrawerClose asChild>
                 <Button variant="outline">Cancelar</Button>
@@ -624,28 +323,29 @@ export function SelectionActionBar() {
         </DrawerContent>
       </Drawer>
 
+      {/* TAGS DRAWER */}
       <Drawer open={isTagDrawerOpen} onOpenChange={setIsTagDrawerOpen}>
         <DrawerContent>
           <div className="mx-auto w-full max-w-sm">
             <DrawerHeader>
               <DrawerTitle>Tags</DrawerTitle>
               <DrawerDescription>
-                {selectedNotesForTagging.length} nota(s) selecionada(s)
+                {actions.selectedNotes.length} nota(s) selecionada(s)
               </DrawerDescription>
             </DrawerHeader>
 
-            <div className="px-4 pb-2">
-              {tags.length === 0 ? (
-                <div className="text-sm text-muted-foreground">
+            <div className="px-4 pb-8">
+              {actions.tags.length === 0 ? (
+                <div className="text-sm text-muted-foreground text-center py-4">
                   Nenhuma tag cadastrada.
                 </div>
               ) : (
                 <div className="max-h-[45vh] overflow-auto flex flex-col gap-2">
-                  {tags.map((tag) => {
-                    const hasInAll = selectedNotesForTagging.every((n) =>
+                  {actions.tags.map((tag) => {
+                    const hasInAll = actions.selectedNotes.every((n) =>
                       (n.tagIds ?? []).includes(tag.id),
                     );
-                    const hasInAny = selectedNotesForTagging.some((n) =>
+                    const hasInAny = actions.selectedNotes.some((n) =>
                       (n.tagIds ?? []).includes(tag.id),
                     );
                     const actionLabel = hasInAll
@@ -660,8 +360,8 @@ export function SelectionActionBar() {
                         type="button"
                         variant="outline"
                         className="w-full justify-between"
-                        onClick={() => handleToggleTagOnSelection(tag.id)}
-                        disabled={isTagging || isTagsLoading || !canTag}
+                        onClick={() => actions.handleToggleTag(tag.id)}
+                        disabled={actions.isTagging}
                       >
                         <span className="inline-flex items-center gap-2">
                           <span
@@ -680,6 +380,81 @@ export function SelectionActionBar() {
                   })}
                 </div>
               )}
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* MOVE TO DRAWER */}
+      <Drawer open={isMoveDrawerOpen} onOpenChange={setIsMoveDrawerOpen}>
+        <DrawerContent>
+          <div className="mx-auto w-full max-w-md">
+            <DrawerHeader>
+              <DrawerTitle>Mover para</DrawerTitle>
+              <DrawerDescription>
+                Selecione a pasta de destino para {actions.totalCount} iten(s).
+              </DrawerDescription>
+            </DrawerHeader>
+
+            <div className="px-4 pb-8">
+              <ScrollArea className="h-[40vh]">
+                <div className="flex flex-col gap-1 pr-4">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-3 h-11"
+                    onClick={() => {
+                      actions.handleMoveToFolder(undefined);
+                      setIsMoveDrawerOpen(false);
+                    }}
+                  >
+                    <div className="size-8 rounded-md bg-muted flex items-center justify-center">
+                      <ChevronRight className="size-4 opacity-50" />
+                    </div>
+                    <div className="flex flex-col items-start text-left">
+                      <span className="text-sm font-medium">Raiz</span>
+                      <span className="text-[10px] text-muted-foreground">Sem pasta específica</span>
+                    </div>
+                  </Button>
+
+                  <Separator className="my-1" />
+
+                  {availableFolders.length === 0 ? (
+                    <div className="text-sm text-muted-foreground text-center py-8">
+                      Nenhuma pasta disponível para destino.
+                    </div>
+                  ) : (
+                    availableFolders.map((folder) => (
+                      <Button
+                        key={folder.id}
+                        variant="ghost"
+                        className="w-full justify-start gap-3 h-11"
+                        onClick={() => {
+                          actions.handleMoveToFolder(folder.id);
+                          setIsMoveDrawerOpen(false);
+                        }}
+                      >
+                        <div 
+                          className={cn(
+                            "size-8 rounded-md flex items-center justify-center text-white",
+                            folder.color || "bg-primary/20 text-primary"
+                          )}
+                          style={folder.color ? { backgroundColor: folder.color } : {}}
+                        >
+                          <FolderIcon className="size-4 fill-current" />
+                        </div>
+                        <div className="flex flex-col items-start text-left truncate">
+                          <span className="text-sm font-medium truncate">{folder.title}</span>
+                          {folder.parentId && (
+                            <span className="text-[10px] text-muted-foreground">
+                              Pasta filha
+                            </span>
+                          )}
+                        </div>
+                      </Button>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
             </div>
           </div>
         </DrawerContent>
