@@ -36,8 +36,8 @@ Todas as interfaces devem ser desenhadas primariamente para telas pequenas e ada
 
 ## 🎛️ 3. Componentes e Cards (Superfícies)
 
-- **Cards Padrão:** Use `rounded-2xl border bg-card p-5 sm:p-6 shadow-sm`.
-- **Interatividade Visual:** Adicione `transition-all hover:shadow-md` em Cards que possam ter alguma interatividade secundária para dar sensação de profundidade.
+- **Cards Padrão:** Use sempre a classe utilitária `.card-section` (definida em `globals.css`). Ela garante o estilo padronizado: `rounded-2xl border bg-card p-5 sm:p-6 shadow-sm transition-all hover:shadow-md`.
+- **Interatividade Visual:** O `.card-section` já inclui por padrão uma animação de profundidade no hover (`hover:shadow-md`). Mantenha este comportamento para cards interativos.
 - **Status Visual:** Para indicar se algo está ativo/inativo, evite depender só de texto. Use pequenos indicadores de cor (ex: bolinhas `bg-emerald-500` para ativo, `bg-amber-500` para atenção).
 - **Desativação (Disabled State):** Se algo não puder ser clicado (ex: ativar biometria sem PIN), explique o _motivo_ imediatamente abaixo com um texto de feedback (`text-xs text-destructive` ou `text-amber-500`).
 

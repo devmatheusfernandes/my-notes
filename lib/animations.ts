@@ -5,7 +5,7 @@ export const pageContainerVariants: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1, // Faz com que os itens filhos apareçam em sequência
+      staggerChildren: 0.1,
     },
   },
 };

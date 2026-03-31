@@ -25,7 +25,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!userId) return;
-    fetchSettings(userId).catch(() => {});
+    fetchSettings(userId).catch(() => { });
   }, [fetchSettings, userId]);
 
   const hasPin = useMemo(() => {
@@ -115,14 +115,11 @@ export default function SettingsPage() {
     }
   };
 
-  // Previne a renderização do layout antes de buscar as configurações iniciais
   const isInitializing = isLoading && !settings;
 
   if (isInitializing) {
     return (
-      <div className="flex min-h-[50vh] w-full items-center justify-center">
-        <Loading />
-      </div>
+      <Loading />
     );
   }
 
@@ -144,10 +141,9 @@ export default function SettingsPage() {
       </motion.div>
 
       <div className="space-y-6 sm:space-y-8">
-        {/* Sessão de PIN */}
         <motion.section
           variants={itemFadeInUpVariants}
-          className="rounded-2xl border bg-card p-5 sm:p-6 shadow-sm transition-all hover:shadow-md"
+          className="card-section"
         >
           <div className="mb-5">
             <h2 className="text-lg font-semibold text-foreground">
@@ -190,10 +186,9 @@ export default function SettingsPage() {
           </div>
         </motion.section>
 
-        {/* Sessão de Biometria */}
         <motion.section
           variants={itemFadeInUpVariants}
-          className="rounded-2xl border bg-card p-5 sm:p-6 shadow-sm transition-all hover:shadow-md"
+          className="card-section"
         >
           <div className="mb-5">
             <h2 className="text-lg font-semibold text-foreground">Biometria</h2>
@@ -211,7 +206,7 @@ export default function SettingsPage() {
               disabled={!userId || isLoading || isBiometricBusy || !hasPin}
               onCheckedChange={(checked) => {
                 const enabled = checked === true;
-                handleToggleBiometric(enabled).catch(() => {});
+                handleToggleBiometric(enabled).catch(() => { });
               }}
             />
             <div className="flex flex-col gap-1">
