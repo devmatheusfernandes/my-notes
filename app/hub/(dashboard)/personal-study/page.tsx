@@ -2,16 +2,14 @@
 
 import { useState } from "react";
 import { useJwpub } from "@/hooks/use-jwpub";
+import { JwpubMetadata } from "@/schemas/jwpubSchema";
 import {
-  Search,
   Plus,
   BookOpen,
   Trash2,
   ChevronRight,
-  Loader2,
   FileText
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -34,14 +32,14 @@ export default function PersonalStudyPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
-  const [pubToDelete, setPubToDelete] = useState<any>(null);
+  const [pubToDelete, setPubToDelete] = useState<JwpubMetadata | null>(null);
 
   const filteredPubs = publications?.filter(p =>
     p.title.toLowerCase().includes(search.toLowerCase()) ||
     p.symbol.toLowerCase().includes(search.toLowerCase())
   ) || [];
 
-  const handleDeleteClick = (pub: any, e: React.MouseEvent) => {
+  const handleDeleteClick = (pub: JwpubMetadata, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setPubToDelete(pub);
@@ -165,7 +163,7 @@ export default function PersonalStudyPage() {
               </div>
               <DrawerTitle className="text-xl">Remover publicação?</DrawerTitle>
               <DrawerDescription className="text-base pt-2">
-                Tem certeza que deseja remover <strong>"{pubToDelete?.title}"</strong>?
+                Tem certeza que deseja remover <strong>&quot;{pubToDelete?.title}&quot;</strong>?
                 Esta ação não poderá ser desfeita e os dados locais serão excluídos.
               </DrawerDescription>
             </DrawerHeader>

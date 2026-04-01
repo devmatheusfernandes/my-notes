@@ -1,4 +1,4 @@
-import { JwpubParagraph, JwpubReference } from "@/types/jwpub";
+import { JwpubParagraph, JwpubReference } from "@/schemas/jwpubSchema";
 
 export const jwpubParser = {
   parseChapterHtml(html: string): JwpubParagraph[] {

@@ -1,4 +1,4 @@
-import { JwpubPublication, JwpubParagraph } from "@/types/jwpub";
+import { JwpubParagraph } from "@/schemas/jwpubSchema";
 import { indexedDbService } from "@/services/indexedDbService";
 
 export interface JwpubParsedReference {

@@ -2,10 +2,10 @@
 
 import React, { useRef } from "react";
 import { useJwpub } from "@/hooks/use-jwpub";
-import { Upload, FileText, Loader2, Link2, X } from "lucide-react";
+import { Upload, FileText, Loader2 } from "lucide-react";
 
 export function JwpubUploader() {
-  const { uploadJwpub, isProcessing, symbols, deletePublication } = useJwpub();
+  const { uploadJwpub, isProcessing } = useJwpub();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useJwpub } from "@/hooks/use-jwpub";
-import { JwpubPublication } from "@/types/jwpub";
+import { JwpubPublication } from "@/schemas/jwpubSchema";
 import { indexedDbService } from "@/services/indexedDbService";
 import {
   ChevronLeft,
@@ -35,7 +35,7 @@ export default function JwpubReaderPage() {
   const [pub, setPub] = useState<JwpubPublication | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const initialChapter = parseInt(searchParams.get("c") || "1", 10);
+  const initialChapter = parseInt(searchParams.get("c") || "0", 10);
   const [currentChapterIndex, setCurrentChapterIndex] = useState(initialChapter);
   const [images, setImages] = useState<Record<string, string>>({});
   const [isChapterDrawerOpen, setIsChapterDrawerOpen] = useState(false);
@@ -44,25 +44,30 @@ export default function JwpubReaderPage() {
 
   useEffect(() => {
     if (!symbol) return;
+    const loadPublication = async () => {
+      setLoading(true);
 
-    setLoading(true);
-    getPublication(symbol as string).then(data => {
-      setPub(data);
+      try {
+        const data = await getPublication(symbol as string);
+        setPub(data);
 
-      const c = parseInt(searchParams.get("c") || "", 10);
-      if (isNaN(c) || c < 0 || (data && c >= data.chapters.length)) {
-        const defaultChapter = data && data.chapters.length > 1 ? 1 : 0;
-        setCurrentChapterIndex(defaultChapter);
-        router.replace(`?c=${defaultChapter}`);
-      } else {
-        setCurrentChapterIndex(c);
+        const c = parseInt(searchParams.get("c") || "", 10);
+
+        if (isNaN(c) || c < 0 || (data && c >= data.chapters.length)) {
+          const defaultChapter = 0;
+          setCurrentChapterIndex(defaultChapter);
+          router.replace(`?c=${defaultChapter}`);
+        } else {
+          setCurrentChapterIndex(c);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar publicação:", err);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setLoading(false);
-    }).catch(err => {
-      console.error(err);
-      setLoading(false);
-    });
+    loadPublication();
   }, [symbol, getPublication, router, searchParams]);
 
   const updateChapterIndex = useCallback((index: number) => {
@@ -79,7 +84,7 @@ export default function JwpubReaderPage() {
     if (!currentChapter) return;
 
     const loadImages = async () => {
-      const newImages: Record<string, string> = { ...images };
+      const fetchedImages: Record<string, string> = {};
 
       const imageIds = new Set<string>();
       const mediaMatches = currentChapter.html.matchAll(/jwpub-media:\/\/([^\s"'<>]+)/g);
@@ -95,28 +100,34 @@ export default function JwpubReaderPage() {
       }
 
       for (const id of Array.from(imageIds)) {
-        if (!newImages[id]) {
-          const imgData = await indexedDbService.getImage(id);
-          if (imgData) {
-            newImages[id] = URL.createObjectURL(imgData.blob);
-          }
+        const imgData = await indexedDbService.getImage(id);
+        if (imgData) {
+          fetchedImages[id] = URL.createObjectURL(imgData.blob);
         }
       }
-      setImages(newImages);
+
+      setImages(prev => {
+        if (Object.keys(fetchedImages).length === 0) return prev;
+        return { ...prev, ...fetchedImages };
+      });
     };
 
     loadImages();
   }, [currentChapter]);
 
   const handleNextChapter = useCallback(() => {
-    if (pub && currentChapterIndex < pub.chapters.length - 1) {
-      updateChapterIndex(currentChapterIndex + 1);
+    if (pub) {
+      const nextIdx = currentChapterIndex === 0 ? 2 : currentChapterIndex + 1;
+      if (nextIdx < pub.chapters.length) {
+        updateChapterIndex(nextIdx);
+      }
     }
   }, [pub, currentChapterIndex, updateChapterIndex]);
 
   const handlePrevChapter = useCallback(() => {
-    if (currentChapterIndex > 0) {
-      updateChapterIndex(currentChapterIndex - 1);
+    const prevIdx = currentChapterIndex === 2 ? 0 : currentChapterIndex - 1;
+    if (prevIdx >= 0) {
+      updateChapterIndex(prevIdx);
     }
   }, [currentChapterIndex, updateChapterIndex]);
 
@@ -169,21 +180,24 @@ export default function JwpubReaderPage() {
                 </DrawerHeader>
                 <ScrollArea className="flex-1 p-4 overflow-y-auto">
                   <div className="space-y-1 pb-10">
-                    {pub.chapters.map((chapter, idx) => (
-                      <DrawerClose key={chapter.id} asChild>
-                        <button
-                          onClick={() => updateChapterIndex(idx)}
-                          className={`w-full text-left p-3 rounded-xl transition-all flex items-center gap-3 ${currentChapterIndex === idx
-                            ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium border border-blue-100 dark:border-blue-800"
-                            : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                            }`}
-                        >
-                          <span className="text-xs opacity-50 w-6 tabular-nums">{idx + 1}</span>
-                          <span className="truncate">{chapter.title}</span>
-                          {currentChapterIndex === idx && <BookOpen className="w-4 h-4 ml-auto" />}
-                        </button>
-                      </DrawerClose>
-                    ))}
+                    {pub.chapters.slice(2).map((chapter, idx) => {
+                      const actualIdx = idx + 2;
+                      return (
+                        <DrawerClose key={chapter.id} asChild>
+                          <button
+                            onClick={() => updateChapterIndex(actualIdx)}
+                            className={`w-full text-left p-3 rounded-xl transition-all flex items-center gap-3 ${currentChapterIndex === actualIdx
+                              ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium border border-blue-100 dark:border-blue-800"
+                              : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                              }`}
+                          >
+                            <span className="text-xs opacity-50 w-6 tabular-nums">{idx + 1}</span>
+                            <span className="truncate text-sm">{chapter.title}</span>
+                            {currentChapterIndex === actualIdx && <BookOpen className="w-4 h-4 ml-auto" />}
+                          </button>
+                        </DrawerClose>
+                      );
+                    })}
                   </div>
                 </ScrollArea>
               </div>
@@ -221,17 +235,59 @@ export default function JwpubReaderPage() {
                 if (info.offset.x > 100) handlePrevChapter();
                 else if (info.offset.x < -100) handleNextChapter();
               }}
-              className="w-full max-w-2xl mx-auto"
+              className="w-full max-w-2xl mx-auto px-4"
             >
-              {currentChapter && (
-                <article>
-                  <ChapterRenderer
-                    html={currentChapter.html}
-                    images={images}
-                    footnotes={pub.footnotes || {}}
-                    onReferenceClick={(ref) => setActiveReference(ref)}
-                  />
-                </article>
+              {currentChapterIndex === 0 ? (
+                <div className="py-12">
+                  <div className="mb-10 text-center sm:text-left">
+                    <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] mb-2 block">Início</span>
+                    <h1 className="text-4xl sm:text-5xl font-black tracking-tight mb-4">{pub.title}</h1>
+                    <div className="flex items-center gap-2 text-zinc-500 text-sm font-medium">
+                      <BookOpen className="w-4 h-4" />
+                      <span>{pub.chapters.length - 2} Artigos disponíveis</span>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3">
+                    <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2 px-1">Índice de Artigos</h3>
+                    {pub.chapters.slice(2).map((chapter, idx) => {
+                      const actualIdx = idx + 2;
+                      return (
+                        <button
+                          key={chapter.id}
+                          onClick={() => updateChapterIndex(actualIdx)}
+                          className="w-full text-left p-5 rounded-2xl transition-all flex items-center gap-5 bg-zinc-50 dark:bg-zinc-800/40 hover:bg-white dark:hover:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/50 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-xl hover:shadow-blue-500/5 group"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 transition-colors tabular-nums">
+                            {idx + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className="block font-bold text-zinc-800 dark:text-zinc-200 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors truncate">
+                              {chapter.title}
+                            </span>
+                            <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium opacity-0 group-hover:opacity-100 transition-all">Ler agora</span>
+                          </div>
+                          <ChevronRight className="w-5 h-5 text-zinc-300 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                currentChapter && (
+                  <article className="py-8">
+                    <div className="mb-10 text-center">
+                      <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] mb-2 block">Capítulo {currentChapterIndex - 1}</span>
+                      <h1 className="text-3xl sm:text-4xl font-black tracking-tight">{currentChapter.title}</h1>
+                    </div>
+                    <ChapterRenderer
+                      html={currentChapter.html}
+                      images={images}
+                      footnotes={pub.footnotes || {}}
+                      onReferenceClick={(ref) => setActiveReference(ref)}
+                    />
+                  </article>
+                )
               )}
             </motion.div>
           </AnimatePresence>
@@ -243,7 +299,7 @@ export default function JwpubReaderPage() {
             size="icon"
             className="w-12 h-12 rounded-full shadow-lg opacity-40 hover:opacity-100 bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-none transition-all focus:ring-0"
             onClick={handleNextChapter}
-            disabled={currentChapterIndex === pub.chapters.length - 1}
+            disabled={currentChapterIndex >= pub.chapters.length - 1}
           >
             <ChevronRight className="w-6 h-6" />
           </Button>

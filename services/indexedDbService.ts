@@ -1,4 +1,4 @@
-import { JwpubPublication, JwpubImage } from "@/types/jwpub";
+import { JwpubPublication, JwpubImage, JwpubMetadata } from "@/schemas/jwpubSchema";
 
 const DB_NAME = "MyNotesJwpubDB";
 const DB_VERSION = 1;
@@ -64,7 +64,7 @@ export const indexedDbService = {
      });
   },
 
-  async getPublicationsMetadata(): Promise<Array<{ symbol: string; title: string; lastAccessed: string }>> {
+  async getPublicationsMetadata(): Promise<JwpubMetadata[]> {
     const db = await this.openDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(STORE_PUBS, "readonly");

@@ -1,12 +1,13 @@
 import JSZip from "jszip";
 import initSqlJs from "sql.js";
 import pako from "pako";
-import { JwpubPublication, JwpubChapter, JwpubImage } from "@/types/jwpub";
+import { JwpubPublication, JwpubChapter, JwpubImage, JwpubParagraph } from "@/schemas/jwpubSchema";
 import { indexedDbService } from "./indexedDbService";
+import { getErrorMessage } from "@/utils/getErrorMessage";
 
 const SQL_JS_WASM_URL = "https://unpkg.com/sql.js@1.14.1/dist/sql-wasm.wasm";
 
-async function getEncryptionKeys(db: any): Promise<{ key: CryptoKey; iv: Uint8Array } | null> {
+async function getEncryptionKeys(db: initSqlJs.Database): Promise<{ key: CryptoKey; iv: Uint8Array } | null> {
   try {
     const res = db.exec("SELECT MepsLanguageIndex, Symbol, Year, IssueTagNumber FROM Publication");
     if (res.length === 0 || res[0].values.length === 0) return null;
@@ -24,7 +25,7 @@ async function getEncryptionKeys(db: any): Promise<{ key: CryptoKey; iv: Uint8Ar
 
     const encoder = new TextEncoder();
     const data = encoder.encode(hashString);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data as any);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
     const hashArray = new Uint8Array(hashBuffer);
 
     const constantHex = "11cbb5587e32846d4c26790c633da289f66fe5842a3a585ce1bc3a294af5ada7";
@@ -43,7 +44,7 @@ async function getEncryptionKeys(db: any): Promise<{ key: CryptoKey; iv: Uint8Ar
 
     const key = await crypto.subtle.importKey(
       "raw",
-      aesKeyBytes as any,
+      aesKeyBytes,
       { name: "AES-CBC" },
       false,
       ["decrypt"]
@@ -59,7 +60,7 @@ async function getEncryptionKeys(db: any): Promise<{ key: CryptoKey; iv: Uint8Ar
 export const jwpubService = {
   async processFile(file: File): Promise<JwpubPublication> {
     const zip = await JSZip.loadAsync(file);
-    let dbFiles: string[] = [];
+    const dbFiles: string[] = [];
     const allZipEntries: Record<string, JSZip.JSZipObject> = {};
 
     zip.forEach((relativePath, zipEntry) => {
@@ -118,14 +119,14 @@ export const jwpubService = {
           if (row[2] instanceof Uint8Array) {
             let bytes = row[2];
             if (cryptoKeys && bytes.length > 0 && bytes[0] !== 0x3c) {
-               const decryptedBuffer = await crypto.subtle.decrypt(
-                 { name: "AES-CBC", iv: cryptoKeys.iv as any },
-                 cryptoKeys.key,
-                 bytes as any
-               );
-               bytes = pako.inflate(new Uint8Array(decryptedBuffer));
+              const decryptedBuffer = await crypto.subtle.decrypt(
+                { name: "AES-CBC", iv: cryptoKeys.iv as BufferSource },
+                cryptoKeys.key,
+                bytes as BufferSource
+              );
+              bytes = pako.inflate(new Uint8Array(decryptedBuffer));
             } else if (bytes.length > 0 && bytes[0] !== 0x3c) {
-               try { bytes = pako.inflate(bytes); } catch(e){}
+              try { bytes = pako.inflate(bytes); } catch (e) { console.log(getErrorMessage(e)) }
             }
             content = new TextDecoder().decode(bytes);
           } else {
@@ -155,13 +156,13 @@ export const jwpubService = {
               let bytes = row[1];
               if (cryptoKeys && bytes.length > 0 && bytes[0] !== 0x3c) {
                 const decryptedBuffer = await crypto.subtle.decrypt(
-                  { name: "AES-CBC", iv: cryptoKeys.iv as any },
+                  { name: "AES-CBC", iv: cryptoKeys.iv as BufferSource },
                   cryptoKeys.key,
-                  bytes as any
+                  bytes as BufferSource
                 );
                 bytes = pako.inflate(new Uint8Array(decryptedBuffer));
               } else if (bytes.length > 0 && bytes[0] !== 0x3c) {
-                try { bytes = pako.inflate(bytes); } catch(e){}
+                try { bytes = pako.inflate(bytes); } catch (e) { console.log(getErrorMessage(e)) }
               }
               fContent = new TextDecoder().decode(bytes);
             } else {
@@ -197,37 +198,37 @@ export const jwpubService = {
     return processedPublication;
   },
 
-  processContentHtml(html: string): { processedHtml: string, paragraphs: any[] } {
+  processContentHtml(html: string): { processedHtml: string, paragraphs: JwpubParagraph[] } {
     if (typeof window === "undefined") return { processedHtml: html, paragraphs: [] };
-    
+
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
-    const paragraphs: any[] = [];
+    const paragraphs: JwpubParagraph[] = [];
     let pidCounter = 0;
 
     const walker = document.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT);
     let node = walker.nextNode() as Element | null;
-    
+
     const tagsToTag = ['p', 'h1', 'h2', 'h3', 'h4', 'li', 'blockquote', 'caption', 'dt', 'dd'];
 
     while (node) {
       const tag = node.tagName.toLowerCase();
-      
+
       // Normalize alignment classes for floating images
       const classList = Array.from(node.classList);
       const isEast = classList.some(c => c.includes('east') || c === 'right');
       const isWest = classList.some(c => c.includes('west') || c === 'left');
-      
+
       if (isEast) node.classList.add('jw-align-right');
       if (isWest) node.classList.add('jw-align-left');
 
       if (tagsToTag.includes(tag)) {
         const pid = `p${pidCounter++}`;
         node.setAttribute('data-pid', pid);
-        
+
         paragraphs.push({
           index: pidCounter - 1,
-          type: tag as any,
+          type: this.normalizeTagType(tag),
           content: node.textContent?.trim() || "",
           html: node.innerHTML,
           images: [],
@@ -259,5 +260,13 @@ export const jwpubService = {
 
     await indexedDbService.saveImage(image);
     return fileName;
+  },
+
+  normalizeTagType(tag: string): JwpubParagraph["type"] {
+    const validTypes: JwpubParagraph["type"][] = ["p", "h1", "h2", "h3", "li", "blockquote", "caption"];
+    if (validTypes.includes(tag as JwpubParagraph["type"])) {
+      return tag as JwpubParagraph["type"];
+    }
+    return "p";
   }
 };

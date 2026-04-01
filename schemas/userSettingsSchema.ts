@@ -6,6 +6,7 @@ export const userSettings = z.object({
   pinHash: z.string().nullable().default(null),
   biometricEnabled: z.boolean().default(false),
   biometricCredentialId: z.string().nullable().default(null),
+
   // Backup Settings
   autoBackupEnabled: z.boolean().default(false),
   autoBackupTime: z.string().default("02:00"),

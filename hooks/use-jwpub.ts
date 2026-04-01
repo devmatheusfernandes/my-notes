@@ -3,6 +3,7 @@ import useSWR from "swr";
 import { jwpubService } from "@/services/jwpubService";
 import { indexedDbService } from "@/services/indexedDbService";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/utils/getErrorMessage";
 
 const CACHE_KEY = "jwpub_publications";
 
@@ -25,9 +26,10 @@ export function useJwpub() {
       refresh();
       toast.success(`Publicação ${pub.symbol} carregada com sucesso!`);
       return pub;
-    } catch (err: any) {
+    } catch (err) {
+      const message = getErrorMessage(err);
       console.error("Failed to upload JWPUB:", err);
-      toast.error(err.message || "Falha ao processar arquivo JWPUB.");
+      toast.error(message || "Falha ao processar arquivo JWPUB.");
       throw err;
     } finally {
       setIsProcessing(false);
@@ -44,6 +46,7 @@ export function useJwpub() {
       refresh();
       toast.success("Publicação removida.");
     } catch (err) {
+      getErrorMessage(err);
       toast.error("Erro ao remover publicação.");
     }
   }, [refresh]);
