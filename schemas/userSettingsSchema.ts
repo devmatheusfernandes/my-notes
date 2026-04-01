@@ -13,6 +13,7 @@ export const userSettings = z.object({
   autoBackupFrequency: z.enum(["daily", "weekly", "monthly"]).default("daily"),
   lastBackupAt: z.string().nullable().default(null),
   driveRefreshToken: z.string().nullable().default(null),
+
   createdAt: z.string(),
   updatedAt: z.string(),
 });

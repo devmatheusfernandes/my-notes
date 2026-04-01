@@ -4,10 +4,12 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useJwpub } from "@/hooks/use-jwpub";
+import { useSettings } from "@/hooks/use-settings";
+import { useAuthStore } from "@/store/authStore";
 import { JwpubPublication } from "@/schemas/jwpubSchema";
 import { indexedDbService } from "@/services/indexedDbService";
 import { Loading } from "@/components/ui/loading";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Info, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // Refactored Components
@@ -18,30 +20,37 @@ import { ReaderNextButton } from "@/components/jwpub/ReaderNextButton";
 import { ReaderHome } from "@/components/jwpub/ReaderHome";
 import { ChapterRenderer } from "@/components/jwpub/ChapterRenderer";
 import { ChapterCover } from "@/components/jwpub/ChapterCover";
-import { ReferenceModal } from "@/components/jwpub/ReferenceModal";
+import { SidebarLayout } from "@/components/layout/SidebarLayout";
 
 export default function JwpubReaderPage() {
   const { symbol } = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { getPublication } = useJwpub();
+  const { user } = useAuthStore();
+  const { fetchSettings } = useSettings();
 
-  // Local Data State
   const [pub, setPub] = useState<JwpubPublication | null>(null);
   const [loading, setLoading] = useState(true);
   const [images, setImages] = useState<Record<string, string>>({});
 
-  // Store State
   const {
     currentChapterIndex,
     setCurrentChapterIndex,
     direction,
     setDirection,
-    setActiveReference,
+    activeReferences,
+    addReference,
+    removeReference,
     reset
   } = useReaderStore();
 
-  // 1. Initial Load & Sync with URL
+  useEffect(() => {
+    if (user?.uid) {
+      fetchSettings(user.uid);
+    }
+  }, [user?.uid, fetchSettings]);
+
   useEffect(() => {
     if (!symbol) return;
 
@@ -67,11 +76,9 @@ export default function JwpubReaderPage() {
 
     loadPublication();
 
-    // Cleanup store on unmount
     return () => reset();
   }, [symbol, getPublication, router, searchParams, setCurrentChapterIndex, reset]);
 
-  // 2. Navigation Helper
   const updateChapterIndex = useCallback((index: number) => {
     const newDir = index > currentChapterIndex ? 1 : -1;
     setDirection(newDir);
@@ -80,7 +87,6 @@ export default function JwpubReaderPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentChapterIndex, router, setCurrentChapterIndex, setDirection]);
 
-  // 3. Image Loading Logic
   const currentChapter = pub?.chapters[currentChapterIndex];
 
   useEffect(() => {
@@ -113,7 +119,6 @@ export default function JwpubReaderPage() {
     loadImages();
   }, [currentChapter]);
 
-  // Extract first image ID for the cover
   const firstImageId = useMemo(() => {
     if (!currentChapter) return null;
     const mediaMatch = currentChapter.html.match(/jwpub-media:\/\/([^\s"'<>]+)/);
@@ -125,7 +130,6 @@ export default function JwpubReaderPage() {
     return null;
   }, [currentChapter]);
 
-  // 4. Swipe Handlers
   const handleNextChapter = useCallback(() => {
     if (pub) {
       const nextIdx = currentChapterIndex === 0 ? 2 : currentChapterIndex + 1;
@@ -152,57 +156,131 @@ export default function JwpubReaderPage() {
     );
   }
 
+  const sidebarContent = (
+    <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+      {activeReferences.length > 0 ? (
+        activeReferences.map((ref) => (
+          <div key={ref.id} className="group relative bg-zinc-50/50 dark:bg-zinc-800/20 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800 transition-all hover:bg-white dark:hover:bg-zinc-800">
+            <div className="flex items-center justify-between mb-3 border-b border-zinc-100 dark:border-zinc-800/50 pb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                  <Info className="w-3 px-0 text-blue-600 dark:text-blue-400" />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                  {ref.label}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => removeReference(ref.id)}
+              >
+                <X className="w-3 h-3 text-zinc-400" />
+              </Button>
+            </div>
+            <div className="jwpub-content text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+              {ref.content.startsWith("jwpub://b/") ? (
+                <div className="py-2 text-muted-foreground italic text-[11px]">
+                  Referência Bíblica ativa.
+                </div>
+              ) : (
+                <div dangerouslySetInnerHTML={{ __html: ref.content }} />
+              )}
+            </div>
+          </div>
+        ))
+      ) : (
+        <div className="h-40 flex flex-col items-center justify-center text-center px-6">
+          <BookOpen className="w-8 h-8 text-zinc-200 dark:text-zinc-800 mb-3" />
+          <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-300 dark:text-zinc-700">
+            Notas & Referências
+          </p>
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-600 mt-1">
+            Clique em uma nota ou texto bíblico para visualizar aqui.
+          </p>
+        </div>
+      )}
+
+      {currentChapterIndex > 0 && (
+        <div className="pt-8 border-t border-zinc-100 dark:border-zinc-800/50">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-4 px-2">
+            Metadados do Artigo
+          </h4>
+          <div className="space-y-4 px-2">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-zinc-500 font-medium">Título Original</span>
+              <span className="text-xs font-bold font-serif italic text-zinc-800 dark:text-zinc-300">
+                {currentChapter?.title}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-zinc-500 font-medium">Publicação</span>
+              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-300">
+                {pub.title}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div className="flex flex-col h-full">
+    <SidebarLayout sidebarContent={sidebarContent}>
       <ReaderHeader pub={pub} />
 
-      <div className="flex-1 flex w-full max-w-5xl mx-auto relative min-h-screen shadow-sm">
-        <ReaderPrevButton />
+      <div className="flex-1 overflow-y-auto no-scrollbar">
+        <div className="flex w-full max-w-5xl mx-auto relative min-h-screen">
+          <ReaderPrevButton />
 
-        <main className="flex-1 min-w-0 relative">
-          <AnimatePresence mode="wait" custom={direction}>
-            <motion.div
-              key={currentChapterIndex}
-              custom={direction}
-              initial={{ opacity: 0, x: direction * 250 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: direction * -250 }}
-              transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.2}
-              onDragEnd={(_, info) => {
-                if (info.offset.x > 100) handlePrevChapter();
-                else if (info.offset.x < -100) handleNextChapter();
-              }}
-              className="w-full max-w-2xl mx-auto"
-            >
-              {currentChapterIndex === 0 ? (
-                <ReaderHome pub={pub} onSelectChapter={updateChapterIndex} />
-              ) : (
-                currentChapter && (
-                  <>
-                    <ChapterCover imageUrl={firstImageId ? images[firstImageId] : undefined} />
-                    <article className="px-4 sm:px-0">
-                      <ChapterRenderer
-                        html={currentChapter.html}
-                        images={images}
-                        footnotes={pub.footnotes || {}}
-                        onReferenceClick={setActiveReference}
-                        skipImageId={firstImageId || undefined}
-                      />
-                    </article>
-                  </>
-                )
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </main>
+          <main className="flex-1 min-w-0 relative">
+            <AnimatePresence mode="wait" custom={direction}>
+              <motion.div
+                key={currentChapterIndex}
+                custom={direction}
+                initial={{ opacity: 0, x: direction * 250 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: direction * -250 }}
+                transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.2}
+                onDragEnd={(_, info) => {
+                  if (info.offset.x > 100) handlePrevChapter();
+                  else if (info.offset.x < -100) handleNextChapter();
+                }}
+                className="w-full max-w-2xl mx-auto"
+              >
+                {currentChapterIndex === 0 ? (
+                  <ReaderHome pub={pub} onSelectChapter={updateChapterIndex} />
+                ) : (
+                  currentChapter && (
+                    <>
+                      <ChapterCover imageUrl={firstImageId ? images[firstImageId] : undefined} />
+                      <article className="px-4 sm:px-0 mb-4">
+                        <ChapterRenderer
+                          html={currentChapter.html}
+                          images={images}
+                          footnotes={pub.footnotes || {}}
+                          onReferenceClick={(ref) => addReference({
+                            label: ref.label,
+                            content: ref.url,
+                            type: ref.url.startsWith("jwpub://b/") ? "bible" : "footnote"
+                          })}
+                          skipImageId={firstImageId || undefined}
+                        />
+                      </article>
+                    </>
+                  )
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </main>
 
-        <ReaderNextButton pub={pub} />
+          <ReaderNextButton pub={pub} />
+        </div>
       </div>
-
-      <ReferenceModal />
-    </div>
+    </SidebarLayout>
   );
 }
