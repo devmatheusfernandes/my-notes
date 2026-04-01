@@ -8,7 +8,6 @@ export const jwpubParser = {
     const doc = parser.parseFromString(html, "text/html");
     const paragraphs: JwpubParagraph[] = [];
 
-    // Select all top-level elements that usually contain text content
     const elements = Array.from(doc.body.children);
     let index = 0;
 
@@ -46,9 +45,8 @@ export const jwpubParser = {
       case "figcaption":
       case "cite": return "caption";
       default:
-        // Try to infer from class or nesting if tag is div
         if (tag === "div" && el.classList.contains("p")) return "p";
-        return "p"; // Fallback to 'p' if it has text
+        return "p";
     }
   },
 
@@ -62,7 +60,6 @@ export const jwpubParser = {
       if (match) {
         images.push(match[1]);
       } else if (src && !src.startsWith("data:")) {
-        // Fallback for simple filenames if already processed
         images.push(src.split("/").pop()!);
       }
     }

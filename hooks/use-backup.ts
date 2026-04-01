@@ -28,7 +28,6 @@ export const useBackup = (userId: string) => {
     } catch (err: unknown) {
       const errorMessage = backupService.getErrorDetail(err);
       console.warn("Could not fetch backups from Drive:", errorMessage);
-      // We don't toast on auto-fetch to avoid annoying the user if not linked
       setBackups([]);
     } finally {
       setLoading(false);
@@ -71,19 +70,12 @@ export const useBackup = (userId: string) => {
     try {
       const provider = new GoogleAuthProvider();
       provider.addScope("https://www.googleapis.com/auth/drive.file");
-
-      // Attempt to get refresh token for GH Actions
-      // NOTE: This requires the App to be configured as a Web App in Google Cloud Console
-      // and the redirect URI to be reachable. Firebase handles this mostly.
       provider.setCustomParameters({
         access_type: 'offline',
         prompt: 'consent'
       });
 
       const result = await signInWithPopup(auth, provider);
-
-      // Attempt to get refresh token for GH Actions
-      // In Firebase _tokenResponse usually contains the refreshToken if offline is requested
       const refreshToken = (result as UserCredential & { _tokenResponse?: { refreshToken?: string } })._tokenResponse?.refreshToken || null;
 
       await settingsService.updateUserSettings(userId, {

@@ -107,8 +107,8 @@ export function useSelectionActions({
       success: () => {
         setIsDeleting(false);
         clearSelection();
-        fetchNotes().catch(() => {});
-        fetchFolders().catch(() => {});
+        fetchNotes().catch(() => { });
+        fetchFolders().catch(() => { });
         return isTrashPage
           ? `${successCount} iten(s) excluído(s) permanentemente.`
           : `${successCount} iten(s) movido(s) para a lixeira.`;
@@ -141,8 +141,8 @@ export function useSelectionActions({
       success: () => {
         setIsArchiving(false);
         clearSelection();
-        fetchNotes().catch(() => {});
-        fetchFolders().catch(() => {});
+        fetchNotes().catch(() => { });
+        fetchFolders().catch(() => { });
         return isUnarchiving ? `${successCount} iten(s) desarquivado(s).` : `${successCount} iten(s) arquivado(s).`;
       },
       error: () => {
@@ -158,7 +158,7 @@ export function useSelectionActions({
       loading: "Fixando notas...",
       success: () => {
         clearSelection();
-        fetchNotes().catch(() => {});
+        fetchNotes().catch(() => { });
         return `${selectedNoteIds.size} nota(s) fixada(s).`;
       },
       error: "Erro ao fixar notas.",
@@ -204,8 +204,8 @@ export function useSelectionActions({
       success: () => {
         setIsLocking(false);
         clearSelection();
-        fetchNotes().catch(() => {});
-        fetchFolders().catch(() => {});
+        fetchNotes().catch(() => { });
+        fetchFolders().catch(() => { });
         return isLocked ? "Item(ns) trancado(s)." : "Item(ns) destrancado(s).";
       },
       error: () => {
@@ -234,7 +234,7 @@ export function useSelectionActions({
       success: () => {
         setIsTagging(false);
         clearSelection();
-        fetchNotes().catch(() => {});
+        fetchNotes().catch(() => { });
         return allHaveTag ? "Tag removida." : "Tag aplicada.";
       },
       error: "Erro ao processar tags.",
@@ -253,8 +253,8 @@ export function useSelectionActions({
       success: () => {
         setIsMoving(false);
         clearSelection();
-        fetchNotes().catch(() => {});
-        fetchFolders().catch(() => {});
+        fetchNotes().catch(() => { });
+        fetchFolders().catch(() => { });
         return "Item(ns) movidos com sucesso.";
       },
       error: () => {
@@ -267,16 +267,10 @@ export function useSelectionActions({
   const getFullContentAsText = useCallback(() => {
     let fullText = "";
 
-    // Sort items by title if they belong together or just append
     selectedNotes.forEach((n) => {
       const contentText = n.type === "pdf" ? "[Arquivo PDF]" : tiptapToText(n.content);
       fullText += `${n.title}\n${"=".repeat(n.title.length)}\n${contentText}\n\n`;
     });
-
-    // For folders, it's more complex since we need sub-notes.
-    // Instead of doing recursive fetching here, let's just warn or handle currently loaded ones.
-    // Actually, in the current app, we only have notes/folders that are in the state.
-    // So we'll find notes that are in the selected folders.
     selectedFolders.forEach((f) => {
       const folderNotes = notes.filter((n) => n.folderId === f.id);
       fullText += `[PASTA] ${f.title}\n${"=".repeat(f.title.length + 8)}\n`;

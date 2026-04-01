@@ -100,7 +100,6 @@ export const jwpubService = {
 
     const cryptoKeys = await getEncryptionKeys(db);
 
-    // Get basic metadata
     const pubRes = db.exec("SELECT Symbol, Title FROM Publication");
     const symbol = pubRes[0].values[0][0] as string;
     const title = pubRes[0].values[0][1] as string;
@@ -133,7 +132,6 @@ export const jwpubService = {
             content = String(row[2]);
           }
 
-          // Inject data-pid attributes for paragraph tracking
           const { processedHtml, paragraphs: pMeta } = this.processContentHtml(content);
 
           chapters.push({
@@ -145,7 +143,6 @@ export const jwpubService = {
         }
       }
 
-      // Fetch Footnotes if available
       try {
         const footRes = db.exec("SELECT FootnoteId, Content FROM Footnote");
         if (footRes.length > 0) {
@@ -178,7 +175,6 @@ export const jwpubService = {
       db.close();
     }
 
-    // Process media and save to IndexedDB bucket
     const imageExtensions = ['jpg', 'jpeg', 'png', 'svg', 'webp', 'gif'];
     for (const fileName of Object.keys(allZipEntries)) {
       const ext = fileName.split('.').pop()?.toLowerCase() || '';
@@ -214,7 +210,6 @@ export const jwpubService = {
     while (node) {
       const tag = node.tagName.toLowerCase();
 
-      // Normalize alignment classes for floating images
       const classList = Array.from(node.classList);
       const isEast = classList.some(c => c.includes('east') || c === 'right');
       const isWest = classList.some(c => c.includes('west') || c === 'left');

@@ -3,7 +3,6 @@ import { noteService } from "@/services/noteService";
 import { folderService } from "@/services/folderService";
 import { tagService } from "@/services/tagService";
 
-// Fetcher functions using existing services
 const notesFetcher = (userId: string) => noteService.getNotesByUser(userId);
 const foldersFetcher = (userId: string) => folderService.getFoldersByUser(userId);
 const tagsFetcher = (userId: string) => tagService.getTagsByUser(userId);
@@ -13,8 +12,8 @@ export function useNotesSWR(userId: string | null) {
     userId ? [`notes`, userId] : null,
     ([, id]) => notesFetcher(id),
     {
-      revalidateOnFocus: false, // Opcional: para evitar refreshes excessivos
-      dedupingInterval: 10000, // 10 segundos
+      revalidateOnFocus: false,
+      dedupingInterval: 10000,
     },
   );
 
