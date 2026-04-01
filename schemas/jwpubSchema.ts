@@ -36,7 +36,7 @@ export const jwpubMetadataSchema = z.object({
 });
 
 export const jwpubImageSchema = z.object({
-  id: z.string(),      // The jwpub-media:// name or a random ID
+  id: z.string(),
   blob: z.instanceof(Blob),
   mimeType: z.string(),
 });
