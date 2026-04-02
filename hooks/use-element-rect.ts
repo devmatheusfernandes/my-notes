@@ -50,7 +50,7 @@ const isClientSide = (): boolean => !isSSR
  * @param options Configuration options for element rect tracking
  * @returns The current bounding rectangle of the element
  */
-export function useElementRect({
+function useElementRect({
   element,
   enabled = true,
   throttleMs = 100,
@@ -152,12 +152,3 @@ export function useBodyRect(
   })
 }
 
-/**
- * Convenience hook for tracking a ref element's rect
- */
-export function useRefRect<T extends Element>(
-  ref: React.RefObject<T>,
-  options: Omit<ElementRectOptions, "element"> = {}
-): RectState {
-  return useElementRect({ ...options, element: ref })
-}

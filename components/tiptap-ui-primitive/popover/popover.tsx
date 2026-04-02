@@ -1,7 +1,7 @@
 "use client"
 
 import * as PopoverPrimitive from "@radix-ui/react-popover"
-import { cn } from "@/lib/tiptap-utils"
+import { cn } from "@/lib/utils"
 import "@/components/tiptap-ui-primitive/popover/popover.scss"
 
 function Popover({
@@ -35,3 +35,5 @@ function PopoverContent({
 }
 
 export { Popover, PopoverTrigger, PopoverContent }
+
+

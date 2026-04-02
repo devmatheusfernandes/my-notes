@@ -1,14 +1,7 @@
 "use client";
-
-import React from "react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { type BibleBook } from "@/schemas/bibleSchema";
 
-interface BibleBook {
-  name: string;
-  short: string;
-  chapters: number;
-}
 
 const OT_BOOKS: BibleBook[] = [
   { name: "Gênesis", short: "Ge", chapters: 50 },
@@ -97,7 +90,7 @@ const getShade = (index: number, isNT: boolean) => {
 };
 
 interface BibleSelectorGridProps {
-  onSelectBook: (book: BibleBook) => void;
+  onSelectBook: (book: BibleBook | null) => void;
   onSelectChapter: (book: BibleBook, chapter: number) => void;
   selectedBook: BibleBook | null;
 }
@@ -108,7 +101,7 @@ export function BibleSelectorGrid({
   selectedBook: propSelectedBook,
 }: BibleSelectorGridProps) {
   // If we only have a book name (e.g. from URL), find the full book metadata
-  const selectedBook = propSelectedBook && !propSelectedBook.chapters 
+  const selectedBook = propSelectedBook && !propSelectedBook.chapters
     ? [...OT_BOOKS, ...NT_BOOKS].find((b: { name: string }) => b.name === propSelectedBook.name) || null
     : propSelectedBook;
 
@@ -117,7 +110,7 @@ export function BibleSelectorGrid({
       <div className="flex flex-col gap-6 p-4 animate-in fade-in slide-in-from-bottom-4">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => onSelectBook(null as any)}
+            onClick={() => onSelectBook(null)}
             className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
           >
             ←
@@ -126,7 +119,7 @@ export function BibleSelectorGrid({
             {selectedBook.name}
           </h2>
         </div>
-        
+
         <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
           {Array.from({ length: selectedBook.chapters }, (_, i) => i + 1).map((chapter) => (
             <button

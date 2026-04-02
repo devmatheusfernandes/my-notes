@@ -1,6 +1,4 @@
 "use client";
-
-import React, { useState } from "react";
 import { Search, Globe, ChevronLeft, X, PanelRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -30,9 +28,9 @@ export function BibleHeader({
   onBack,
   onOpenTranslations,
   isSearchActive: isSearching = false,
-  setIsSearchActive: setIsSearching = () => {},
+  setIsSearchActive: setIsSearching = () => { },
   isSidebarOpen = true,
-  onToggleSidebar = () => {},
+  onToggleSidebar = () => { },
 }: BibleHeaderProps) {
   const handleSearchToggle = () => {
     setIsSearching(!isSearching);

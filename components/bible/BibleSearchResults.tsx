@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, Info, ExternalLink, BookOpen } from "lucide-react";
+import { Info, ExternalLink, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 import type { StrongResult } from "@/data/scheme/strong";
 
 interface SearchResult {
@@ -34,7 +33,7 @@ export function BibleSearchResults({
       setStrongResults([]);
       return;
     }
-    
+
     const handleSearch = async () => {
       setLoading(true);
       try {
@@ -85,7 +84,7 @@ export function BibleSearchResults({
               <BookOpen className="w-3 h-3" />
               Ocorrências no Texto
             </h3>
-            
+
             <div className="space-y-4">
               {results.map((r, i) => (
                 <motion.button
@@ -107,7 +106,7 @@ export function BibleSearchResults({
                   </p>
                 </motion.button>
               ))}
-              
+
               {!loading && results.length === 0 && (
                 <div className="p-12 text-center bg-zinc-100 dark:bg-zinc-900 rounded-3xl text-zinc-500">
                   Nenhuma ocorrência encontrada para esta busca no texto.
@@ -122,7 +121,7 @@ export function BibleSearchResults({
               <Info className="w-3 h-3" />
               Dicionário Strongs
             </h3>
-            
+
             <div className="space-y-4">
               {strongResults.map((s, i) => (
                 <motion.div
@@ -153,7 +152,7 @@ export function BibleSearchResults({
                   )}
                 </motion.div>
               ))}
-              
+
               {!loading && strongResults.length === 0 && (
                 <div className="p-8 text-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-400 text-sm">
                   Nenhuma definição Strong encontrada.

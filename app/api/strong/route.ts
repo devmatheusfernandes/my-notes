@@ -3,6 +3,25 @@ import path from "path";
 import fs from "fs";
 import Database from "better-sqlite3";
 import type { StrongResult } from "@/data/scheme/strong";
+ 
+ interface GreekRow {
+    id: string;
+    lemma: string;
+    transliteration: string;
+    pronunciation: string;
+    definition: string;
+    kjv_def: string;
+    derivation: string;
+}
+
+interface HebrewRow {
+    id: string;
+    lemma: string;
+    transliteration: string;
+    pronunciation: string;
+    exegesis: string;
+    translation: string;
+}
 
 export const runtime = "nodejs";
 
@@ -52,7 +71,7 @@ export async function GET(request: Request) {
 
             if (type === 'G') {
                 const idStr = num.toString().padStart(5, '0');
-                const row = db.prepare("SELECT * FROM greek WHERE id = ?").get(idStr) as any;
+                const row = db.prepare("SELECT * FROM greek WHERE id = ?").get(idStr) as GreekRow | undefined;
                 if (row) {
                     results.push({
                         id: `G${parseInt(row.id, 10)}`,
@@ -68,7 +87,7 @@ export async function GET(request: Request) {
                 }
             } else {
                 const idStr = num.toString();
-                const row = db.prepare("SELECT * FROM hebrew WHERE id = ?").get(idStr) as any;
+                const row = db.prepare("SELECT * FROM hebrew WHERE id = ?").get(idStr) as HebrewRow | undefined;
                 if (row) {
                     results.push({
                         id: `H${row.id}`,
@@ -88,7 +107,7 @@ export async function GET(request: Request) {
         SELECT * FROM greek 
         WHERE lemma LIKE ? OR transliteration LIKE ? OR definition LIKE ? 
         LIMIT 20
-      `).all(`%${query}%`, `%${query}%`, `%${query}%`) as any[];
+      `).all(`%${query}%`, `%${query}%`, `%${query}%`) as GreekRow[];
 
             for (const row of greekRows) {
                 results.push({
@@ -108,7 +127,7 @@ export async function GET(request: Request) {
         SELECT * FROM hebrew 
         WHERE lemma LIKE ? OR transliteration LIKE ? OR exegesis LIKE ? 
         LIMIT 20
-      `).all(`%${query}%`, `%${query}%`, `%${query}%`) as any[];
+      `).all(`%${query}%`, `%${query}%`, `%${query}%`) as HebrewRow[];
 
             for (const row of hebrewRows) {
                 results.push({

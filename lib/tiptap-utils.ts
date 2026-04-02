@@ -43,11 +43,6 @@ export const SR_ONLY = {
   borderWidth: 0,
 } as const
 
-export function cn(
-  ...classes: (string | boolean | undefined | null)[]
-): string {
-  return classes.filter(Boolean).join(" ")
-}
 
 /**
  * Determines if the current platform is macOS

@@ -1,5 +1,4 @@
 import { indexedDbService } from "./indexedDbService";
-import { JwpubPublication } from "@/schemas/jwpubSchema";
 import { BIBLE_BOOKS_PT } from "@/data/constants/bible-books-pt";
 
 export interface PublicationContent {
@@ -20,7 +19,7 @@ export const publicationService = {
     const parts = url.replace("jwpub://b/", "").split("/");
     const version = parts[0]; // NWTR, etc
     const ref = parts[1] || "";
-    
+
     // 45:12:11 or 23:55:12:15 or 50:4:6:4:7
     const [bookIdStr, chapterStr, ...versesStr] = ref.split(":");
     const bookNum = parseInt(bookIdStr, 10);
@@ -67,12 +66,12 @@ export const publicationService = {
    */
   parseJwpubUrl(url: string) {
     if (!url.startsWith("jwpub://p/")) return null;
-    
+
     // Remove prefix and split
     const parts = url.replace("jwpub://p/", "").split("/");
     const symbol = parts[0];
     const ref = parts[1] || "0";
-    
+
     const [chapterStr, paragraphStr] = ref.split(":");
     return {
       symbol,

@@ -10,6 +10,7 @@ import { BibleSearchResults } from "@/components/bible/BibleSearchResults";
 import { BibleTranslationDrawer } from "@/components/bible/BibleTranslationDrawer";
 import { CrossReferencesSidebar } from "@/components/bible/CrossReferencesSidebar";
 import { useReaderStore } from "@/store/readerStore";
+import { type BibleBook, type Verse } from "@/schemas/bibleSchema";
 
 function BibleContent() {
     const router = useRouter();
@@ -22,7 +23,7 @@ function BibleContent() {
     const verse = parseInt(searchParams.get("vs") || "0", 10);
     const q = searchParams.get("q") || "";
 
-    const [verses, setVerses] = useState<any[]>([]);
+    const [verses, setVerses] = useState<Verse[]>([]);
     const [loading, setLoading] = useState(false);
     const [isSearchActive, setIsSearchActive] = useState(!!q);
     const [isTranslationsOpen, setIsTranslationsOpen] = useState(false);
@@ -62,7 +63,7 @@ function BibleContent() {
         router.push(`${pathname}?${newParams.toString()}`);
     };
 
-    const handleSelectBook = (selectedBook: any) => {
+    const handleSelectBook = (selectedBook: BibleBook | null) => {
         if (!selectedBook) {
             updateParams({ b: null, c: null, vs: null });
         } else {
@@ -70,7 +71,7 @@ function BibleContent() {
         }
     };
 
-    const handleSelectChapter = (selectedBook: any, selectedChapter: number) => {
+    const handleSelectChapter = (selectedBook: BibleBook, selectedChapter: number) => {
         updateParams({ b: selectedBook.name, c: selectedChapter, vs: null, q: null });
         setIsSearchActive(false);
     };
@@ -91,7 +92,7 @@ function BibleContent() {
         // Optionally closing search if active, though not strictly required here
     };
 
-    const currentBookObj = book ? { name: book, chapters: 0 } as any : null;
+    const currentBookObj = book ? { name: book, chapters: 0, short: "" } as BibleBook : null;
 
     return (
         <SidebarLayout

@@ -1,7 +1,7 @@
 "use client"
 
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
-import { cn } from "@/lib/tiptap-utils"
+import { cn } from "@/lib/utils"
 import { CheckIcon } from "@/components/tiptap-icons/check-icon"
 
 import "@/components/tiptap-ui-primitive/dropdown-menu/dropdown-menu.scss"
@@ -262,3 +262,5 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
 }
+
+
