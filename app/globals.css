@@ -161,14 +161,11 @@
 
   * {
     -ms-overflow-style: none;
-    /* IE / Edge antigo */
     scrollbar-width: none;
-    /* Firefox */
   }
 
   *::-webkit-scrollbar {
     display: none;
-    /* Chrome, Safari */
   }
 }
 
@@ -227,7 +224,6 @@
   @apply block w-[calc(100%+2rem)] -mx-4 max-w-none mb-10 rounded-none shadow-none sm:w-[calc(100%+4rem)] sm:-mx-8;
 }
 
-/* Floating Images (Global - works on both desktop and mobile) */
 .jwpub-content .jw-align-right,
 .jwpub-content figure.align-right,
 .jwpub-content .north-east,
@@ -252,13 +248,11 @@
   @apply text-[10px] text-muted-foreground text-center mt-2 italic max-w-sm;
 }
 
-/* Specific styling for footnote marks */
 .jwpub-content a[href^="jwpub://f/"],
 .jwpub-content a[href^="#"] {
   @apply no-underline font-bold text-[13px] text-blue-600 dark:text-blue-400 align-top ml-0.5 px-0.5 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all;
 }
 
-/* Ensure the footnote content at the bottom doesn't look like a giant heading if it's targeted */
 .jwpub-content p:has(a[name^="footnote"]) {
   @apply text-sm text-muted-foreground border-t pt-2 mt-4;
 }
