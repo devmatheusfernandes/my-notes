@@ -21,128 +21,185 @@ import { ReaderHome } from "@/components/jwpub/ReaderHome";
 import { ChapterRenderer } from "@/components/jwpub/ChapterRenderer";
 import { ChapterCover } from "@/components/jwpub/ChapterCover";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
-
+import { publicationService } from "@/services/publicationService";
+​
 export default function JwpubReaderPage() {
-  const { symbol } = useParams();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { getPublication } = useJwpub();
-  const { user } = useAuthStore();
-  const { fetchSettings } = useSettings();
-
-  const [pub, setPub] = useState<JwpubPublication | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [images, setImages] = useState<Record<string, string>>({});
-
-  const {
-    currentChapterIndex,
-    setCurrentChapterIndex,
-    direction,
-    setDirection,
-    activeReferences,
-    addReference,
-    removeReference,
-    reset
-  } = useReaderStore();
-
-  useEffect(() => {
-    if (user?.uid) {
-      fetchSettings(user.uid);
-    }
-  }, [user?.uid, fetchSettings]);
-
-  useEffect(() => {
-    if (!symbol) return;
-
-    const loadPublication = async () => {
-      setLoading(true);
-      try {
-        const data = await getPublication(symbol as string);
-        setPub(data);
-
-        const c = parseInt(searchParams.get("c") || "0", 10);
-        if (isNaN(c) || c < 0 || (data && c >= data.chapters.length)) {
-          setCurrentChapterIndex(0);
-          router.replace(`?c=0`);
-        } else {
-          setCurrentChapterIndex(c);
+    const { symbol } = useParams();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const { getPublication } = useJwpub();
+    const { user } = useAuthStore();
+    const { fetchSettings } = useSettings();
+​
+    const [pub, setPub] = useState<JwpubPublication | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [images, setImages] = useState<Record<string, string>>({});
+​
+    const {
+        setCurrentChapterIndex,
+        direction,
+        setDirection,
+        activeReferences,
+        addReference,
+        removeReference,
+        reset
+    } = useReaderStore();
+​
+    const currentChapterIndex = useReaderStore(s => s.currentChapterIndex);
+​
+    useEffect(() => {
+        if (user?.uid) {
+            fetchSettings(user.uid);
         }
-      } catch (err) {
-        console.error("Erro ao carregar publicação:", err);
-      } finally {
-        setLoading(false);
-      }
+    }, [user?.uid, fetchSettings]);
+​
+    useEffect(() => {
+        if (!symbol) return;
+​
+        const loadPublication = async () => {
+            setLoading(true);
+            try {
+                const data = await getPublication(symbol as string);
+                setPub(data);
+​
+                const c = parseInt(searchParams.get("c") || "0", 10);
+                if (isNaN(c) || c < 0 || (data && c >= data.chapters.length)) {
+                    setCurrentChapterIndex(0);
+                    router.replace(`?c=0`);
+                } else {
+                    setCurrentChapterIndex(c);
+                }
+            } catch (err) {
+                console.error("Erro ao carregar publicação:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+​
+        loadPublication();
+​
+        return () => reset();
+    }, [symbol, getPublication, router, searchParams, setCurrentChapterIndex, reset]);
+​
+    const updateChapterIndex = useCallback((index: number) => {
+        const newDir = index > currentChapterIndex ? 1 : -1;
+        setDirection(newDir);
+        setCurrentChapterIndex(index);
+        router.push(`?c=${index}`, { scroll: false });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }, [currentChapterIndex, router, setCurrentChapterIndex, setDirection]);
+​
+    const currentChapter = pub?.chapters[currentChapterIndex];
+​
+    useEffect(() => {
+        if (!currentChapter) return;
+​
+        const loadImages = async () => {
+            const fetchedImages: Record<string, string> = {};
+            const imageIds = new Set<string>();
+​
+            const mediaMatches = currentChapter.html.matchAll(/jwpub-media:\/\/([^\s"'<>]+)/g);
+            for (const match of mediaMatches) imageIds.add(match[1]);
+​
+            const srcMatches = currentChapter.html.matchAll(/src=["']([^"'<>]+?\.(?:jpg|png|svg|webp|gif))["']/g);
+            for (const match of srcMatches) {
+                if (!match[1].startsWith('data:') && !match[1].startsWith('blob:')) {
+                    imageIds.add(match[1].split('/').pop()!);
+                }
+            }
+​
+            for (const id of Array.from(imageIds)) {
+                const imgData = await indexedDbService.getImage(id);
+                if (imgData) {
+                    fetchedImages[id] = URL.createObjectURL(imgData.blob);
+                }
+            }
+​
+            setImages(prev => ({ ...prev, ...fetchedImages }));
+        };
+​
+        loadImages();
+    }, [currentChapter]);
+​
+    const firstImageId = useMemo(() => {
+        if (!currentChapter) return null;
+        const mediaMatch = currentChapter.html.match(/jwpub-media:\/\/([^\s"'<>]+)/);
+        if (mediaMatch) return mediaMatch[1];
+​
+        const srcMatch = currentChapter.html.match(/src=["']([^"'<>]+?\.(?:jpg|png|svg|webp|gif))["']/);
+        if (srcMatch) return srcMatch[1].split('/').pop();
+​
+        return null;
+    }, [currentChapter]);
+​
+    const handleNextChapter = useCallback(() => {
+        if (pub) {
+            const nextIdx = currentChapterIndex === 0 ? 2 : currentChapterIndex + 1;
+            if (nextIdx < pub.chapters.length) updateChapterIndex(nextIdx);
+        }
+    }, [pub, currentChapterIndex, updateChapterIndex]);
+​
+    const handlePrevChapter = useCallback(() => {
+        const prevIdx = currentChapterIndex === 2 ? 0 : currentChapterIndex - 1;
+        if (prevIdx >= 0) updateChapterIndex(prevIdx);
+    }, [currentChapterIndex, updateChapterIndex]);
+​
+    const handleReferenceClick = async (ref: { label: string; url: string }) => {
+        if (ref.url.startsWith("jwpub://p/")) {
+            const parsed = publicationService.parseJwpubUrl(ref.url);
+            if (parsed) {
+                const content = await publicationService.getContent(parsed.symbol, parsed.chapterIndex, parsed.paragraphIndex);
+                if (content) {
+                    addReference({
+                        label: `${content.bookTitle} - ${ref.label}`,
+                        content: content.content,
+                        type: "footnote"
+                    });
+                    return;
+                }
+            }
+        }
+
+        if (ref.url.startsWith("jwpub://b/")) {
+            const parsed = publicationService.parseBibleUrl(ref.url);
+            if (parsed && parsed.verses.length > 0) {
+                try {
+                    const res = await fetch(`/api/bible?v=NWT&b=${encodeURIComponent(parsed.book)}&c=${parsed.chapter}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        const versesText = parsed.verses.map(vNum => {
+                            const found = data.verses.find((v: { verse: number; text: string }) => v.verse === vNum);
+                            return found ? `<p><sup class="text-[10px] mr-1 text-primary animate-pulse">${vNum}</sup>${found.text}</p>` : "";
+                        }).join("");
+
+                        if (versesText) {
+                            const labelStr = parsed.verses.length > 1 
+                                ? `${parsed.book} ${parsed.chapter}:${parsed.verses[0]}-${parsed.verses[parsed.verses.length - 1]}`
+                                : `${parsed.book} ${parsed.chapter}:${parsed.verses[0]}`;
+
+                            addReference({
+                                label: labelStr,
+                                content: versesText,
+                                type: "bible"
+                            });
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch bible reference:", e);
+                }
+            }
+        }
+​
+        // Fallback or Footnote
+        addReference({
+            label: ref.label,
+            content: ref.url,
+            type: ref.url.startsWith("jwpub://b/") ? "bible" : "footnote"
+        });
     };
-
-    loadPublication();
-
-    return () => reset();
-  }, [symbol, getPublication, router, searchParams, setCurrentChapterIndex, reset]);
-
-  const updateChapterIndex = useCallback((index: number) => {
-    const newDir = index > currentChapterIndex ? 1 : -1;
-    setDirection(newDir);
-    setCurrentChapterIndex(index);
-    router.push(`?c=${index}`, { scroll: false });
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [currentChapterIndex, router, setCurrentChapterIndex, setDirection]);
-
-  const currentChapter = pub?.chapters[currentChapterIndex];
-
-  useEffect(() => {
-    if (!currentChapter) return;
-
-    const loadImages = async () => {
-      const fetchedImages: Record<string, string> = {};
-      const imageIds = new Set<string>();
-
-      const mediaMatches = currentChapter.html.matchAll(/jwpub-media:\/\/([^\s"'<>]+)/g);
-      for (const match of mediaMatches) imageIds.add(match[1]);
-
-      const srcMatches = currentChapter.html.matchAll(/src=["']([^"'<>]+?\.(?:jpg|png|svg|webp|gif))["']/g);
-      for (const match of srcMatches) {
-        if (!match[1].startsWith('data:') && !match[1].startsWith('blob:')) {
-          imageIds.add(match[1].split('/').pop()!);
-        }
-      }
-
-      for (const id of Array.from(imageIds)) {
-        const imgData = await indexedDbService.getImage(id);
-        if (imgData) {
-          fetchedImages[id] = URL.createObjectURL(imgData.blob);
-        }
-      }
-
-      setImages(prev => ({ ...prev, ...fetchedImages }));
-    };
-
-    loadImages();
-  }, [currentChapter]);
-
-  const firstImageId = useMemo(() => {
-    if (!currentChapter) return null;
-    const mediaMatch = currentChapter.html.match(/jwpub-media:\/\/([^\s"'<>]+)/);
-    if (mediaMatch) return mediaMatch[1];
-
-    const srcMatch = currentChapter.html.match(/src=["']([^"'<>]+?\.(?:jpg|png|svg|webp|gif))["']/);
-    if (srcMatch) return srcMatch[1].split('/').pop();
-
-    return null;
-  }, [currentChapter]);
-
-  const handleNextChapter = useCallback(() => {
-    if (pub) {
-      const nextIdx = currentChapterIndex === 0 ? 2 : currentChapterIndex + 1;
-      if (nextIdx < pub.chapters.length) updateChapterIndex(nextIdx);
-    }
-  }, [pub, currentChapterIndex, updateChapterIndex]);
-
-  const handlePrevChapter = useCallback(() => {
-    const prevIdx = currentChapterIndex === 2 ? 0 : currentChapterIndex - 1;
-    if (prevIdx >= 0) updateChapterIndex(prevIdx);
-  }, [currentChapterIndex, updateChapterIndex]);
-
-  if (loading) return <Loading />;
+​
+    if (loading) return <Loading />;
 
   if (!pub) {
     return (
@@ -263,11 +320,7 @@ export default function JwpubReaderPage() {
                           html={currentChapter.html}
                           images={images}
                           footnotes={pub.footnotes || {}}
-                          onReferenceClick={(ref) => addReference({
-                            label: ref.label,
-                            content: ref.url,
-                            type: ref.url.startsWith("jwpub://b/") ? "bible" : "footnote"
-                          })}
+                          onReferenceClick={handleReferenceClick}
                           skipImageId={firstImageId || undefined}
                         />
                       </article>
