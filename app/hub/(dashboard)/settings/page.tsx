@@ -36,6 +36,7 @@ import {
 import { noteService } from "@/services/noteService";
 import { CreateNoteDTO } from "@/schemas/noteSchema";
 import Header from "@/components/hub/hub-header";
+import { JwpubStorageWidget } from "@/components/jwpub/JwpubStorageWidget";
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
@@ -570,6 +571,9 @@ export default function SettingsPage() {
               </div>
             </div>
           </motion.section>
+          
+          <JwpubStorageWidget />
+          
           <StorageWidget />
         </div>
       </motion.main>

@@ -118,5 +118,45 @@ export const indexedDbService = {
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
     });
+  },
+
+  async getStorageUsage(): Promise<{ totalBytes: number; pubCount: number }> {
+    const db = await this.openDB();
+    
+    const calculatePubsSize = (): Promise<{ size: number; count: number }> => {
+      return new Promise((resolve) => {
+        const transaction = db.transaction(STORE_PUBS, "readonly");
+        const store = transaction.objectStore(STORE_PUBS);
+        const request = store.getAll();
+        request.onsuccess = () => {
+          const pubs = request.result as JwpubPublication[];
+          const size = pubs.reduce((acc, p) => acc + JSON.stringify(p).length, 0);
+          resolve({ size, count: pubs.length });
+        };
+      });
+    };
+
+    const calculateImagesSize = (): Promise<number> => {
+      return new Promise((resolve) => {
+        const transaction = db.transaction(STORE_IMAGES, "readonly");
+        const store = transaction.objectStore(STORE_IMAGES);
+        const request = store.getAll();
+        request.onsuccess = () => {
+          const images = request.result as JwpubImage[];
+          const size = images.reduce((acc, img) => acc + img.blob.size, 0);
+          resolve(size);
+        };
+      });
+    };
+
+    const [pubs, imagesSize] = await Promise.all([
+      calculatePubsSize(),
+      calculateImagesSize()
+    ]);
+
+    return {
+      totalBytes: pubs.size + imagesSize,
+      pubCount: pubs.count
+    };
   }
 };
