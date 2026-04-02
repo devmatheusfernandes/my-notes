@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useEffect, useRef } from "react";
+import { transformDocIdLinks } from "@/lib/jwpub-utils";
 
 interface ChapterRendererProps {
   html: string;
@@ -50,6 +51,9 @@ export function ChapterRenderer({
       result = result.replace(srcRegex, `src="${blobUrl}"`);
     });
 
+    // Transform JWPub DocId links into WOL links
+    result = transformDocIdLinks(result);
+
     return result;
   }, [html, images, skipImageId]);
 
@@ -76,10 +80,10 @@ export function ChapterRenderer({
             url: footnotes[fId]
           });
         }
-      } else if (href.startsWith('jwpub://b/')) {
+      } else if (href.startsWith('jwpub://b/') || href.startsWith('jwpub://p/')) {
         e.preventDefault();
         onReferenceClick({
-          label: link.textContent || "Referência Bíblica",
+          label: link.textContent || "Referência",
           url: href
         });
       } else if (href.startsWith('#')) {
