@@ -1,5 +1,10 @@
 import { JwpubParagraph, JwpubReference } from "@/schemas/jwpubSchema";
 
+/**
+ * Parses the HTML content of a JWPUB file chapter into a list of paragraphs.
+ * @param html The HTML content to parse.
+ * @returns A list of paragraphs.
+ */
 export const jwpubParser = {
   parseChapterHtml(html: string): JwpubParagraph[] {
     if (typeof window === "undefined") return [];
