@@ -10,7 +10,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { ChapterDrawer } from "./ChapterDrawer";
-import { LayoutPanelTopIcon } from "@/components/ui/layout-panel-top";
+import { LayoutPanelTopIcon } from "@/components/icon-animated/layout-panel-top";
 import { cn } from "@/lib/utils";
 
 interface ReaderHeaderProps {

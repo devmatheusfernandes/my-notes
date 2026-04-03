@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/sidebar";
 import {
   hubSidebarFooterItems,
-  hubSidebarItems,
+  hubSidebarMainItems,
+  hubSidebarStudyItems,
 } from "@/components/hub/hub-sidebar-items";
 
 export default function HubSidebar() {
@@ -21,10 +22,39 @@ export default function HubSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Hub</SidebarGroupLabel>
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {hubSidebarItems.map((item) => {
+              {hubSidebarMainItems.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <SidebarMenuItem key={item.label}>
+                    {item.href ? (
+                      <SidebarMenuButton asChild tooltip={item.tooltip}>
+                        <Link href={item.href}>
+                          <Icon />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    ) : (
+                      <SidebarMenuButton tooltip={item.tooltip}>
+                        <Icon />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    )}
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Estudos</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {hubSidebarStudyItems.map((item) => {
                 const Icon = item.icon;
 
                 return (

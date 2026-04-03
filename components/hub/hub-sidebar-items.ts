@@ -1,7 +1,9 @@
-import { LayoutPanelTopIcon } from "../ui/layout-panel-top";
-import { ArchiveIcon } from "../ui/archive";
+import { LayoutPanelTopIcon } from "../icon-animated/layout-panel-top";
+import { ArchiveIcon } from "../icon-animated/archive";
 import { DeleteIcon } from "../ui/delete";
-import { SettingsIcon } from "../ui/settings";
+import { SettingsIcon } from "../icon-animated/settings";
+import { GraduationCapIcon } from "../icon-animated/graduation-cap";
+import { BookTextIcon } from "../icon-animated/book-text";
 
 
 export type HubSidebarItem = {
@@ -11,7 +13,7 @@ export type HubSidebarItem = {
   href?: string;
 };
 
-export const hubSidebarItems: HubSidebarItem[] = [
+export const hubSidebarMainItems: HubSidebarItem[] = [
   {
     label: "Início",
     tooltip: "Dashboard",
@@ -31,6 +33,22 @@ export const hubSidebarItems: HubSidebarItem[] = [
     href: "/hub/trash",
   },
 ];
+
+export const hubSidebarStudyItems: HubSidebarItem[] = [
+  {
+    label: "Bíblia",
+    tooltip: "Bíblia",
+    icon: BookTextIcon,
+    href: "/hub/bible"
+  },
+  {
+    label: "Estudo Pessoal",
+    tooltip: "Estudo Pessoal",
+    icon: GraduationCapIcon,
+    href: "/hub/personal-study"
+  },
+];
+
 
 export const hubSidebarFooterItems: HubSidebarItem[] = [
   {

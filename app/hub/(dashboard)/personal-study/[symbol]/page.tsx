@@ -11,8 +11,6 @@ import { indexedDbService } from "@/services/indexedDbService";
 import { Loading } from "@/components/ui/loading";
 import { BookOpen, Info, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-// Refactored Components
 import { useReaderStore } from "@/store/readerStore";
 import { ReaderHeader } from "@/components/jwpub/ReaderHeader";
 import { ReaderPrevButton } from "@/components/jwpub/ReaderPrevButton";
@@ -149,7 +147,6 @@ export default function JwpubReaderPage() {
     if (ref.url.startsWith("jwpub://p/")) {
       const parsed = publicationService.parseJwpubUrl(ref.url);
       if (parsed) {
-        // Handle T: docId (fallback if not transformed in HTML)
         if (parsed.symbol.startsWith("T:")) {
           const docId = parsed.symbol.substring(2);
           window.open(`https://wol.jw.org/pt/wol/d/r5/lp-t/${docId}`, "_blank");
@@ -165,7 +162,6 @@ export default function JwpubReaderPage() {
           });
           return;
         } else {
-          // If not found locally, try to open in WOL by symbol
           window.open(getWolUrlForSymbol(parsed.symbol, parsed.chapterIndex, parsed.paragraphIndex), "_blank");
           return;
         }
@@ -203,7 +199,6 @@ export default function JwpubReaderPage() {
       }
     }
 
-    // Fallback or Footnote
     addReference({
       label: ref.label,
       content: ref.url,

@@ -33,7 +33,7 @@ interface ReaderState {
 export const useReaderStore = create<ReaderState>((set, get) => ({
   currentChapterIndex: 0,
   isChapterDrawerOpen: false,
-  isSidebarOpen: true,
+  isSidebarOpen: false,
   direction: 0,
   activeReferences: [],
   lastReference: null,
@@ -49,7 +49,7 @@ export const useReaderStore = create<ReaderState>((set, get) => ({
     const newId = `ref-${Date.now()}`;
     const newRef = { ...ref, id: newId };
 
-    const existingIndex = activeReferences.findIndex(r => 
+    const existingIndex = activeReferences.findIndex(r =>
       r.label === ref.label && r.type === ref.type
     );
 

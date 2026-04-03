@@ -8,7 +8,7 @@ import { useNoteStore } from "@/store/noteStore";
 import { UnlockDrawer } from "@/components/modals/unlock-drawer";
 import { Button } from "@/components/ui/button";
 import { useId } from "@/utils/searchParams";
-import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
+import { SimpleEditor } from "@/components/tiptap-editor/simple-editor";
 import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Content } from "@tiptap/react";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";

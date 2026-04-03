@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useRef, useState, useMemo } from "react"
 import { EditorContent, EditorContext, useEditor, type Content, Editor } from "@tiptap/react"
 import { Node, Mark } from "@tiptap/pm/model"
 
@@ -20,7 +20,6 @@ import { useReaderStore, type ReferenceInstance } from "@/store/readerStore"
 import { parseBibleReference } from "@/lib/bible-utils"
 import { jwpubReference } from "@/lib/jwpub-reference"
 import throttle from "lodash.throttle"
-import { useMemo } from "react"
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button"
@@ -75,13 +74,13 @@ import { useWindowSize } from "@/hooks/use-window-size"
 import { useCursorVisibility } from "@/hooks/use-cursor-visibility"
 
 // --- Components ---
-import { ThemeToggle } from "@/components/tiptap-templates/simple/theme-toggle"
+import { ThemeToggle } from "@/components/tiptap-editor/theme-toggle"
 
 // --- Lib ---
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
 
 // --- Styles ---
-import "@/components/tiptap-templates/simple/simple-editor.scss"
+import "@/components/tiptap-editor/simple-editor.scss"
 
 interface SimpleEditorProps {
   content: Content

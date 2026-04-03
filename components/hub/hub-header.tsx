@@ -112,7 +112,7 @@ export default function Header({
                     <div className="relative group">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
                       <Input
-                        placeholder="Buscar nota ou pasta..."
+                        placeholder="Buscar..."
                         className="pl-10 pr-10 h-10 bg-muted/40 border-transparent hover:bg-muted/60 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/20 w-full transition-all duration-300 rounded-xl"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery?.(e.target.value)}
