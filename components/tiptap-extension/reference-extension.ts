@@ -117,16 +117,19 @@ export const ReferenceExtension = Mark.create<ReferenceOptions>({
         },
       }),
       new InputRule({
-        // Matches Publication references without @ (e.g. wp23 1:1)
-        find: /([a-zA-Z0-9]+)\s+(\d+):(\d+)(?:-(\d+))?\s$/,
+        // Matches Publication references (e.g. wp23 1:1, w21.05 p. 15, it-1 p. 250 par. 3, lmd lição 5)
+        find: /(?:^|\s)([a-zA-Z0-9çÇáÁéÉíÍóÓúÚâÂêÊôÔãÃõÕüÜ.-]+\s+(?:[\w\d\s\.\/§\-çÇáÁéÉíÍóÓúÚâÂêÊôÔãÃõÕüÜ]{2,}\d))\s$/i,
         handler: ({ state, range, match }) => {
           const { tr } = state;
-          const fullText = match[0];
-          const referenceText = fullText.trim();
+          const fullMatch = match[0];
+          const referenceText = match[1].trim();
+          
+          // Verify if it's a valid publication reference
           const isPub = !!jwpubReference.parseReferenceString(referenceText);
 
           if (isPub) {
-            const start = range.from;
+            const hasLeadingSpace = /^\s/.test(fullMatch);
+            const start = range.from + (hasLeadingSpace ? 1 : 0);
             const end = range.to;
 
             // Re-insert the space at the end to keep it outside the mark

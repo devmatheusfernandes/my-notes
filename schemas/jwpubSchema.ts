@@ -6,10 +6,14 @@ export const jwpubReferenceSchema = z.object({
 });
 
 export const jwpubParagraphSchema = z.object({
-  index: z.number(),
+  id: z.string().optional(), // 'p9' from data-pid
+  index: z.number(),         // Sequential index in chapter
   type: z.enum(["p", "h1", "h2", "h3", "li", "blockquote", "caption"]),
-  content: z.string(), // Plain text
-  html: z.string(),    // Formatted HTML
+  content: z.string(),       // Plain text
+  html: z.string(),          // Formatted HTML
+  page: z.number().optional(), // Latest page number found
+  paragraphNumber: z.number().optional(), // Explicit parNum value
+  sectionTitle: z.string().optional(), // Latest header text
   images: z.array(z.string()), // IDs for the image bucket store
   references: z.array(jwpubReferenceSchema),
 });

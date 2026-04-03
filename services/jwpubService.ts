@@ -4,6 +4,7 @@ import pako from "pako";
 import { JwpubPublication, JwpubChapter, JwpubImage, JwpubParagraph } from "@/schemas/jwpubSchema";
 import { indexedDbService } from "./indexedDbService";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import { jwpubParser } from "@/lib/jwpub-parser";
 
 const SQL_JS_WASM_URL = "https://unpkg.com/sql.js@1.14.1/dist/sql-wasm.wasm";
 
@@ -132,13 +133,13 @@ export const jwpubService = {
             content = String(row[2]);
           }
 
-          const { processedHtml, paragraphs: pMeta } = this.processContentHtml(content);
+          const paragraphs = jwpubParser.parseChapterHtml(content);
 
           chapters.push({
             id: docId,
             title: docTitle,
-            html: processedHtml,
-            paragraphs: pMeta,
+            html: content, // The parser might have modified el classes but we save content for now
+            paragraphs,
           });
         }
       }
@@ -194,47 +195,13 @@ export const jwpubService = {
     return processedPublication;
   },
 
+  // This method is now replaced by jwpubParser.parseChapterHtml
+  // keeping it commented if needed but actually jwpubParser is more complete
+  /*
   processContentHtml(html: string): { processedHtml: string, paragraphs: JwpubParagraph[] } {
-    if (typeof window === "undefined") return { processedHtml: html, paragraphs: [] };
-
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-    const paragraphs: JwpubParagraph[] = [];
-    let pidCounter = 0;
-
-    const walker = document.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT);
-    let node = walker.nextNode() as Element | null;
-
-    const tagsToTag = ['p', 'h1', 'h2', 'h3', 'h4', 'li', 'blockquote', 'caption', 'dt', 'dd'];
-
-    while (node) {
-      const tag = node.tagName.toLowerCase();
-
-      const classList = Array.from(node.classList);
-      const isEast = classList.some(c => c.includes('east') || c === 'right');
-      const isWest = classList.some(c => c.includes('west') || c === 'left');
-
-      if (isEast) node.classList.add('jw-align-right');
-      if (isWest) node.classList.add('jw-align-left');
-
-      if (tagsToTag.includes(tag)) {
-        const pid = `p${pidCounter++}`;
-        node.setAttribute('data-pid', pid);
-
-        paragraphs.push({
-          index: pidCounter - 1,
-          type: this.normalizeTagType(tag),
-          content: node.textContent?.trim() || "",
-          html: node.innerHTML,
-          images: [],
-          references: []
-        });
-      }
-      node = walker.nextNode() as Element | null;
-    }
-
-    return { processedHtml: doc.body.innerHTML, paragraphs };
-  },
+    ...
+  }
+  */
 
   async extractAndSaveMedia(zipEntries: Record<string, JSZip.JSZipObject>, fileName: string): Promise<string> {
     const entry = zipEntries[fileName];
