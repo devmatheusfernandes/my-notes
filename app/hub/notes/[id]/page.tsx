@@ -11,6 +11,8 @@ import { useId } from "@/utils/searchParams";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Content } from "@tiptap/react";
+import { SidebarLayout } from "@/components/layout/SidebarLayout";
+import { ReferenceSidebar } from "@/components/tiptap-ui/reference-sidebar";
 
 export default function NotePage() {
   const router = useRouter();
@@ -95,58 +97,55 @@ export default function NotePage() {
   }
 
   return (
-    <main>
-      <div>
-
-        <div>
-          {!isBlocked ? (
-            note.type === "pdf" ? (
-              note.fileUrl ? (
-                <div className="mt-6 flex flex-col gap-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button variant="outline" asChild>
-                      <a href={note.fileUrl} target="_blank" rel="noreferrer">
-                        Abrir PDF
-                      </a>
-                    </Button>
-                    <Button asChild>
-                      <a href={note.fileUrl} target="_blank" rel="noreferrer">
-                        Baixar
-                      </a>
-                    </Button>
-                  </div>
-                  <iframe
-                    title={note.title || "PDF"}
-                    src={note.fileUrl}
-                    className="h-[80vh] w-full rounded-2xl border bg-card shadow-lg"
-                  />
-                </div>
-              ) : (
-                <div className="mt-6 rounded-2xl border bg-card p-6 text-center text-sm text-muted-foreground">
-                  PDF sem arquivo.
-                </div>
-              )
-            ) : (
-              <SimpleEditor
-                content={note.content || ""}
-                userId={userId}
-                onChange={handleUpdate}
+    <SidebarLayout sidebarContent={<ReferenceSidebar />}>
+      {!isBlocked ? (
+        note.type === "pdf" ? (
+          note.fileUrl ? (
+            <div className="mt-6 flex flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" asChild>
+                  <a href={note.fileUrl} target="_blank" rel="noreferrer">
+                    Abrir PDF
+                  </a>
+                </Button>
+                <Button asChild>
+                  <a href={note.fileUrl} target="_blank" rel="noreferrer">
+                    Baixar
+                  </a>
+                </Button>
+              </div>
+              <iframe
+                title={note.title || "PDF"}
+                src={note.fileUrl}
+                className="h-[80vh] w-full rounded-2xl border bg-card shadow-lg"
               />
-            )
-          ) : (
-            <div className="mt-6 rounded-2xl border bg-card p-12 text-center shadow-sm">
-              <div className="text-3xl mb-4">🔒</div>
-              <p className="text-lg font-medium text-muted-foreground">Conteúdo protegido por senha.</p>
-              <Button variant="secondary" className="mt-4" onClick={() => setUnlockOpen(true)}>
-                Desbloquear
-              </Button>
             </div>
-          )}
+          ) : (
+            <div className="mt-6 rounded-2xl border bg-card p-6 text-center text-sm text-muted-foreground">
+              PDF sem arquivo.
+            </div>
+          )
+        ) : (
+          <SimpleEditor
+            content={note.content || ""}
+            userId={userId}
+            onChange={handleUpdate}
+          />
+        )
+      ) : (
+        <div className="max-w-2xl mx-auto mt-12 px-4">
+          <div className="rounded-2xl border bg-card p-12 text-center shadow-sm">
+            <div className="text-3xl mb-4">🔒</div>
+            <p className="text-lg font-medium text-muted-foreground">Conteúdo protegido por senha.</p>
+            <Button variant="secondary" className="mt-4" onClick={() => setUnlockOpen(true)}>
+              Desbloquear
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Sync Status Indicator */}
-      <div className="fixed bottom-6 right-6 flex items-center gap-2 rounded-full border bg-background/80 px-4 py-2 text-xs font-medium shadow-lg backdrop-blur-sm transition-all hover:bg-background">
+      <div className="fixed bottom-6 right-6 flex items-center gap-2 rounded-full border bg-background/80 px-4 py-2 text-xs font-medium shadow-lg backdrop-blur-sm transition-all hover:bg-background z-50">
         {saveStatus === "saving" && (
           <>
             <Loader2 className="h-3 w-3 animate-spin text-primary" />
@@ -167,7 +166,6 @@ export default function NotePage() {
         )}
       </div>
 
-
       <UnlockDrawer
         open={unlockOpen}
         onOpenChange={(open) => {
@@ -182,6 +180,6 @@ export default function NotePage() {
           setUnlockOpen(false);
         }}
       />
-    </main>
+    </SidebarLayout>
   );
 }

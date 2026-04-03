@@ -249,10 +249,8 @@ export default function JwpubReaderPage() {
               </Button>
             </div>
             <div className="jwpub-content text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-              {ref.content.startsWith("jwpub://b/") ? (
-                <div className="py-2 text-muted-foreground italic text-[11px]">
-                  Referência Bíblica ativa.
-                </div>
+              {ref.type === "bible" ? (
+                <div dangerouslySetInnerHTML={{ __html: ref.content }} />
               ) : (
                 <div dangerouslySetInnerHTML={{ __html: transformDocIdLinks(ref.content) }} />
               )}

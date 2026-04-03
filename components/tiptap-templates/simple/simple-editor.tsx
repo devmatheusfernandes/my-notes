@@ -1,7 +1,8 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { EditorContent, EditorContext, useEditor, type Content } from "@tiptap/react"
+import { EditorContent, EditorContext, useEditor, type Content, Editor } from "@tiptap/react"
+import { Node, Mark } from "@tiptap/pm/model"
 
 // --- Tiptap Core Extensions ---
 import { StarterKit } from "@tiptap/starter-kit"
@@ -13,6 +14,13 @@ import { Highlight } from "@tiptap/extension-highlight"
 import { Subscript } from "@tiptap/extension-subscript"
 import { Superscript } from "@tiptap/extension-superscript"
 import { Selection } from "@tiptap/extensions"
+import { ReferenceExtension } from "@/components/tiptap-extension/reference-extension"
+import { publicationSuggestion } from "@/components/tiptap-extension/publication-suggestion"
+import { useReaderStore, type ReferenceInstance } from "@/store/readerStore"
+import { parseBibleReference } from "@/lib/bible-utils"
+import { jwpubReference } from "@/lib/jwpub-reference"
+import throttle from "lodash.throttle"
+import { useMemo } from "react"
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button"
@@ -59,6 +67,7 @@ import { UndoRedoButton } from "@/components/tiptap-ui/undo-redo-button"
 import { ArrowLeftIcon } from "@/components/tiptap-icons/arrow-left-icon"
 import { HighlighterIcon } from "@/components/tiptap-icons/highlighter-icon"
 import { LinkIcon } from "@/components/tiptap-icons/link-icon"
+import { PanelRightOpen, PanelRightClose } from "lucide-react"
 
 // --- Hooks ---
 import { useIsBreakpoint } from "@/hooks/use-is-breakpoint"
@@ -84,10 +93,14 @@ const MainToolbarContent = ({
   onHighlighterClick,
   onLinkClick,
   isMobile,
+  isSidebarOpen,
+  onToggleSidebar,
 }: {
   onHighlighterClick: () => void
   onLinkClick: () => void
   isMobile: boolean
+  isSidebarOpen: boolean
+  onToggleSidebar: () => void
 }) => {
   return (
     <>
@@ -154,6 +167,18 @@ const MainToolbarContent = ({
 
       <ToolbarGroup>
         <ThemeToggle />
+        <Button
+          variant="ghost"
+          size="small"
+          onClick={onToggleSidebar}
+          className="tiptap-toolbar-button h-8 w-8 text-zinc-500 hover:text-amber-500"
+        >
+          {isSidebarOpen ? (
+            <PanelRightClose className="w-4 h-4" />
+          ) : (
+            <PanelRightOpen className="w-4 h-4" />
+          )}
+        </Button>
       </ToolbarGroup>
     </>
   )
@@ -195,6 +220,77 @@ export function SimpleEditor({ content, userId, onChange }: SimpleEditorProps) {
     "main"
   )
   const toolbarRef = useRef<HTMLDivElement>(null)
+  const { addReference, setDocReferences, isSidebarOpen, setIsSidebarOpen } = useReaderStore()
+
+  // Scan document for all references
+  const scanReferences = useMemo(() => throttle((editor: Editor) => {
+    if (!editor) return
+    const refs: ReferenceInstance[] = []
+
+    editor.state.doc.descendants((node: Node) => {
+      const mark = node.marks.find((m: Mark) => m.type.name === 'reference')
+      if (mark) {
+        const { reference, type } = mark.attrs
+        // Avoid duplicates by label and type
+        if (!refs.find(r => r.label === reference && r.type === type)) {
+          refs.push({
+            id: `doc-${reference}-${type}`,
+            label: reference,
+            type,
+            content: '', // Content will be lazy-loaded in the sidebar
+          })
+        }
+      }
+    })
+
+    setDocReferences(refs)
+  }, 2000), [setDocReferences])
+
+  const handleReferenceClick = async (reference: string, type: "bible" | "publication") => {
+    if (type === "bible") {
+      const parsed = parseBibleReference(reference)
+      if (!parsed) return
+
+      try {
+        const res = await fetch(`/api/bible?v=NWT&b=${encodeURIComponent(parsed.book)}&c=${parsed.chapter}`)
+        if (res.ok) {
+          const data = await res.json()
+          const versesText = parsed.verses
+            .map((vNum) => {
+              const found = data.verses.find((v: { verse: number; text: string }) => v.verse === vNum)
+              return found
+                ? `${found.text} `
+                : ""
+            })
+            .join("")
+
+          if (versesText) {
+            addReference({
+              label: reference,
+              content: versesText,
+              type: "bible",
+            })
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch bible reference:", e)
+      }
+    } else if (type === "publication") {
+      try {
+        const paragraphs = await jwpubReference.getReferencedContent(reference)
+        if (paragraphs && paragraphs.length > 0) {
+          const content = paragraphs.map((p) => p.html).join("")
+          addReference({
+            label: reference,
+            content: content,
+            type: "publication",
+          })
+        }
+      } catch (e) {
+        console.error("Failed to fetch publication reference:", e)
+      }
+    }
+  }
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -232,14 +328,22 @@ export function SimpleEditor({ content, userId, onChange }: SimpleEditorProps) {
         upload: (file) => handleImageUpload(file, userId),
         onError: (error) => toast.error(`Falha no upload: ${error}`),
       }),
+      ReferenceExtension.configure({
+        onReferenceClick: handleReferenceClick,
+        suggestion: publicationSuggestion,
+      }),
     ],
     content,
     onUpdate: ({ editor }) => {
+      scanReferences(editor)
       onChange?.({
         json: editor.getJSON(),
         text: editor.getText(),
       })
     },
+    onCreate: ({ editor }) => {
+      scanReferences(editor)
+    }
   }, [userId])
 
   const rect = useCursorVisibility({
@@ -269,6 +373,8 @@ export function SimpleEditor({ content, userId, onChange }: SimpleEditorProps) {
               onHighlighterClick={() => setMobileView("highlighter")}
               onLinkClick={() => setMobileView("link")}
               isMobile={isMobile}
+              isSidebarOpen={isSidebarOpen}
+              onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
             />
           ) : (
             <MobileToolbarContent
