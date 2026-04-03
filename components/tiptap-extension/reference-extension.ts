@@ -43,7 +43,7 @@ export const ReferenceExtension = Mark.create<ReferenceOptions>({
             .chain()
             .focus()
             .deleteRange(range)
-            .insertContent(`${props.symbol} `)
+            .insertContent(`/${props.symbol} `)
             .run();
         },
       },
@@ -116,31 +116,7 @@ export const ReferenceExtension = Mark.create<ReferenceOptions>({
           }
         },
       }),
-      new InputRule({
-        // Matches Publication references (e.g. wp23 1:1, w21.05 p. 15, it-1 p. 250 par. 3, lmd lição 5)
-        find: /(?:^|\s)([a-zA-Z0-9çÇáÁéÉíÍóÓúÚâÂêÊôÔãÃõÕüÜ.-]+\s+(?:[\w\d\s\.\/§\-çÇáÁéÉíÍóÓúÚâÂêÊôÔãÃõÕüÜ]{2,}\d))\s$/i,
-        handler: ({ state, range, match }) => {
-          const { tr } = state;
-          const fullMatch = match[0];
-          const referenceText = match[1].trim();
-          
-          // Verify if it's a valid publication reference
-          const isPub = !!jwpubReference.parseReferenceString(referenceText);
-
-          if (isPub) {
-            const hasLeadingSpace = /^\s/.test(fullMatch);
-            const start = range.from + (hasLeadingSpace ? 1 : 0);
-            const end = range.to;
-
-            // Re-insert the space at the end to keep it outside the mark
-            tr.replaceWith(start, end, state.schema.text(referenceText + ' '));
-            tr.addMark(start, start + referenceText.length, this.type.create({
-              reference: referenceText,
-              type: 'publication',
-            }));
-          }
-        },
-      }),
+      // Unified Publication InputRule removed in favor of handleKeyDown (Enter-based)
     ];
   },
 
@@ -151,8 +127,44 @@ export const ReferenceExtension = Mark.create<ReferenceOptions>({
         ...this.options.suggestion,
       }),
       new Plugin({
-        key: new PluginKey('reference-click-handler'),
+        key: new PluginKey('reference-handler'),
         props: {
+          handleKeyDown: (view, event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              const { state, dispatch } = view;
+              const { $from } = state.selection;
+              
+              const currentLineText = $from.nodeBefore?.text || '';
+              const lastSlashIndex = currentLineText.lastIndexOf('/');
+
+              if (lastSlashIndex !== -1) {
+                const potentialRefText = currentLineText.substring(lastSlashIndex).trim();
+                const isPub = jwpubReference.parseReferenceString(potentialRefText);
+
+                if (isPub) {
+                  // Text to show as link (strip the leading slash)
+                  const displayText = potentialRefText.startsWith('/') 
+                    ? potentialRefText.substring(1) 
+                    : potentialRefText;
+
+                  const start = $from.pos - potentialRefText.length;
+                  const end = $from.pos;
+
+                  const tr = state.tr
+                    .replaceWith(start, end, state.schema.text(displayText))
+                    .addMark(start, start + displayText.length, this.type.create({
+                      reference: displayText,
+                      type: 'publication',
+                    }));
+
+                  // Focus the editor after the mark
+                  if (dispatch) dispatch(tr);
+                  return true; // Prevent default Enter (don't jump to next line)
+                }
+              }
+            }
+            return false;
+          },
           handleClick: (view, pos) => {
             const { state } = view;
             const $pos = state.doc.resolve(pos);

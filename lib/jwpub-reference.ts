@@ -9,6 +9,7 @@ export interface JwpubParsedReference {
   endParagraph?: number;
   isExplicitParagraph?: boolean; // If true, search by paragraphNumber field
   isLogicalChapter?: boolean;    // If true, prioritize searching for "Capítulo X" or "Lição X"
+  queryWord?: string;            // Quoted title search (e.g. "Amor")
 }
 
 export const jwpubReference = {
@@ -25,22 +26,24 @@ export const jwpubReference = {
   parseReferenceString(query: string): JwpubParsedReference | null {
     const q = query.trim();
 
-    // 1. Flexible format: [Symbol] [Optional Chapter/Article] [Optional Page] [Optional Paragraph]
-    // Captures the keyword (cap, lição, etc) in match[2]
-    const flexibleRegex = /^([a-zA-Z0-9.-]+)(?:\s+(cap\.|capítulo|lição|article|[\d\/]+)?\s*([\w\/]+))?(?:\s+(?:p\.|pág\.|pag\.)\s*(\d+))?(?:\s+(?:par\.|pars\.|pp\.|\§\§|\§)\s*(\d+)(?:\s*-\s*(\d+))?)?$/i;
+    // 1. Flexible format: [Symbol] [Optional Quoted Word] [Optional Chapter/Article] [Optional Page] [Optional Paragraph]
+    // Captures the queryWord in match[2], keyword in match[3], chapterId in match[4]
+    // Now optionally handles a leading /
+    const flexibleRegex = /^\/?([a-zA-Z0-9.-]+)(?:\s+"([^"]+)")?(?:\s+(cap\.|capítulo|lição|article|[\d\/]+)?\s*([\w\/]+))?(?:\s+(?:p\.|pág\.|pag\.)\s*(\d+))?(?:\s+(?:par\.|pars\.|pp\.|\§\§|\§)\s*(\d+)(?:\s*-\s*(\d+))?)?$/i;
     let match = q.match(flexibleRegex);
 
-    if (match && (match[3] || match[4] || match[5])) {
-      const keyword = match[2]?.toLowerCase() || "";
+    if (match && (match[2] || match[4] || match[5] || match[6])) {
+      const keyword = match[3]?.toLowerCase() || "";
       const isLogical = keyword.includes("cap") || keyword.includes("liç") || keyword.includes("lic");
-      const hasExplicitPar = !!match[5];
+      const hasExplicitPar = !!match[6];
       
       return {
         symbol: match[1],
-        chapterId: match[3],
-        page: match[4] ? parseInt(match[4], 10) : undefined,
-        startParagraph: match[5] ? parseInt(match[5], 10) : undefined,
-        endParagraph: match[6] ? parseInt(match[6], 10) : (match[5] ? parseInt(match[5], 10) : undefined),
+        queryWord: match[2],
+        chapterId: match[4],
+        page: match[5] ? parseInt(match[5], 10) : undefined,
+        startParagraph: match[6] ? parseInt(match[6], 10) : undefined,
+        endParagraph: match[7] ? parseInt(match[7], 10) : (match[6] ? parseInt(match[6], 10) : undefined),
         isExplicitParagraph: hasExplicitPar,
         isLogicalChapter: isLogical
       };
@@ -72,30 +75,49 @@ export const jwpubReference = {
     const pub = await indexedDbService.getPublication(ref.symbol);
     if (!pub) return [];
 
+    const normalize = (str: string) => 
+      str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase();
+
     let chapter = null;
-    if (ref.chapterId) {
-      const searchId = ref.chapterId.toLocaleLowerCase();
-      
-      // If logical chapter (cap. or lição), prioritize searching in content/title
+    const searchTerms = [ref.queryWord, ref.chapterId].filter(Boolean) as string[];
+
+    for (const term of searchTerms) {
+      const normTerm = normalize(term);
+      const searchLower = term.toLocaleLowerCase();
+
+      // 1. Exact Title Match (Normalized)
+      chapter = pub.chapters.find(c => normalize(c.title) === normTerm);
+      if (chapter) break;
+
+      // 2. Logical Chapter Match (Priority for 'cap.', 'lição')
       if (ref.isLogicalChapter) {
-        // Pattern: [Term] [number] [non-digit or end]
-        const pattern = new RegExp(`^\\s*(capítulo|lição|chapter|lesson)\\s+${searchId}(\\b|:|\\s)`, 'i');
+        const pattern = new RegExp(`^\\s*(capítulo|lição|chapter|lesson)\\s+${searchLower}(\\b|:|\\s)`, 'i');
         chapter = pub.chapters.find(c => 
           pattern.test(c.title) || 
           c.paragraphs.slice(0, 5).some(p => pattern.test(p.content))
         );
+        if (chapter) break;
       }
 
-      // Fallback to ID or normal title search if not found yet
-      if (!chapter) {
-        chapter = pub.chapters.find(c => 
-          c.id.toLocaleLowerCase() === searchId || 
-          c.title.toLocaleLowerCase().includes(searchId)
-        );
-      }
+      // 3. Strong Tag Match (Insight Pattern)
+      chapter = pub.chapters.find(c => 
+        c.paragraphs.slice(0, 3).some(p => 
+          normalize(p.html).includes(`<strong>${normTerm}</strong>`) ||
+          normalize(p.content).startsWith(normTerm)
+        )
+      );
+      if (chapter) break;
+
+      // 4. Partial Title Match
+      chapter = pub.chapters.find(c => normalize(c.title).includes(normTerm));
+      if (chapter) break;
+
+      // 5. Fallback to Chapter ID
+      chapter = pub.chapters.find(c => c.id.toLocaleLowerCase() === searchLower);
+      if (chapter) break;
     }
 
-    // If no chapter found by ID/Title, and we have a page, search chapters for that page
+    // If no chapter found by ID/Title/Word, and we have a page, search chapters for that page
     if (!chapter && ref.page) {
       chapter = pub.chapters.find(c => c.paragraphs.some(p => p.page === ref.page));
     }
