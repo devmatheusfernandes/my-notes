@@ -3,7 +3,6 @@
 import { useMemo, useEffect, useState } from "react"
 import { CategoryGroup, VideoData } from "@/schemas/videos";
 import { VideoCard } from "./video-card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Ghost, Clock, Loader2, Plus, SearchX } from "lucide-react";
 import {
   Empty,
@@ -19,6 +18,7 @@ import { videoService } from "@/lib/video/video-service";
 import { getAllVideosGrouped } from "@/lib/video/video-crawler";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { Loading } from "../ui/loading";
 
 interface StudyVideosProps {
   searchQuery: string;
@@ -76,27 +76,7 @@ export function StudyVideos({ searchQuery, searchResults, isSearching }: StudyVi
 
   if (isLoading) {
     return (
-      <div className="flex-1 overflow-y-auto no-scrollbar">
-        <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-8">
-          <header className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-10 w-32" />
-              <Skeleton className="h-6 w-20" />
-            </div>
-          </header>
-
-          {[1, 2].map((i) => (
-            <section key={i} className="space-y-4">
-              <Skeleton className="h-8 w-48" />
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {[1, 2, 3, 4].map((j) => (
-                  <Skeleton key={j} className="aspect-video rounded-xl" />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      </div>
+      <Loading />
     );
   }
 

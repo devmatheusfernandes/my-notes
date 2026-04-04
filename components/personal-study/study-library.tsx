@@ -178,7 +178,7 @@ export function StudyLibrary({ search, searchResults, isSearching }: StudyLibrar
             )}
           </div>
 
-          <div className="flex-1 max-h-[calc(89vh-100px)] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="flex-1 lg:max-h-[calc(89vh-100px)] max-h-[calc(70vh-100px)] overflow-y-auto pr-2 custom-scrollbar">
             {isLoadingAll ? (
               <Loading />
             ) : hasSearch ? (
