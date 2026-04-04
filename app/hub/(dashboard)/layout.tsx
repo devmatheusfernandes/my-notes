@@ -7,9 +7,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <SidebarProvider>
       <HubSidebar />
       <SidebarInset className="min-h-svh">
-        <div>
-          {children}
-        </div>
+        {children}
       </SidebarInset>
     </SidebarProvider>
   );

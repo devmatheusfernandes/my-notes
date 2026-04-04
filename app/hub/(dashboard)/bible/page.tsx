@@ -11,6 +11,7 @@ import { BibleTranslationDrawer } from "@/components/bible/BibleTranslationDrawe
 import { CrossReferencesSidebar } from "@/components/bible/CrossReferencesSidebar";
 import { useReaderStore } from "@/store/readerStore";
 import { type BibleBook, type Verse } from "@/schemas/bibleSchema";
+import { Loading } from "@/components/ui/loading";
 
 function BibleContent() {
     const router = useRouter();
@@ -89,7 +90,6 @@ function BibleContent() {
 
     const handleNavigate = (b: string, c: number, vs: number) => {
         updateParams({ b, c, vs });
-        // Optionally closing search if active, though not strictly required here
     };
 
     const currentBookObj = book ? { name: book, chapters: 0, short: "" } as BibleBook : null;
@@ -174,7 +174,7 @@ function BibleContent() {
 
 export default function BiblePage() {
     return (
-        <Suspense fallback={<div className="p-8 text-center">Iniciando Escrituras...</div>}>
+        <Suspense fallback={<Loading />}>
             <BibleContent />
         </Suspense>
     );
