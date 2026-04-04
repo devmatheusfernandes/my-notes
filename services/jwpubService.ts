@@ -4,7 +4,8 @@ import pako from "pako";
 import { JwpubPublication, JwpubChapter, JwpubImage, JwpubParagraph } from "@/schemas/jwpubSchema";
 import { indexedDbService } from "./indexedDbService";
 import { getErrorMessage } from "@/utils/getErrorMessage";
-import { jwpubParser } from "@/lib/jwpub-parser";
+import { jwpubParser } from "@/lib/jwpub/jwpub-parser";
+import { tokenize } from "@/lib/video/tokenize";
 
 const SQL_JS_WASM_URL = "https://unpkg.com/sql.js@1.14.1/dist/sql-wasm.wasm";
 
@@ -107,6 +108,7 @@ export const jwpubService = {
 
     const chapters: JwpubChapter[] = [];
     const footnotes: Record<string, string> = {};
+    const tokens = new Set<string>();
 
     try {
       const res = db.exec("SELECT DocumentId, Title, Content FROM Document ORDER BY DocumentId");
@@ -134,6 +136,11 @@ export const jwpubService = {
           }
 
           const paragraphs = jwpubParser.parseChapterHtml(content);
+
+          // Collect tokens for search optimization
+          paragraphs.forEach(p => {
+            tokenize(p.content).forEach(token => tokens.add(token));
+          });
 
           chapters.push({
             id: docId,
@@ -187,6 +194,7 @@ export const jwpubService = {
     const processedPublication: JwpubPublication = {
       symbol,
       title,
+      tokens: Array.from(tokens),
       chapters,
       footnotes,
       lastAccessed: new Date().toISOString()

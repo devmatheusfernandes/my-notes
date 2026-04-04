@@ -1,4 +1,4 @@
-import { normalizeBookToken } from "@/data/constants/bible-abreviations";
+import { normalizeBookToken } from "@/lib/bible/bible-abreviations";
 
 export interface ParsedReference {
   book: string;

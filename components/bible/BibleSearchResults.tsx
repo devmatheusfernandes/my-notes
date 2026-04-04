@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Info, ExternalLink, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
-import type { StrongResult } from "@/data/scheme/strong";
+import type { StrongResult } from "@/schemas/strong";
 
 interface SearchResult {
   book: string;

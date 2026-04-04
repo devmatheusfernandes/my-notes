@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useEffect, useRef } from "react";
-import { transformDocIdLinks } from "@/lib/jwpub-utils";
+import { transformDocIdLinks } from "@/lib/jwpub/jwpub-utils";
 
 interface ChapterRendererProps {
   html: string;
@@ -9,6 +9,7 @@ interface ChapterRendererProps {
   footnotes: Record<string, string>;
   onReferenceClick: (ref: { label: string; url: string }) => void;
   skipImageId?: string;
+  highlightTerm?: string;
 }
 
 export function ChapterRenderer({
@@ -16,34 +17,25 @@ export function ChapterRenderer({
   images,
   footnotes,
   onReferenceClick,
-  skipImageId
+  skipImageId,
+  highlightTerm
 }: ChapterRendererProps) {
   const processedHtml = useMemo(() => {
     if (!html) return "";
 
     let result = html;
 
-    // Remove skipped image if present
+    // 1. Remove skipped image if present
     if (skipImageId) {
       const escapedSkipId = skipImageId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      // Match jwpub-media://ID or just the filename in a src attribute
-      const jwMediaRegex = new RegExp(
-        `<img[^>]*src=["']jwpub-media://${escapedSkipId}["'][^>]*>`,
-        "gi"
-      );
-      const directRegex = new RegExp(
-        `<img[^>]*src=["'][^"']*${escapedSkipId}["'][^>]*>`,
-        "gi"
-      );
-      
+      const jwMediaRegex = new RegExp(`<img[^>]*src=["']jwpub-media://${escapedSkipId}["'][^>]*>`, "gi");
+      const directRegex = new RegExp(`<img[^>]*src=["'][^"']*${escapedSkipId}["'][^>]*>`, "gi");
       result = result.replace(jwMediaRegex, "").replace(directRegex, "");
     }
 
+    // 2. Handle jwpub images
     const placeholder = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-
-    result = result.replace(/jwpub-media:\/\/([^\s"'<>]+)/g, (match, id) => {
-      return images[id] || placeholder;
-    });
+    result = result.replace(/jwpub-media:\/\/([^\s"'<>]+)/g, (match, id) => images[id] || placeholder);
 
     Object.entries(images).forEach(([id, blobUrl]) => {
       const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -51,11 +43,34 @@ export function ChapterRenderer({
       result = result.replace(srcRegex, `src="${blobUrl}"`);
     });
 
-    // Transform JWPub DocId links into WOL links
+    // 3. Transform JWPub DocId links
     result = transformDocIdLinks(result);
 
+    // 4. Implement Highlighting (New)
+    if (highlightTerm?.trim()) {
+      // Simple regex to identify parsed terms (same logic as search)
+      const termRegex = /(['"])(.*?)\1|(\S+)/g;
+      const cleanQuery = highlightTerm.replace(/[,\.]/g, " ");
+      const terms: string[] = [];
+      let match;
+      while ((match = termRegex.exec(cleanQuery)) !== null) {
+        const t = (match[2] || match[3] || "").trim();
+        if (t.length > 1) terms.push(t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      }
+
+      if (terms.length > 0) {
+        // We want to highlight only text, not inside HTML tags
+        // Regex: (terms)|(<[^>]+>) - if group 1 matches, it's our term.
+        const highlightPattern = new RegExp(`(${terms.join("|")})|(<[^>]+>)`, "gi");
+        result = result.replace(highlightPattern, (m, g1) => {
+          if (g1) return `<mark class="bg-yellow-400/30 dark:bg-yellow-500/50 rounded-sm px-0.5 ring-1 ring-yellow-400/20 text-foreground search-highlight">${m}</mark>`;
+          return m; // Keep tags as they are
+        });
+      }
+    }
+
     return result;
-  }, [html, images, skipImageId]);
+  }, [html, images, skipImageId, highlightTerm]);
 
   const containerRef = useRef<HTMLDivElement>(null);
 

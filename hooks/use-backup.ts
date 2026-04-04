@@ -5,7 +5,7 @@ import { backupService } from "@/services/backupService";
 import { toast } from "sonner";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { settingsService } from "@/services/settingsService";
-import { auth } from "@/lib/firebase";
+import { auth } from "@/lib/firebase/firebase";
 import type { UserCredential } from "firebase/auth";
 
 export interface DriveFile {

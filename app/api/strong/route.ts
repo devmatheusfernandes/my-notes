@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
 import Database from "better-sqlite3";
-import type { StrongResult } from "@/data/scheme/strong";
- 
- interface GreekRow {
+import type { StrongResult } from "@/schemas/strong";
+
+interface GreekRow {
     id: string;
     lemma: string;
     transliteration: string;

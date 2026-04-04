@@ -1,4 +1,4 @@
-import { db, storage } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase/firebase";
 import {
   ref,
   uploadBytes,
@@ -12,7 +12,7 @@ import {
   increment,
   serverTimestamp,
 } from "firebase/firestore";
-import { MEDIA_COLLECTION_NAME } from "@/lib/collections-name";
+import { MEDIA_COLLECTION_NAME } from "@/lib/firebase/collections-name";
 import { v4 as uuidv4 } from "uuid";
 
 const IMAGE_STORAGE_LIMIT_BYTES = 50 * 1024 * 1024; // 50MB

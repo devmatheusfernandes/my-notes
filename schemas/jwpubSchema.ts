@@ -26,8 +26,9 @@ export const jwpubChapterSchema = z.object({
 });
 
 export const jwpubPublicationSchema = z.object({
-  symbol: z.string(),  // Ex: 'wp23'
+  symbol: z.string(),
   title: z.string(),
+  tokens: z.array(z.string()).optional(),
   chapters: z.array(jwpubChapterSchema),
   footnotes: z.record(z.string(), z.string()).optional(), // FootnoteId -> content HTML
   lastAccessed: z.string().datetime().or(z.string()), // Permite ISO string completo ou string genérica
@@ -37,6 +38,7 @@ export const jwpubMetadataSchema = z.object({
   symbol: z.string(),
   title: z.string(),
   lastAccessed: z.string(),
+  tokens: z.array(z.string()).optional(),
 });
 
 export const jwpubImageSchema = z.object({

@@ -105,6 +105,8 @@ export const publicacoes: Publicacao[] = [
     { codigo: 'tp', titulo: 'Verdadeira Paz', ano: '1986', categoria: 'Livros' },
     { codigo: 'fl', titulo: 'Vida Familiar', ano: '1978', categoria: 'Livros' },
     { codigo: 'pe', titulo: 'Viver Para Sempre', ano: '1989', categoria: 'Livros' },
+    { codigo: 'od', titulo: 'Organização de Jeová', ano: '1971', categoria: 'Livros' },
+    { codigo: 'lvs', titulo: 'Continue a amar a Deus', ano: '2002', categoria: 'Livros' },
 
     // --- Anuários ---
     { codigo: 'yb', titulo: 'Anuários', ano: '1973–2017', categoria: 'Anuários' },

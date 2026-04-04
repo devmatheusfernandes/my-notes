@@ -2,13 +2,13 @@
 
 import React, { useState } from "react"
 import { useReaderStore, ReferenceInstance } from "@/store/readerStore"
-import { transformDocIdLinks } from "@/lib/jwpub-utils"
+import { transformDocIdLinks } from "@/lib/jwpub/jwpub-utils"
 import { Button } from "@/components/ui/button"
 import { Info, X, BookOpen, Clock, FileText, Trash2, ChevronRight, Loader2 } from "lucide-react"
 import * as Tabs from "@radix-ui/react-tabs"
 import * as Accordion from "@radix-ui/react-accordion"
-import { parseBibleReference } from "@/lib/bible-utils"
-import { jwpubReference } from "@/lib/jwpub-reference"
+import { parseBibleReference } from "@/lib/bible/bible-utils"
+import { jwpubReference } from "@/lib/jwpub/jwpub-reference"
 
 export function ReferenceSidebar() {
   const {

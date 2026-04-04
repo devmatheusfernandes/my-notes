@@ -1,0 +1,114 @@
+import { db } from "@/lib/firebase/firebase";
+import {
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    onSnapshot,
+    setDoc,
+    deleteField,
+    query,
+    limit,
+    orderBy
+} from "firebase/firestore";
+import { VideoData } from "@/schemas/videos";
+import { selectBestVideoUrl } from "./video-utils";
+import { USERS_COLLECTION, VIDEOS_COLLECTION } from "../firebase/collections-name";
+
+export const videoService = {
+    // Subscribe to local state (imported notes, etc.)
+    subscribeUserVideos(userId: string, onData: (items: VideoData[]) => void) {
+        const ref = collection(db, USERS_COLLECTION, userId, "all_videos")
+        return onSnapshot(ref, (snap) => {
+            const items = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<VideoData, "id">) })) as VideoData[]
+            onData(items)
+        })
+    },
+
+    async setVideoNoteLink(userId: string, id: string, noteId: string) {
+        const ref = doc(db, USERS_COLLECTION, userId, "all_videos", id)
+        const now = new Date().toISOString()
+        await setDoc(ref, { importedAsNote: true, noteId, updatedAt: now }, { merge: true })
+    },
+
+    async clearVideoNoteLink(userId: string, id: string) {
+        const ref = doc(db, USERS_COLLECTION, userId, "all_videos", id)
+        const now = new Date().toISOString()
+        await setDoc(ref, { importedAsNote: false, noteId: deleteField(), updatedAt: now }, { merge: true })
+    },
+
+    async saveVideoContent(userId: string, video: VideoData, contentText: string) {
+        const ref = doc(db, USERS_COLLECTION, userId, "all_videos", video.id)
+        const now = new Date().toISOString()
+        const payload = {
+            ...video,
+            contentText,
+            updatedAt: now
+        }
+        await setDoc(ref, payload, { merge: true })
+    },
+
+    async getVideoById(id: string): Promise<VideoData | null> {
+        // 1. Try Firestore first
+        const ref = doc(db, VIDEOS_COLLECTION, id)
+        const snap = await getDoc(ref)
+        if (snap.exists()) {
+            return { id: snap.id, ...snap.data() } as VideoData
+        }
+
+        // 2. Fallback to API
+        try {
+            const url = `https://b.jw-cdn.org/apis/mediator/v1/media-items/T/${id}?clientType=www`
+            const res = await fetch(url)
+            if (!res.ok) return null
+            const data = await res.json()
+            const video = data.media[0]
+
+            if (!video) return null
+
+            let subtitlesUrl: string | undefined
+            for (const f of video.files || []) {
+                if (f?.subtitles?.url) {
+                    subtitlesUrl = f.subtitles.url
+                    break
+                }
+            }
+
+            const title: string = video.title || ""
+            const primaryCategory = video.primaryCategory || "VideoOnDemand"
+            const durationFormatted = video.durationFormattedMinSec || ""
+            const coverImage: string | undefined = video.images?.wss?.lg || video.images?.pnr?.lg || video.images?.sqr?.lg || undefined
+            const videoUrl = selectBestVideoUrl(video.files || [])
+
+            return {
+                id: video.naturalKey,
+                title,
+                categoryKey: video.primaryCategory || "VideoOnDemand",
+                primaryCategory,
+                durationFormatted,
+                coverImage,
+                subtitlesUrl,
+                videoUrl
+            }
+        } catch (err) {
+            console.error("Error fetching video from API:", err)
+            return null
+        }
+    },
+
+    async getLastUpdated(): Promise<Date | null> {
+        const q = query(
+            collection(db, VIDEOS_COLLECTION),
+            orderBy("updatedAt", "desc"),
+            limit(1)
+        )
+        const snap = await getDocs(q)
+        if (snap.empty) return null
+        const data = snap.docs[0].data()
+
+        const val = data.updatedAt;
+        if (!val) return null;
+        if (typeof val.toDate === "function") return val.toDate();
+        return new Date(val);
+    }
+}

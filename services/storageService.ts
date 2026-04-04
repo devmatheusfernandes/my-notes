@@ -19,8 +19,8 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { storage, db } from "@/lib/firebase";
-import { NOTES_COLLECTION_NAME, FOLDERS_COLLECTION_NAME } from "@/lib/collections-name";
+import { storage, db } from "@/lib/firebase/firebase";
+import { NOTES_COLLECTION_NAME, FOLDERS_COLLECTION_NAME } from "@/lib/firebase/collections-name";
 
 export const storageService = {
   /**
@@ -136,23 +136,23 @@ export const storageService = {
 
     const listRecursive = async (folderRef: StorageReference) => {
       const res = await listAll(folderRef);
-      
+
       // Process files in current folder
       for (const item of res.items) {
         const metadata = await getMetadata(item);
         const size = metadata.size || 0;
         const contentType = metadata.contentType || "";
-        
+
         totalBytesUsed += size;
         uploadCount++;
-        
+
         if (contentType.startsWith("image/")) {
           imageBytesUsed += size;
         } else if (contentType === "application/pdf") {
           pdfBytesUsed += size;
         }
       }
-      
+
       // Process subfolders
       for (const folder of res.prefixes) {
         await listRecursive(folder);
@@ -166,7 +166,7 @@ export const storageService = {
     try {
       const notesQuery = query(collection(db, NOTES_COLLECTION_NAME), where("userId", "==", userId));
       const foldersQuery = query(collection(db, FOLDERS_COLLECTION_NAME), where("userId", "==", userId));
-      
+
       const [notesSnap, foldersSnap] = await Promise.all([
         getDocs(notesQuery),
         getDocs(foldersQuery)

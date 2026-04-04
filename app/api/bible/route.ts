@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
 import Database from "better-sqlite3";
-import { BIBLE_BOOKS_PT } from "@/data/constants/bible-books-pt";
-import { PT_TO_NWT } from "@/data/constants/bible-books";
+import { BIBLE_BOOKS_PT } from "@/lib/bible/bible-books-pt";
+import { PT_TO_NWT } from "@/lib/bible/bible-books";
 
 export const runtime = "nodejs";
 
-const dbInstances: Record<string, Database.Database|null> = {};
+const dbInstances: Record<string, Database.Database | null> = {};
 
 function getBibleDb(version: string) {
     const versionUpper = version.toUpperCase();
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
 
         // Find book ID for other versions
         let bookRow = db.prepare("SELECT id FROM book WHERE name = ? COLLATE NOCASE").get(bookName) as { id: number } | undefined;
-        
+
         if (!bookRow) {
             // Try to find by index if name doesn't match directly
             const index = (BIBLE_BOOKS_PT as readonly string[]).indexOf(bookName as string);

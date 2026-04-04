@@ -9,9 +9,9 @@ import {
   updateDoc,
   writeBatch,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/firebase";
 import { note, Note, CreateNoteDTO } from "@/schemas/noteSchema";
-import { NOTES_COLLECTION_NAME } from "@/lib/collections-name";
+import { NOTES_COLLECTION_NAME } from "@/lib/firebase/collections-name";
 
 export const noteService = {
   async createNote(userId: string, data: CreateNoteDTO): Promise<Note> {
@@ -82,7 +82,7 @@ export const noteService = {
   async createManyNotes(userId: string, notesData: CreateNoteDTO[]): Promise<void> {
     try {
       const batch = writeBatch(db);
-      
+
       for (const data of notesData) {
         const newNoteRef = doc(collection(db, NOTES_COLLECTION_NAME));
         const rawNote = {

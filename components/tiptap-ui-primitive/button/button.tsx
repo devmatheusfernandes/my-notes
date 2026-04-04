@@ -11,7 +11,7 @@ import {
 
 // --- Lib ---
 import { cn } from "@/lib/utils"
-import { parseShortcutKeys } from "@/lib/tiptap-utils"
+import { parseShortcutKeys } from "@/lib/notes/tiptap-utils"
 
 import "@/components/tiptap-ui-primitive/button/button-colors.scss"
 import "@/components/tiptap-ui-primitive/button/button.scss"

@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { tagColors } from "@/lib/tag-colors";
+import { tagColors } from "@/lib/notes/tag-colors";
 import { useFolderId } from "@/utils/searchParams";
 import type { Tag as TagModel } from "@/schemas/tagSchema";
 import { useAuthStore } from "@/store/authStore";
@@ -233,17 +233,17 @@ export default function CreateButton({
     },
     ...(handleCreateNewTag
       ? ([
-          {
-            icon: Tag,
-            label: "Criar tag",
-            action: () => {
-              setIsTagDrawerOpen(true);
-            },
-            offsetY: 152,
-            openDelay: "60ms",
-            closeDelay: "0ms",
+        {
+          icon: Tag,
+          label: "Criar tag",
+          action: () => {
+            setIsTagDrawerOpen(true);
           },
-        ] satisfies MenuItem[])
+          offsetY: 152,
+          openDelay: "60ms",
+          closeDelay: "0ms",
+        },
+      ] satisfies MenuItem[])
       : []),
     {
       icon: FilePlus2,
@@ -255,17 +255,17 @@ export default function CreateButton({
     },
     ...(handleUploadPdf
       ? ([
-          {
-            icon: FileText,
-            label: "Enviar PDF",
-            action: () => {
-              pdfInputRef.current?.click();
-            },
-            offsetY: handleCreateNewTag ? 292 : 222,
-            openDelay: handleCreateNewTag ? "180ms" : "120ms",
-            closeDelay: "0ms",
+        {
+          icon: FileText,
+          label: "Enviar PDF",
+          action: () => {
+            pdfInputRef.current?.click();
           },
-        ] satisfies MenuItem[])
+          offsetY: handleCreateNewTag ? 292 : 222,
+          openDelay: handleCreateNewTag ? "180ms" : "120ms",
+          closeDelay: "0ms",
+        },
+      ] satisfies MenuItem[])
       : []),
   ];
 
@@ -742,7 +742,7 @@ export function SmartCreateButton() {
         type: "pdf",
       });
       if (!newNote) throw new Error("Falha ao criar nota para PDF");
-      
+
       createdNoteId = newNote.id;
 
       const url = await storageService.uploadFile(
@@ -756,7 +756,7 @@ export function SmartCreateButton() {
       router.push(`/hub/notes/${newNote.id}`);
     } catch (error) {
       if (createdNoteId) {
-        await deleteNote(createdNoteId).catch(() => {});
+        await deleteNote(createdNoteId).catch(() => { });
       }
       console.log("Erro ao enviar PDF:", error);
       toast.error("Erro ao enviar PDF!");

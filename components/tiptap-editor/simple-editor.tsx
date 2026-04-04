@@ -17,8 +17,8 @@ import { Selection } from "@tiptap/extensions"
 import { ReferenceExtension } from "@/components/tiptap-extension/reference-extension"
 import { publicationSuggestion } from "@/components/tiptap-extension/publication-suggestion"
 import { useReaderStore, type ReferenceInstance } from "@/store/readerStore"
-import { parseBibleReference } from "@/lib/bible-utils"
-import { jwpubReference } from "@/lib/jwpub-reference"
+import { parseBibleReference } from "@/lib/bible/bible-utils"
+import { jwpubReference } from "@/lib/jwpub/jwpub-reference"
 import throttle from "lodash.throttle"
 
 // --- UI Primitives ---
@@ -77,7 +77,7 @@ import { useCursorVisibility } from "@/hooks/use-cursor-visibility"
 import { ThemeToggle } from "@/components/tiptap-editor/theme-toggle"
 
 // --- Lib ---
-import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
+import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/notes/tiptap-utils"
 
 // --- Styles ---
 import "@/components/tiptap-editor/simple-editor.scss"

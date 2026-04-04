@@ -8,9 +8,9 @@ import {
   updateDoc,
   writeBatch,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/firebase";
 import { folder, Folder, CreateFolderDTO } from "@/schemas/folderSchema";
-import { FOLDERS_COLLECTION_NAME, NOTES_COLLECTION_NAME } from "@/lib/collections-name";
+import { FOLDERS_COLLECTION_NAME, NOTES_COLLECTION_NAME } from "@/lib/firebase/collections-name";
 
 export const folderService = {
   async createFolder(userId: string, data: CreateFolderDTO): Promise<Folder> {
@@ -58,7 +58,7 @@ export const folderService = {
   async getFolderDescendants(userId: string, folderId: string): Promise<{ folderIds: string[]; noteIds: string[] }> {
     try {
       const allFolders = await this.getFoldersByUser(userId);
-      
+
       const folderIds: string[] = [];
       const findChildren = (parentId: string) => {
         const children = allFolders.filter(f => f.parentId === parentId);
@@ -67,9 +67,9 @@ export const folderService = {
           findChildren(child.id);
         }
       };
-      
+
       findChildren(folderId);
-      
+
       // Get all notes to filter those belonging to any of these folders
       const notesQuery = query(
         collection(db, NOTES_COLLECTION_NAME),
@@ -77,7 +77,7 @@ export const folderService = {
       );
       const notesSnapshot = await getDocs(notesQuery);
       const noteIds: string[] = [];
-      
+
       const targetFolderIds = new Set([folderId, ...folderIds]);
       notesSnapshot.forEach((doc) => {
         const data = doc.data();
@@ -85,7 +85,7 @@ export const folderService = {
           noteIds.push(doc.id);
         }
       });
-      
+
       return { folderIds, noteIds };
     } catch (error) {
       console.error("Erro ao buscar descendentes da pasta:", error);
@@ -97,20 +97,20 @@ export const folderService = {
     try {
       const { folderIds, noteIds } = await this.getFolderDescendants(userId, folderId);
       const batch = writeBatch(db);
-      
+
       // Add folder itself
       batch.delete(doc(db, FOLDERS_COLLECTION_NAME, folderId));
-      
+
       // Add subfolders
       folderIds.forEach(id => {
         batch.delete(doc(db, FOLDERS_COLLECTION_NAME, id));
       });
-      
+
       // Add notes
       noteIds.forEach(id => {
         batch.delete(doc(db, NOTES_COLLECTION_NAME, id));
       });
-      
+
       await batch.commit();
     } catch (error) {
       console.error("Erro ao deletar pasta (cascata):", error);
@@ -121,20 +121,20 @@ export const folderService = {
   async updateFolder(folderId: string, data: Partial<Folder>, userId?: string): Promise<void> {
     try {
       const folderRef = doc(db, FOLDERS_COLLECTION_NAME, folderId);
-      
+
       // If we are updating trashed or archived status, we might want to cascade
       const shouldCascade = userId && (data.trashed !== undefined || data.archived !== undefined);
-      
+
       if (shouldCascade && userId) {
         const { folderIds, noteIds } = await this.getFolderDescendants(userId, folderId);
         const batch = writeBatch(db);
-        
+
         // Update the folder itself
         batch.update(folderRef, {
           ...data,
           updatedAt: new Date().toISOString(),
         });
-        
+
         // Update subfolders
         folderIds.forEach(id => {
           batch.update(doc(db, FOLDERS_COLLECTION_NAME, id), {
@@ -142,7 +142,7 @@ export const folderService = {
             updatedAt: new Date().toISOString(),
           });
         });
-        
+
         // Update notes
         noteIds.forEach(id => {
           batch.update(doc(db, NOTES_COLLECTION_NAME, id), {
@@ -150,7 +150,7 @@ export const folderService = {
             updatedAt: new Date().toISOString(),
           });
         });
-        
+
         await batch.commit();
       } else {
         await updateDoc(folderRef, {

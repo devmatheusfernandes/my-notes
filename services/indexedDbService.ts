@@ -69,16 +69,23 @@ export const indexedDbService = {
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(STORE_PUBS, "readonly");
       const store = transaction.objectStore(STORE_PUBS);
-      const request = store.getAll();
+      const request = store.openCursor();
+      const metadata: JwpubMetadata[] = [];
 
-      request.onsuccess = () => {
-        const pubs = request.result as JwpubPublication[];
-        const metadata = pubs.map(p => ({
-          symbol: p.symbol,
-          title: p.title,
-          lastAccessed: p.lastAccessed
-        }));
-        resolve(metadata);
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          const p = cursor.value as JwpubPublication;
+          metadata.push({
+            symbol: p.symbol,
+            title: p.title,
+            lastAccessed: p.lastAccessed,
+            tokens: p.tokens
+          });
+          cursor.continue();
+        } else {
+          resolve(metadata);
+        }
       };
       request.onerror = () => reject(request.error);
     });

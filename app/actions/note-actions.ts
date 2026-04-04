@@ -1,7 +1,7 @@
 "use server";
 
-import { adminDb, adminStorage } from "@/lib/firebase-admin";
-import { NOTES_COLLECTION_NAME } from "@/lib/collections-name";
+import { adminDb, adminStorage } from "@/lib/firebase/firebase-admin";
+import { NOTES_COLLECTION_NAME } from "@/lib/firebase/collections-name";
 import { revalidatePath } from "next/cache";
 
 export async function uploadPdfAction(formData: FormData) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { adminAuth } from '@/lib/firebase-admin';
+import { adminAuth } from '@/lib/firebase/firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
     // Verify the ID token using Firebase Admin
     const decodedToken = await adminAuth.verifyIdToken(token);
-    
+
     if (!decodedToken) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     // Set the session cookie with Firebase Admin
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
     const sessionCookie = await adminAuth.createSessionCookie(token, { expiresIn });
-    
+
     const cookieStore = await cookies();
     cookieStore.set('__session', sessionCookie, {
       path: '/',

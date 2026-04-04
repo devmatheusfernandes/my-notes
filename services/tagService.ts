@@ -11,9 +11,9 @@ import {
     arrayRemove,
     updateDoc,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/firebase";
 import { tag, Tag, CreateTagDTO } from "@/schemas/tagSchema";
-import { TAGS_COLLECTION_NAME, NOTES_COLLECTION_NAME } from "@/lib/collections-name";
+import { TAGS_COLLECTION_NAME, NOTES_COLLECTION_NAME } from "@/lib/firebase/collections-name";
 
 export const tagService = {
     async createTag(userId: string, data: CreateTagDTO): Promise<Tag> {
@@ -42,12 +42,12 @@ export const tagService = {
             const newTag = tag.parse(rawTag);
             await setDoc(newTagRef, newTag);
             return newTag;
-        }  catch (error) {
+        } catch (error) {
             console.error("Erro ao criar tag no Firebase:", error);
             if (error instanceof Error && error.message === "Já existe uma tag com este nome.") {
-                throw error; 
+                throw error;
             }
-                throw new Error("Não foi possível salvar a tag no banco de dados.");
+            throw new Error("Não foi possível salvar a tag no banco de dados.");
         }
     },
 
@@ -152,10 +152,10 @@ export const tagService = {
     async applyTagToNote(noteId: string, tagId: string): Promise<void> {
         try {
             const noteRef = doc(db, NOTES_COLLECTION_NAME, noteId);
-            await updateDoc(noteRef, { 
-                tagIds: arrayUnion(tagId), 
-                updatedAt: new Date().toISOString() 
-            }); 
+            await updateDoc(noteRef, {
+                tagIds: arrayUnion(tagId),
+                updatedAt: new Date().toISOString()
+            });
         } catch (error) {
             console.error("Erro ao aplicar tag à nota:", error);
             throw new Error("Não foi possível aplicar a tag à nota.");

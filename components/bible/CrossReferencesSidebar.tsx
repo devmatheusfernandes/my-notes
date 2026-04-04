@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Link2, BookOpen, Layers, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import type { TargetReference } from "@/data/scheme/cross-reference";
+import type { TargetReference } from "@/schemas/cross-reference";
 
 interface CrossReferencesSidebarProps {
   book: string;
@@ -14,14 +14,14 @@ interface CrossReferencesSidebarProps {
   onNavigate: (book: string, chapter: number, verse: number) => void;
 }
 
-function ReferenceItem({ 
-  ref, 
-  version, 
-  onNavigate 
-}: { 
-  ref: TargetReference; 
-  version: string; 
-  onNavigate: (book: string, chapter: number, verse: number) => void 
+function ReferenceItem({
+  ref,
+  version,
+  onNavigate
+}: {
+  ref: TargetReference;
+  version: string;
+  onNavigate: (book: string, chapter: number, verse: number) => void
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [text, setText] = useState<string>("");
@@ -92,12 +92,12 @@ function ReferenceItem({
                 </p>
               )}
             </div>
-            
+
             <button
               onClick={() => onNavigate(ref.book, ref.chapter, ref.verse)}
               className="w-full py-2 px-3 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-xs font-bold text-zinc-500 hover:text-primary transition-all flex items-center justify-center gap-2"
             >
-              Ver capítulo 
+              Ver capítulo
               <ExternalLink className="w-3 h-3" />
             </button>
           </motion.div>
@@ -119,7 +119,7 @@ export function CrossReferencesSidebar({
 
   useEffect(() => {
     if (!book || !chapter || !verse) return;
-    
+
     const fetchRefs = async () => {
       setLoading(true);
       try {
@@ -171,7 +171,7 @@ export function CrossReferencesSidebar({
           </div>
         ) : references.length > 0 ? (
           references.map((ref, i) => (
-            <ReferenceItem 
+            <ReferenceItem
               key={`${ref.book}-${ref.chapter}-${ref.verse}-${i}`}
               ref={ref}
               version={version}

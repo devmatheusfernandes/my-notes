@@ -1,8 +1,8 @@
 import { Mark, mergeAttributes, InputRule, Editor, Range } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import suggestion, { SuggestionOptions } from '@tiptap/suggestion';
-import { normalizeBookToken } from '@/data/constants/bible-abreviations';
-import { jwpubReference } from '@/lib/jwpub-reference';
+import { normalizeBookToken } from '@/lib/bible/bible-abreviations';
+import { jwpubReference } from '@/lib/jwpub/jwpub-reference';
 import { JwpubMetadata } from '@/schemas/jwpubSchema';
 
 export interface ReferenceOptions {
@@ -133,7 +133,7 @@ export const ReferenceExtension = Mark.create<ReferenceOptions>({
             if (event.key === 'Enter' && !event.shiftKey) {
               const { state, dispatch } = view;
               const { $from } = state.selection;
-              
+
               const currentLineText = $from.nodeBefore?.text || '';
               const lastSlashIndex = currentLineText.lastIndexOf('/');
 
@@ -143,8 +143,8 @@ export const ReferenceExtension = Mark.create<ReferenceOptions>({
 
                 if (isPub) {
                   // Text to show as link (strip the leading slash)
-                  const displayText = potentialRefText.startsWith('/') 
-                    ? potentialRefText.substring(1) 
+                  const displayText = potentialRefText.startsWith('/')
+                    ? potentialRefText.substring(1)
                     : potentialRefText;
 
                   const start = $from.pos - potentialRefText.length;

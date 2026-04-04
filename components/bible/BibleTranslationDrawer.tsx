@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BIBLE_NAMES } from "@/data/constants/bible-books";
+import { BIBLE_NAMES } from "@/lib/bible/bible-books";
 import { motion } from "framer-motion";
 import { Check, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -55,8 +55,8 @@ export function BibleTranslationDrawer({
               }}
               className={cn(
                 "w-full text-left p-4 rounded-xl flex items-center justify-between transition-all group",
-                currentVersion === code 
-                  ? "bg-primary/10 text-primary font-bold" 
+                currentVersion === code
+                  ? "bg-primary/10 text-primary font-bold"
                   : "hover:bg-zinc-100 dark:hover:bg-zinc-900"
               )}
             >

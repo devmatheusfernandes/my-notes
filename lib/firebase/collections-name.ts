@@ -3,3 +3,5 @@ export const FOLDERS_COLLECTION_NAME = "folders";
 export const TAGS_COLLECTION_NAME = "tags";
 export const USER_SETTINGS_COLLECTION_NAME = "userSettings";
 export const MEDIA_COLLECTION_NAME = "media";
+export const VIDEOS_COLLECTION = "videos";
+export const USERS_COLLECTION = "users";

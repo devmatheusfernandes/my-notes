@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
 import Database from "better-sqlite3";
-import { CrossReferenceRow, TargetReference } from "@/data/scheme/cross-reference";
-import { BIBLE_BOOKS_PT } from "@/data/constants/bible-books-pt";
+import { CrossReferenceRow, TargetReference } from "@/schemas/cross-reference";
+import { BIBLE_BOOKS_PT } from "@/lib/bible/bible-books-pt";
 
 export const runtime = "nodejs";
 

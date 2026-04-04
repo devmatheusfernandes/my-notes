@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth } from "@/lib/firebase/firebase";
 import { useAuthStore } from "@/store/authStore";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

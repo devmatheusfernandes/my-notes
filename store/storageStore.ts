@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/firebase";
 
 interface StorageUsageData {
   totalBytesUsed: number;
@@ -41,13 +41,13 @@ export const useStorageStore = create<StorageState>((set) => ({
     set({ isLoading: true });
 
     const usageRef = doc(db, "usage", userId);
-    
+
     // Realtime listener for quota
     const unsubscribe = onSnapshot(usageRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const totalBytesUsed = data.totalBytesUsed || 0;
-        
+
         set({
           usage: {
             totalBytesUsed,

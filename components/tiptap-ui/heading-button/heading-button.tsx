@@ -3,7 +3,7 @@
 import { forwardRef, useCallback } from "react"
 
 // --- Lib ---
-import { parseShortcutKeys } from "@/lib/tiptap-utils"
+import { parseShortcutKeys } from "@/lib/notes/tiptap-utils"
 
 // --- Tiptap UI ---
 import type {

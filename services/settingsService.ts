@@ -1,5 +1,5 @@
-import { db } from "@/lib/firebase";
-import { USER_SETTINGS_COLLECTION_NAME } from "@/lib/collections-name";
+import { db } from "@/lib/firebase/firebase";
+import { USER_SETTINGS_COLLECTION_NAME } from "@/lib/firebase/collections-name";
 import { UserSettings, userSettings } from "@/schemas/userSettingsSchema";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 

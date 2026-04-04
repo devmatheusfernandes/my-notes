@@ -1,4 +1,4 @@
-import { auth, db, storage } from "@/lib/firebase";
+import { auth, db, storage } from "@/lib/firebase/firebase";
 import {
   collection,
   getDocs,
@@ -25,7 +25,7 @@ import {
   NOTES_COLLECTION_NAME,
   FOLDERS_COLLECTION_NAME,
   TAGS_COLLECTION_NAME
-} from "@/lib/collections-name";
+} from "@/lib/firebase/collections-name";
 import type { Note } from "@/schemas/noteSchema";
 import type { Folder } from "@/schemas/folderSchema";
 import type { Tag } from "@/schemas/tagSchema";
@@ -409,10 +409,10 @@ export const backupService = {
             const fileName = oldUrl.split('/').pop()?.split('?')[0] || `backup-${Date.now()}`;
             // If it's a Tiptap image, it likely has /images/ in path. If PDF, /notes/ or similar.
             const isImage = oldUrl.includes("/images/");
-            const storagePath = isImage 
-              ? `users/${userId}/images/${fileName}` 
+            const storagePath = isImage
+              ? `users/${userId}/images/${fileName}`
               : `users/${userId}/notes/${fileName}`;
-            
+
             const fileRef = ref(storage, storagePath);
             await uploadBytes(fileRef, blob);
             const newUrl = await getDownloadURL(fileRef);

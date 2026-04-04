@@ -1,5 +1,5 @@
 import { indexedDbService } from "./indexedDbService";
-import { BIBLE_BOOKS_PT } from "@/data/constants/bible-books-pt";
+import { BIBLE_BOOKS_PT } from "@/lib/bible/bible-books-pt";
 
 export interface PublicationContent {
   title: string;

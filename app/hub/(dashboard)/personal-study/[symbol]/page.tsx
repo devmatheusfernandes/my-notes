@@ -20,7 +20,7 @@ import { ChapterRenderer } from "@/components/jwpub/ChapterRenderer";
 import { ChapterCover } from "@/components/jwpub/ChapterCover";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { publicationService } from "@/services/publicationService";
-import { transformDocIdLinks, getWolUrlForSymbol } from "@/lib/jwpub-utils";
+import { transformDocIdLinks, getWolUrlForSymbol } from "@/lib/jwpub/jwpub-utils";
 
 export default function JwpubReaderPage() {
   const { symbol } = useParams();
@@ -45,12 +45,27 @@ export default function JwpubReaderPage() {
   } = useReaderStore();
 
   const currentChapterIndex = useReaderStore(s => s.currentChapterIndex);
+  const currentChapter = pub?.chapters[currentChapterIndex];
+  const highlightTerm = searchParams.get("h") || undefined;
 
   useEffect(() => {
     if (user?.uid) {
       fetchSettings(user.uid);
     }
   }, [user?.uid, fetchSettings]);
+
+  // Handle automatic scrolling to highlight
+  useEffect(() => {
+    if (highlightTerm && !loading && currentChapter) {
+      const timer = setTimeout(() => {
+        const firstHighlight = document.querySelector(".search-highlight");
+        if (firstHighlight) {
+          firstHighlight.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightTerm, loading, currentChapterIndex, currentChapter]);
 
   useEffect(() => {
     if (!symbol) return;
@@ -88,7 +103,6 @@ export default function JwpubReaderPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentChapterIndex, router, setCurrentChapterIndex, setDirection]);
 
-  const currentChapter = pub?.chapters[currentChapterIndex];
 
   useEffect(() => {
     if (!currentChapter) return;
@@ -327,6 +341,7 @@ export default function JwpubReaderPage() {
                           footnotes={pub.footnotes || {}}
                           onReferenceClick={handleReferenceClick}
                           skipImageId={firstImageId || undefined}
+                          highlightTerm={highlightTerm}
                         />
                       </article>
                     </>
