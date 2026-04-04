@@ -100,14 +100,13 @@ export function BibleSelectorGrid({
   onSelectChapter,
   selectedBook: propSelectedBook,
 }: BibleSelectorGridProps) {
-  // If we only have a book name (e.g. from URL), find the full book metadata
   const selectedBook = propSelectedBook && !propSelectedBook.chapters
     ? [...OT_BOOKS, ...NT_BOOKS].find((b: { name: string }) => b.name === propSelectedBook.name) || null
     : propSelectedBook;
 
   if (selectedBook) {
     return (
-      <div className="flex flex-col gap-6 p-4 animate-in fade-in slide-in-from-bottom-4">
+      <div className="flex flex-col gap-6 p-4 animate-in fade-in slide-in-from-bottom-4 max-w-5xl w-full">
         <div className="flex items-center gap-4">
           <button
             onClick={() => onSelectBook(null)}
@@ -120,12 +119,12 @@ export function BibleSelectorGrid({
           </h2>
         </div>
 
-        <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
+        <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-12 lg:grid-cols-15 xl:grid-cols-20 gap-1">
           {Array.from({ length: selectedBook.chapters }, (_, i) => i + 1).map((chapter) => (
             <button
               key={chapter}
               onClick={() => onSelectChapter(selectedBook, chapter)}
-              className="aspect-square flex items-center justify-center text-lg font-medium border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors rounded-md"
+              className="aspect-square flex items-center justify-center text-base font-medium border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
               {chapter}
             </button>
@@ -136,18 +135,18 @@ export function BibleSelectorGrid({
   }
 
   return (
-    <div className="flex flex-col gap-12 p-4 select-none">
+    <div className="flex flex-col gap-8 p-4 select-none max-w-5xl w-full">
       <section>
-        <h2 className="text-xl font-bold mb-6 uppercase tracking-widest text-zinc-500">
+        <h2 className="text-sm font-semibold mb-4 uppercase tracking-widest text-zinc-500/80">
           Hebrew-Aramaic Scriptures
         </h2>
-        <div className="grid grid-cols-6 gap-1">
+        <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-13 gap-1">
           {OT_BOOKS.map((book, i) => (
             <button
               key={book.name}
               onClick={() => onSelectBook(book)}
               className={cn(
-                "aspect-[4/3] flex items-center justify-center text-sm font-bold uppercase transition-all hover:scale-105 active:scale-95 border-[0.5px] border-zinc-500/20",
+                "w-full aspect-square flex items-center justify-center text-xs sm:text-sm font-bold uppercase transition-all hover:scale-105 active:scale-95 border-[0.5px] border-zinc-500/10",
                 getShade(i, false)
               )}
             >
@@ -158,16 +157,16 @@ export function BibleSelectorGrid({
       </section>
 
       <section>
-        <h2 className="text-xl font-bold mb-6 uppercase tracking-widest text-zinc-500">
+        <h2 className="text-sm font-semibold mb-4 uppercase tracking-widest text-zinc-500/80">
           Christian Greek Scriptures
         </h2>
-        <div className="grid grid-cols-6 gap-1">
+        <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-13 gap-1">
           {NT_BOOKS.map((book, i) => (
             <button
               key={book.name}
               onClick={() => onSelectBook(book)}
               className={cn(
-                "aspect-[4/3] flex items-center justify-center text-sm font-bold uppercase transition-all hover:scale-105 active:scale-95 border-[0.5px] border-zinc-500/20",
+                "w-full aspect-square flex items-center justify-center text-xs sm:text-sm font-bold uppercase transition-all hover:scale-105 active:scale-95 border-[0.5px] border-zinc-500/10",
                 getShade(i, true)
               )}
             >
