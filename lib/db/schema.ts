@@ -10,8 +10,8 @@ export const embeddingsQueue = sqliteTable("embeddings_queue", {
   syncStatus: text("sync_status", { enum: ["pending", "synced", "error"] }).default("pending"),
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
   updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
-}, (table) => {
-  return {
-    sourceUnique: unique("source_unique").on(table.sourceId, table.sourceType),
-  };
-});
+}, (table) => [
+  unique("source_unique").on(table.sourceId, table.sourceType),
+]);
+
+// run "npx drizzle-kit push" to update the database schema

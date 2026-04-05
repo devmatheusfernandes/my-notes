@@ -5,3 +5,6 @@ export const USER_SETTINGS_COLLECTION_NAME = "userSettings";
 export const MEDIA_COLLECTION_NAME = "media";
 export const VIDEOS_COLLECTION = "videos";
 export const USERS_COLLECTION = "users";
+
+//Test collections
+export const TEST_VIDEOS_COLLECTION = "test_videos";
