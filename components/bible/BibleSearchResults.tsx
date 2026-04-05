@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Info, ExternalLink, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
+import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
 import type { StrongResult } from "@/schemas/strong";
 
 interface SearchResult {
@@ -67,31 +68,40 @@ export function BibleSearchResults({
 
   return (
     <div className="flex-1 overflow-y-auto no-scrollbar bg-zinc-50/50 dark:bg-zinc-950/50">
-      <div className="max-w-5xl mx-auto p-6 space-y-12">
-        <header className="flex flex-col gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-6">
+      <motion.div
+        className="max-w-5xl mx-auto p-6 space-y-12"
+        variants={pageContainerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.header
+          className="flex flex-col gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-6"
+          variants={itemFadeInUpVariants}
+        >
           <h2 className="text-3xl font-bold tracking-tight">
             Resultados para <span className="text-primary">&quot;{query}&quot;</span>
           </h2>
           <p className="text-zinc-500">
             {loading ? "Pesquisando..." : `Encontrados ${results.length} versículos e ${strongResults.length} definições.`}
           </p>
-        </header>
+        </motion.header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Results Column */}
           <div className="lg:col-span-2 space-y-6">
-            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+            <motion.h3
+              className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2"
+              variants={itemFadeInUpVariants}
+            >
               <BookOpen className="w-3 h-3" />
               Ocorrências no Texto
-            </h3>
+            </motion.h3>
 
             <div className="space-y-4">
               {results.map((r, i) => (
                 <motion.button
                   key={`${r.book}-${r.chapter}-${r.verse}-${i}`}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
+                  variants={itemFadeInUpVariants}
                   onClick={() => onSelectVerse(r.book, r.chapter, r.verse)}
                   className="w-full text-left p-6 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 hover:border-primary/50 hover:shadow-md transition-all group"
                 >
@@ -108,27 +118,31 @@ export function BibleSearchResults({
               ))}
 
               {!loading && results.length === 0 && (
-                <div className="p-12 text-center bg-zinc-100 dark:bg-zinc-900 rounded-3xl text-zinc-500">
+                <motion.div
+                  variants={itemFadeInUpVariants}
+                  className="p-12 text-center bg-zinc-100 dark:bg-zinc-900 rounded-3xl text-zinc-500"
+                >
                   Nenhuma ocorrência encontrada para esta busca no texto.
-                </div>
+                </motion.div>
               )}
             </div>
           </div>
 
           {/* Sidebar / Strong Definitions Column */}
           <div className="space-y-6">
-            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+            <motion.h3
+              className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2"
+              variants={itemFadeInUpVariants}
+            >
               <Info className="w-3 h-3" />
               Dicionário Strongs
-            </h3>
+            </motion.h3>
 
             <div className="space-y-4">
-              {strongResults.map((s, i) => (
+              {strongResults.map((s) => (
                 <motion.div
                   key={s.id}
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.1 }}
+                  variants={itemFadeInUpVariants}
                   className="p-6 bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-2xl"
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -154,14 +168,17 @@ export function BibleSearchResults({
               ))}
 
               {!loading && strongResults.length === 0 && (
-                <div className="p-8 text-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-400 text-sm">
+                <motion.div
+                  variants={itemFadeInUpVariants}
+                  className="p-8 text-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-400 text-sm"
+                >
                   Nenhuma definição Strong encontrada.
-                </div>
+                </motion.div>
               )}
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

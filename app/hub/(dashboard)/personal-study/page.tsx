@@ -13,7 +13,7 @@ export default function PersonalStudyPage() {
   const { videos: searchVideos, publications: searchPubs, isSearching } = useUnifiedSearch(search);
 
   return (
-    <div className="container-page overflow-hidden">
+    <>
       <Header
         scrollSearch
         searchQuery={search}
@@ -21,7 +21,7 @@ export default function PersonalStudyPage() {
         showSearch={true}
       />
 
-      <div className="hidden md:flex flex-col md:flex-row lg:flex-row mx-auto max-w-full overflow-hidden">
+      <div className="page-container hidden md:flex flex-col md:flex-row lg:flex-row gap-8">
         <StudyVideos
           searchQuery={search}
           searchResults={searchVideos}
@@ -55,6 +55,6 @@ export default function PersonalStudyPage() {
         </TabsContent>
       </Tabs>
 
-    </div>
+    </>
   );
 }

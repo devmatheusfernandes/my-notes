@@ -285,7 +285,7 @@ export default function NoteCard({
             onClick={handleClick}
             {...longPressProps}
             className={cn(
-              "group relative flex flex-col justify-between overflow-hidden rounded-2xl transition-all duration-300 cursor-pointer min-h-[180px]",
+              "group relative flex flex-col justify-between overflow-hidden rounded-sm transition-all duration-300 cursor-pointer min-h-[180px]",
               "bg-card border shadow-sm hover:shadow-md hover:border-border/80",
               isSelected
                 ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20"

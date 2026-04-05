@@ -19,6 +19,8 @@ import { getAllVideosGrouped } from "@/lib/video/video-crawler";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Loading } from "../ui/loading";
+import { motion } from "framer-motion";
+import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
 
 interface StudyVideosProps {
   searchQuery: string;
@@ -81,10 +83,15 @@ export function StudyVideos({ searchQuery, searchResults, isSearching }: StudyVi
   }
 
   return (
-    <div className="max-w-5xl flex-1 overflow-y-auto">
-      <div className="mx-auto p-4 md:p-8">
+    <div className="flex-1 overflow-y-auto">
+      <motion.div 
+        variants={pageContainerVariants}
+        initial="hidden"
+        animate="visible"
+        className="pb-20"
+      >
         <div className="flex flex-col gap-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <motion.div variants={itemFadeInUpVariants} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-3">
                 <h2 className="page-title leading-tight">Vídeos</h2>
@@ -104,49 +111,54 @@ export function StudyVideos({ searchQuery, searchResults, isSearching }: StudyVi
             <div className="text-xs font-bold text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full border border-border/40">
               {hasSearch ? `${searchResults.length} ENCONTRADOS` : `${totalVideos} DISPONÍVEIS`}
             </div>
-          </div>
+          </motion.div>
 
           {!hasSearch && groups.length > 0 && (
-            <ScrollArea className="w-full">
-              <div className="flex gap-2 pb-2">
-                {groups.map((group) => (
-                  <button
-                    key={group.key}
-                    onClick={() => {
-                      if (selectedCategories.includes(group.key)) {
-                        setSelectedCategories(prev => prev.filter(k => k !== group.key))
-                      } else {
-                        setSelectedCategories(prev => [...prev, group.key])
-                      }
-                    }}
-                    className={cn(
-                      "px-4 py-1.5 rounded-full text-xs font-bold transition-all border whitespace-nowrap",
-                      selectedCategories.includes(group.key)
-                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                        : "bg-card text-foreground border-border hover:border-primary/50"
-                    )}
-                  >
-                    {group.title.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-              <ScrollBar orientation="horizontal" className="invisible sm:visible" />
-            </ScrollArea>
+            <motion.div variants={itemFadeInUpVariants}>
+              <ScrollArea className="w-full">
+                <div className="flex gap-2 pb-2">
+                  {groups.map((group) => (
+                    <button
+                      key={group.key}
+                      onClick={() => {
+                        if (selectedCategories.includes(group.key)) {
+                          setSelectedCategories(prev => prev.filter(k => k !== group.key))
+                        } else {
+                          setSelectedCategories(prev => [...prev, group.key])
+                        }
+                      }}
+                      className={cn(
+                        "px-4 py-1.5 rounded-full text-xs font-bold transition-all border whitespace-nowrap",
+                        selectedCategories.includes(group.key)
+                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                          : "bg-card text-foreground border-border hover:border-primary/50"
+                      )}
+                    >
+                      {group.title.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+                <ScrollBar orientation="horizontal" className="invisible sm:visible" />
+              </ScrollArea>
+            </motion.div>
           )}
 
           <div className="flex-1 max-h-[calc(86vh-100px)] overflow-y-auto custom-scrollbar">
             {slicedVideos.length > 0 ? (
-              <div className={cn(
-                "grid gap-x-4 gap-y-6",
-                hasSearch ? "flex flex-col gap-4" : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
-              )}>
+              <div 
+                className={cn(
+                  "grid gap-x-4 gap-y-6",
+                  hasSearch ? "flex flex-col gap-4" : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
+                )}
+              >
                 {slicedVideos.map((video) => (
-                  <VideoCard
-                    key={video.id}
-                    video={video}
-                    searchQuery={searchQuery}
-                    variant={hasSearch ? "list" : "grid"}
-                  />
+                  <motion.div key={video.id} variants={itemFadeInUpVariants}>
+                    <VideoCard
+                      video={video}
+                      searchQuery={searchQuery}
+                      variant={hasSearch ? "list" : "grid"}
+                    />
+                  </motion.div>
                 ))}
               </div>
             ) : (
@@ -157,7 +169,7 @@ export function StudyVideos({ searchQuery, searchResults, isSearching }: StudyVi
             )}
 
             {visibleCount < allVideos.length && (
-              <div className="flex justify-center pt-8 pb-12">
+              <motion.div variants={itemFadeInUpVariants} className="flex justify-center pt-8 pb-12">
                 <Button
                   variant="outline"
                   onClick={() => setVisibleCount(prev => prev + 9)}
@@ -166,11 +178,11 @@ export function StudyVideos({ searchQuery, searchResults, isSearching }: StudyVi
                   Carregar Mais
                   <Plus className="w-4 h-4" />
                 </Button>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

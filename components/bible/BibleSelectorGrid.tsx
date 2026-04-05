@@ -1,6 +1,8 @@
 "use client";
 import { cn } from "@/lib/utils";
 import { type BibleBook } from "@/schemas/bibleSchema";
+import { motion } from "framer-motion";
+import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
 
 
 const OT_BOOKS: BibleBook[] = [
@@ -106,8 +108,13 @@ export function BibleSelectorGrid({
 
   if (selectedBook) {
     return (
-      <div className="flex flex-col gap-6 p-4 animate-in fade-in slide-in-from-bottom-4 max-w-5xl w-full">
-        <div className="flex items-center gap-4">
+      <motion.div 
+        className="flex flex-col gap-6 p-4 max-w-5xl w-full"
+        variants={pageContainerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={itemFadeInUpVariants} className="flex items-center gap-4">
           <button
             onClick={() => onSelectBook(null)}
             className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
@@ -117,26 +124,32 @@ export function BibleSelectorGrid({
           <h2 className="text-2xl font-bold uppercase tracking-tight">
             {selectedBook.name}
           </h2>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-12 lg:grid-cols-15 xl:grid-cols-20 gap-1">
           {Array.from({ length: selectedBook.chapters }, (_, i) => i + 1).map((chapter) => (
-            <button
+            <motion.button
               key={chapter}
+              variants={itemFadeInUpVariants}
               onClick={() => onSelectChapter(selectedBook, chapter)}
               className="aspect-square flex items-center justify-center text-base font-medium border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
               {chapter}
-            </button>
+            </motion.button>
           ))}
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-8 p-4 select-none max-w-5xl w-full">
-      <section>
+    <motion.div 
+      className="flex flex-col gap-8 p-4 select-none max-w-5xl w-full"
+      variants={pageContainerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.section variants={itemFadeInUpVariants}>
         <h2 className="text-sm font-semibold mb-4 uppercase tracking-widest text-zinc-500/80">
           Hebrew-Aramaic Scriptures
         </h2>
@@ -154,9 +167,9 @@ export function BibleSelectorGrid({
             </button>
           ))}
         </div>
-      </section>
+      </motion.section>
 
-      <section>
+      <motion.section variants={itemFadeInUpVariants}>
         <h2 className="text-sm font-semibold mb-4 uppercase tracking-widest text-zinc-500/80">
           Christian Greek Scriptures
         </h2>
@@ -174,7 +187,7 @@ export function BibleSelectorGrid({
             </button>
           ))}
         </div>
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }

@@ -22,12 +22,6 @@ export const hubSidebarMainItems: HubSidebarItem[] = [
     href: "/hub/items",
   },
   {
-    label: "Chat IA",
-    tooltip: "Conversar com IA",
-    icon: MessageSquareIcon,
-    href: "/hub/chat",
-  },
-  {
     label: "Arquivadas",
     tooltip: "Arquivadas",
     icon: ArchiveIcon,
@@ -54,6 +48,12 @@ export const hubSidebarStudyItems: HubSidebarItem[] = [
     icon: GraduationCapIcon,
     href: "/hub/personal-study"
   },
+  {
+    label: "Chat",
+    tooltip: "Conversar com IA",
+    icon: MessageSquareIcon,
+    href: "/hub/chat",
+  }
 ];
 
 

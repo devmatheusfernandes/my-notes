@@ -12,6 +12,8 @@ import { CrossReferencesSidebar } from "@/components/bible/CrossReferencesSideba
 import { useReaderStore } from "@/store/readerStore";
 import { type BibleBook, type Verse } from "@/schemas/bibleSchema";
 import { Loading } from "@/components/ui/loading";
+import { motion } from "framer-motion";
+import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
 
 function BibleContent() {
     const router = useRouter();
@@ -108,7 +110,12 @@ function BibleContent() {
                 ) : null
             }
         >
-            <div className="flex flex-col h-full bg-white dark:bg-zinc-950 overflow-hidden">
+            <motion.div 
+                className="flex flex-col h-full bg-white dark:bg-zinc-950 overflow-hidden"
+                variants={pageContainerVariants}
+                initial="hidden"
+                animate="visible"
+            >
                 <BibleHeader
                     version={version}
                     book={book}
@@ -133,32 +140,37 @@ function BibleContent() {
                 />
 
                 <main className="flex-1 overflow-hidden flex flex-col relative">
-                    {q ? (
-                        <BibleSearchResults
-                            query={q}
-                            version={version}
-                            onSelectVerse={(b: string, c: number, vs: number) => {
-                                updateParams({ b, c, vs, q: null });
-                                setIsSearchActive(false);
-                                setSearchQuery("");
-                            }}
-                        />
-                    ) : !book || !chapter ? (
-                        <div className="flex-1 overflow-y-auto no-scrollbar">
-                            <BibleSelectorGrid
-                                selectedBook={currentBookObj}
-                                onSelectBook={handleSelectBook}
-                                onSelectChapter={handleSelectChapter}
+                    <motion.div 
+                        className="flex-1 overflow-hidden flex flex-col h-full"
+                        variants={itemFadeInUpVariants}
+                    >
+                        {q ? (
+                            <BibleSearchResults
+                                query={q}
+                                version={version}
+                                onSelectVerse={(b: string, c: number, vs: number) => {
+                                    updateParams({ b, c, vs, q: null });
+                                    setIsSearchActive(false);
+                                    setSearchQuery("");
+                                }}
                             />
-                        </div>
-                    ) : (
-                        <BibleReader
-                            verses={verses}
-                            isLoading={loading}
-                            highlightedVerse={verse > 0 ? verse : null}
-                            onVerseClick={handleVerseClick}
-                        />
-                    )}
+                        ) : !book || !chapter ? (
+                            <div className="flex-1 overflow-y-auto no-scrollbar">
+                                <BibleSelectorGrid
+                                    selectedBook={currentBookObj}
+                                    onSelectBook={handleSelectBook}
+                                    onSelectChapter={handleSelectChapter}
+                                />
+                            </div>
+                        ) : (
+                            <BibleReader
+                                verses={verses}
+                                isLoading={loading}
+                                highlightedVerse={verse > 0 ? verse : null}
+                                onVerseClick={handleVerseClick}
+                            />
+                        )}
+                    </motion.div>
 
                     <BibleTranslationDrawer
                         isOpen={isTranslationsOpen}
@@ -167,7 +179,7 @@ function BibleContent() {
                         onSelect={(v) => updateParams({ v })}
                     />
                 </main>
-            </div>
+            </motion.div>
         </SidebarLayout>
     );
 }

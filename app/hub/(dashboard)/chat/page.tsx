@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
-import { Chat, chatService, Message } from "@/services/chatService"; // Certifique-se que isso exporta os métodos corretos
+import { Chat, chatService, Message } from "@/services/chatService";
 import { Button } from "@/components/ui/button";
 import {
   SendIcon,
@@ -10,7 +10,6 @@ import {
   MessageSquareIcon,
   BotIcon,
   MenuIcon,
-  SquareTerminal,
   Archive,
   Trash2,
   Menu
@@ -26,11 +25,12 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
+  DrawerDescription,
+  DrawerClose,
 } from "@/components/ui/drawer";
+import { motion, AnimatePresence } from "framer-motion";
+import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
 
-
-
-// Utilitário para converter datas do Firebase ou Strings para Date nativo
 const parseDate = (date: unknown): Date => {
   if (!date) return new Date();
   if (typeof date === 'object' && date !== null && 'toDate' in date && typeof (date as { toDate: unknown }).toDate === 'function') {
@@ -48,7 +48,6 @@ export default function ChatPage() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
-  // States
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -56,12 +55,12 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
+  const [chatToDeleteId, setChatToDeleteId] = useState<string | null>(null);
 
-  // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -72,7 +71,6 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages, isLoading]);
 
-  // Gerenciamento de Resize da Sidebar
   useEffect(() => {
     const handleResize = () => setIsSidebarOpen(window.innerWidth >= 768);
     handleResize();
@@ -80,8 +78,6 @@ export default function ChatPage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-
-  // API Calls
   const loadChats = React.useCallback(async () => {
     if (!user) return;
     try {
@@ -104,11 +100,9 @@ export default function ChatPage() {
     }
   }, []);
 
-  // Carregamento Inicial
   useEffect(() => {
     if (user) {
       loadChats();
-      // Load chat from URL if ID exists
       const chatIdFromUrl = searchParams.get("id");
       if (chatIdFromUrl) {
         setCurrentChatId(chatIdFromUrl);
@@ -117,7 +111,6 @@ export default function ChatPage() {
     }
   }, [user, loadChats, loadMessages, searchParams]);
 
-  // Sync currentChatId with URL
   useEffect(() => {
     const currentIdInUrl = searchParams.get("id");
     if (currentChatId !== currentIdInUrl) {
@@ -127,11 +120,7 @@ export default function ChatPage() {
       } else {
         params.delete("id");
       }
-      // Note: we use router.replace with the current searchParams to sync
-      // but only if it's different to avoid loops. 
-      // Actually the current searchParams might be different from currentChatId.
     }
-    // This sync logic was already there, but let's keep it clean.
   }, [currentChatId, searchParams, router, pathname]);
 
   useEffect(() => {
@@ -142,14 +131,12 @@ export default function ChatPage() {
     }
   }, [currentChatId, loadMessages]);
 
-  // Lógica de Envio e Streaming Refatorada
   const handleSend = async () => {
     if (!input.trim() || !user || isLoading) return;
 
     const userMessageText = input.trim();
     setInput("");
 
-    // Volta o foco pro input e reseta a altura
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.focus();
@@ -172,7 +159,7 @@ export default function ChatPage() {
           messages: [...messages, newUserMessage].map(m => ({
             role: m.role,
             content: m.content
-          })), // Envia apenas dados limpos para a API
+          })),
           chatId: currentChatId,
           userId: user.uid
         }),
@@ -180,20 +167,17 @@ export default function ChatPage() {
 
       if (!response.ok) throw new Error("Falha na requisição da API");
 
-      // Atualiza a lista de chats se for um chat novo
       const newChatId = response.headers.get("X-Chat-Id");
       if (newChatId && newChatId !== currentChatId) {
         setCurrentChatId(newChatId);
         loadChats();
       }
 
-      // Prepara estado inicial da mensagem da IA
       setMessages((prev) => [
         ...prev,
         { role: "model", content: "", createdAt: new Date() },
       ]);
 
-      // Lógica de Stream Segura
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
@@ -208,7 +192,6 @@ export default function ChatPage() {
         const chunk = decoder.decode(value, { stream: true });
         aiText += chunk;
 
-        // Atualização funcional do React garantindo integridade do array
         setMessages((prev) => {
           const updatedMessages = [...prev];
           const lastIndex = updatedMessages.length - 1;
@@ -233,7 +216,6 @@ export default function ChatPage() {
     }
   };
 
-  // Handlers de UI
   const startNewChat = () => {
     setCurrentChatId(null);
     setMessages([]);
@@ -243,7 +225,7 @@ export default function ChatPage() {
   const handleTextareaInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
     e.target.style.height = 'auto';
-    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`; // Auto-resize até 120px
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -267,30 +249,42 @@ export default function ChatPage() {
     }
   };
 
-  const handleDeleteChat = async (e: React.MouseEvent, chatId: string) => {
+  const handleDeleteChat = (e: React.MouseEvent, chatId: string) => {
     e.stopPropagation();
-    if (!confirm("Tem certeza que deseja excluir esta conversa permanentemente?")) return;
+    setChatToDeleteId(chatId);
+    setIsDeleteDrawerOpen(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!chatToDeleteId) return;
     try {
-      await chatService.deleteChat(chatId);
-      setChats(prev => prev.filter(c => c.id !== chatId));
-      if (currentChatId === chatId) {
+      await chatService.deleteChat(chatToDeleteId);
+      setChats(prev => prev.filter(c => c.id !== chatToDeleteId));
+      if (currentChatId === chatToDeleteId) {
         setCurrentChatId(null);
         setMessages([]);
       }
+      setIsDeleteDrawerOpen(false);
+      setChatToDeleteId(null);
     } catch (error) {
       console.error("Erro ao deletar chat:", error);
     }
   };
 
   const ChatHistoryList = ({ onSelect }: { onSelect?: () => void }) => (
-    <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+    <motion.div
+      className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar"
+      variants={pageContainerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {chats.length === 0 ? (
-        <p className="text-xs text-neutral-500 text-center py-6">Sem conversas anteriores.</p>
+        <motion.p variants={itemFadeInUpVariants} className="text-xs text-neutral-500 text-center py-6">Sem conversas anteriores.</motion.p>
       ) : (
         chats.map((chat) => (
-          <div
+          <motion.div
             key={chat.id}
+            variants={itemFadeInUpVariants}
             onClick={() => {
               setCurrentChatId(chat.id ?? null);
               if (onSelect) onSelect();
@@ -330,23 +324,28 @@ export default function ChatPage() {
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </div>
-          </div>
+          </motion.div>
         ))
       )}
-    </div>
+    </motion.div>
   );
 
   return (
     <div className="flex h-[100dvh] w-full bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 overflow-hidden font-sans">
 
-      {/* Drawer Mobile */}
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} direction="left">
         <DrawerContent className="h-full w-72 rounded-none border-r">
           <DrawerHeader className="border-b text-left">
             <div className="flex items-center justify-between">
               <DrawerTitle className="text-sm font-semibold flex items-center gap-2">
-                <SquareTerminal className="w-5 h-5 text-neutral-500" />
-                Histórico
+                <Button
+                  variant="ghost"
+                  className="rounded-full hover:bg-muted/50 transition-colors"
+                  size="icon"
+                  onClick={toggleSidebar}
+                >
+                  <Menu className="w-5 h-5 text-foreground/80" />
+                </Button>Histórico
               </DrawerTitle>
               <Button variant="ghost" size="icon" onClick={startNewChat} className="h-8 w-8">
                 <PlusIcon className="h-4 w-4" />
@@ -357,7 +356,40 @@ export default function ChatPage() {
         </DrawerContent>
       </Drawer>
 
-      {/* Sidebar Desktop */}
+      <Drawer open={isDeleteDrawerOpen} onOpenChange={setIsDeleteDrawerOpen}>
+        <DrawerContent>
+          <div className="mx-auto w-full max-w-lg p-6">
+            <DrawerHeader className="px-0 flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
+                <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+              <DrawerTitle className="text-xl">Excluir Conversa?</DrawerTitle>
+              <DrawerDescription className="text-base pt-2">
+                Esta ação não pode ser desfeita. Todo o histórico desta conversa será removido permanentemente.
+              </DrawerDescription>
+            </DrawerHeader>
+
+            <div className="flex flex-col gap-3 py-6">
+              <Button
+                variant="destructive"
+                className="w-full h-12 text-base font-semibold rounded-xl transition-all"
+                onClick={confirmDelete}
+              >
+                Sim, excluir permanentemente
+              </Button>
+              <DrawerClose asChild>
+                <Button
+                  variant="ghost"
+                  className="w-full h-12 text-base rounded-xl transition-all"
+                >
+                  Cancelar
+                </Button>
+              </DrawerClose>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
       <aside
         className={cn(
           "hidden md:flex flex-col bg-neutral-100 dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 w-72 shrink-0 transition-all",
@@ -383,11 +415,12 @@ export default function ChatPage() {
         <ChatHistoryList />
       </aside>
 
-      {/* Main Chat Area */}
       <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#212121] relative h-full">
-
-        {/* Header */}
-        <header className="h-16 border-b border-neutral-100 dark:border-neutral-800/50 flex items-center px-4 justify-between bg-white/80 dark:bg-[#212121]/80 backdrop-blur-sm sticky top-0 z-10 shrink-0">
+        <motion.header
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="h-16 border-b border-neutral-100 dark:border-neutral-800/50 flex items-center px-4 justify-between bg-white/80 dark:bg-[#212121]/80 backdrop-blur-sm sticky top-0 z-10 shrink-0"
+        >
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="md:hidden h-9 w-9 -ml-2" onClick={() => setIsDrawerOpen(true)}>
               <MenuIcon className="h-5 w-5" />
@@ -397,14 +430,17 @@ export default function ChatPage() {
               <p className="text-[11px] md:text-xs text-neutral-500">Pronto para te ajudar nos estudos</p>
             </div>
           </div>
-        </header>
+        </motion.header>
 
-        {/* Mensagens - Usando div nativa com overflow para controle preciso de scroll */}
         <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 scroll-smooth custom-scrollbar">
-          <div className="max-w-3xl mx-auto flex flex-col gap-8 pb-4">
-
+          <motion.div
+            className="max-w-3xl mx-auto flex flex-col gap-8 pb-4"
+            variants={pageContainerVariants}
+            initial="hidden"
+            animate="visible"
+          >
             {messages.length === 0 && !isLoading ? (
-              <div className="flex flex-col items-center justify-center pt-24 text-center">
+              <motion.div variants={itemFadeInUpVariants} className="flex flex-col items-center justify-center pt-24 text-center">
                 <div className="w-16 h-16 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mb-6">
                   <BotIcon className="w-8 h-8 text-neutral-600 dark:text-neutral-300" />
                 </div>
@@ -414,8 +450,9 @@ export default function ChatPage() {
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-lg">
                   {["Resuma meu último estudo", "Me explique o conceito de Quilha", "Crie um questionário sobre Gênesis"].map((suggestion) => (
-                    <button
+                    <motion.button
                       key={suggestion}
+                      variants={itemFadeInUpVariants}
                       className="p-3 text-sm text-left border border-neutral-200 dark:border-neutral-800 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                       onClick={() => {
                         setInput(suggestion);
@@ -423,48 +460,54 @@ export default function ChatPage() {
                       }}
                     >
                       {suggestion}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             ) : (
-              messages.map((message, i) => (
-                <div key={i} className={cn("flex gap-4 w-full", message.role === "user" ? "justify-end" : "justify-start")}>
-
-                  {/* Avatar IA */}
-                  {message.role === "model" && (
-                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 flex items-center justify-center shrink-0 mt-1">
-                      <BotIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    </div>
-                  )}
-
-                  <div className={cn("flex flex-col gap-1 min-w-0", message.role === "user" ? "items-end max-w-[85%] md:max-w-[75%]" : "w-full")}>
-
-                    {message.role === "user" ? (
-                      <div className="bg-neutral-900 dark:bg-neutral-100 text-white dark:text-black px-5 py-3 rounded-2xl rounded-tr-sm text-[15px] leading-relaxed whitespace-pre-wrap break-words">
-                        {message.content}
-                      </div>
-                    ) : (
-                      <div className="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none break-words text-[15px] leading-relaxed">
-                        {/* Se a mensagem estiver vazia, estamos aguardando o stream começar */}
-                        {message.content === "" && isLoading && i === messages.length - 1 ? (
-                          <span className="inline-block w-2 h-4 bg-neutral-400 animate-pulse ml-1 align-middle" />
-                        ) : (
-                          <ReactMarkdown>{message.content}</ReactMarkdown>
-                        )}
+              <AnimatePresence mode="popLayout" initial={false}>
+                {messages.map((message, i) => (
+                  <motion.div
+                    key={i}
+                    variants={itemFadeInUpVariants}
+                    layout
+                    className={cn("flex gap-4 w-full", message.role === "user" ? "justify-end" : "justify-start")}
+                  >
+                    {message.role === "model" && (
+                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 flex items-center justify-center shrink-0 mt-1">
+                        <BotIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       </div>
                     )}
-                  </div>
-                </div>
-              ))
+
+                    <div className={cn("flex flex-col gap-1 min-w-0", message.role === "user" ? "items-end max-w-[85%] md:max-w-[75%]" : "w-full")}>
+                      {message.role === "user" ? (
+                        <div className="bg-neutral-900 dark:bg-neutral-100 text-white dark:text-black px-5 py-3 rounded-2xl rounded-tr-sm text-[15px] leading-relaxed whitespace-pre-wrap break-words">
+                          {message.content}
+                        </div>
+                      ) : (
+                        <div className="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none break-words text-[15px] leading-relaxed">
+                          {message.content === "" && isLoading && i === messages.length - 1 ? (
+                            <span className="inline-block w-2 h-4 bg-neutral-400 animate-pulse ml-1 align-middle" />
+                          ) : (
+                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             )}
 
             <div ref={messagesEndRef} className="h-4 w-full shrink-0" />
-          </div>
+          </motion.div>
         </div>
 
-        {/* Área de Input - Fixa na base */}
-        <div className="px-4 pb-4 md:pb-6 pt-2 bg-white dark:bg-[#212121] shrink-0">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="px-4 pb-4 md:pb-6 pt-2 bg-white dark:bg-[#212121] shrink-0"
+        >
           <div className="max-w-3xl mx-auto relative">
             <div className="bg-neutral-100 dark:bg-neutral-800/80 rounded-2xl border border-neutral-200 dark:border-neutral-700/50 focus-within:ring-2 focus-within:ring-neutral-300 dark:focus-within:ring-neutral-600 transition-all flex items-end p-2 gap-2 shadow-sm">
               <textarea
@@ -472,7 +515,7 @@ export default function ChatPage() {
                 value={input}
                 onChange={handleTextareaInput}
                 onKeyDown={handleKeyDown}
-                placeholder="Mensagem para Assistente..."
+                placeholder="Mensagem..."
                 className="w-full bg-transparent border-0 focus:ring-0 resize-none max-h-[120px] min-h-[40px] px-3 py-2 text-[15px] outline-none custom-scrollbar"
                 rows={1}
                 disabled={isLoading}
@@ -491,14 +534,10 @@ export default function ChatPage() {
                 <SendIcon className="h-4 w-4 ml-0.5" />
               </Button>
             </div>
-            <div className="text-center mt-2">
-              <span className="text-[10px] text-neutral-400 font-medium">A IA pode cometer erros. Revise o conteúdo.</span>
-            </div>
           </div>
-        </div>
+        </motion.div>
       </main>
 
-      {/* Estilos Globais Injetados para Scrollbar (Opcional, mas melhora a UI) */}
       <style dangerouslySetInnerHTML={{
         __html: `
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }

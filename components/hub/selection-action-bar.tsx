@@ -37,7 +37,6 @@ import {
   DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
@@ -293,20 +292,25 @@ export function SelectionActionBar() {
       {/* DELETE DRAWER */}
       <Drawer open={isDeleteDrawerOpen} onOpenChange={setIsDeleteDrawerOpen}>
         <DrawerContent>
-          <div className="mx-auto w-full max-w-sm">
-            <DrawerHeader>
-              <DrawerTitle>
+          <div className="mx-auto w-full max-w-lg p-6">
+            <DrawerHeader className="px-0 flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
+                <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+              <DrawerTitle className="text-xl">
                 {isTrashPage ? "Excluir Definitivamente?" : "Mover para a lixeira?"}
               </DrawerTitle>
-              <DrawerDescription>
+              <DrawerDescription className="text-base pt-2">
                 {isTrashPage
                   ? `Tem certeza que deseja excluir permanentemente ${actions.totalCount} iten(s)? Essa ação não pode ser desfeita.`
                   : `Tem certeza que deseja mover ${actions.totalCount} iten(s) para a lixeira? Eles podem ser restaurados depois.`}
               </DrawerDescription>
             </DrawerHeader>
-            <DrawerFooter>
+
+            <div className="flex flex-col gap-3 py-6">
               <Button
                 variant="destructive"
+                className="w-full h-12 text-base font-semibold rounded-xl transition-all"
                 onClick={() => {
                   actions.handleConfirmDelete();
                   setIsDeleteDrawerOpen(false);
@@ -315,9 +319,14 @@ export function SelectionActionBar() {
                 {isTrashPage ? "Excluir Permanentemente" : "Mover para a lixeira"}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline">Cancelar</Button>
+                <Button
+                  variant="ghost"
+                  className="w-full h-12 text-base rounded-xl transition-all"
+                >
+                  Cancelar
+                </Button>
               </DrawerClose>
-            </DrawerFooter>
+            </div>
           </div>
         </DrawerContent>
       </Drawer>

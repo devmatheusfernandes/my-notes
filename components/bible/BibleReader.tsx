@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { itemFadeInUpVariants } from "@/lib/animations";
 
 interface Verse {
   verse: number;
@@ -47,10 +48,10 @@ export function BibleReader({
       <AnimatePresence mode="popLayout">
         <motion.div
           key="verses-container"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.3 }}
+          variants={itemFadeInUpVariants}
+          initial="hidden"
+          animate="visible"
+          exit="hidden"
           className="max-w-3xl mx-auto space-y-4"
         >
           {verses.map((v) => (
