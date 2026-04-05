@@ -47,6 +47,20 @@ export const videoService = {
             updatedAt: now
         }
         await setDoc(ref, payload, { merge: true })
+
+        // Sync to Turso for Vector Search
+        // fetch("/api/sync/queue", {
+        //     method: "POST",
+        //     headers: { "Content-Type": "application/json" },
+        //     body: JSON.stringify({
+        //         items: [{
+        //             sourceId: video.id,
+        //             sourceType: "video",
+        //             content: `${video.title}\n${contentText}`,
+        //             userId: userId // Personal video content
+        //         }]
+        //     })
+        // }).catch(err => console.error("Erro ao sincronizar vídeo para busca:", err));
     },
 
     async getVideoById(id: string): Promise<VideoData | null> {

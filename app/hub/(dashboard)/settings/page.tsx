@@ -37,6 +37,7 @@ import { noteService } from "@/services/noteService";
 import { CreateNoteDTO } from "@/schemas/noteSchema";
 import Header from "@/components/hub/hub-header";
 import { JwpubStorageWidget } from "@/components/jwpub/JwpubStorageWidget";
+import { BulkImportStatus } from "@/components/notes/BulkImportStatus";
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
@@ -575,6 +576,7 @@ export default function SettingsPage() {
           <JwpubStorageWidget />
           
           <StorageWidget />
+          <BulkImportStatus />
         </div>
       </motion.main>
     </>

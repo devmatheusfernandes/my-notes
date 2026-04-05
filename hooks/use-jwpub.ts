@@ -23,6 +23,20 @@ export function useJwpub() {
     try {
       const pub = await jwpubService.processFile(file);
       await indexedDbService.savePublication(pub);
+      
+      // Sync chapters to Turso
+      const chaptersToSync = pub.chapters.map(ch => ({
+        sourceId: `${pub.symbol}-${ch.id}`,
+        sourceType: "note" as const, // JWPUB chapters are treated like notes for embedding
+        content: `${pub.title} - ${ch.title}\n${ch.paragraphs.map(p => p.content).join("\n")}`,
+      }));
+
+      fetch("/api/sync/queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: chaptersToSync })
+      }).catch(err => console.error("Erro ao sincronizar capítulos JWPUB:", err));
+
       refresh();
       toast.success(`Publicação ${pub.symbol} carregada com sucesso!`);
       return pub;

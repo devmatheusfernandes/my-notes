@@ -4,6 +4,7 @@ import { DeleteIcon } from "../ui/delete";
 import { SettingsIcon } from "../icon-animated/settings";
 import { GraduationCapIcon } from "../icon-animated/graduation-cap";
 import { BookTextIcon } from "../icon-animated/book-text";
+import { MessageSquareIcon } from "lucide-react";
 
 
 export type HubSidebarItem = {
@@ -19,6 +20,12 @@ export const hubSidebarMainItems: HubSidebarItem[] = [
     tooltip: "Dashboard",
     icon: LayoutPanelTopIcon,
     href: "/hub/items",
+  },
+  {
+    label: "Chat IA",
+    tooltip: "Conversar com IA",
+    icon: MessageSquareIcon,
+    href: "/hub/chat",
   },
   {
     label: "Arquivadas",

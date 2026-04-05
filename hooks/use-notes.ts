@@ -85,7 +85,7 @@ export function useNotes(userId?: string) {
         await mutate(
           cacheKey,
           async (currentNotes: Note[] | undefined) => {
-            await noteService.deleteNote(noteId);
+            await noteService.deleteNote(userId!, noteId);
             return (currentNotes || []).filter((n) => n.id !== noteId);
           },
           {
@@ -116,7 +116,7 @@ export function useNotes(userId?: string) {
         await mutate(
           cacheKey,
           async (currentNotes: Note[] | undefined) => {
-            await noteService.updateNote(noteId, data);
+            await noteService.updateNote(userId!, noteId, data);
             return (currentNotes || []).map((n) => (n.id === noteId ? { ...n, ...data, updatedAt: new Date().toISOString() } : n));
           },
           {

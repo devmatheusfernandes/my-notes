@@ -1,114 +1,36 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase/firebase";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { getAllVideos } from "@/lib/video/video-crawler";
-import { formatVttToText } from "@/lib/video/video-utils";
-import { tokenize } from "@/lib/video/tokenize";
-import crypto from "crypto";
+import { getUserFromSession } from "@/utils/auth-server";
+import { adminDb } from "@/lib/firebase/firebase-admin";
+import { VIDEOS_COLLECTION } from "@/lib/firebase/collections-name";
+import { vectorService } from "@/services/vectorService";
+import { VideoData } from "@/schemas/videos";
 
-export const dynamic = 'force-dynamic'
+export async function POST() {
+  try {
+    // Ensuring the user is authenticated to trigger the sync
+    await getUserFromSession();
 
-function hash(text: string) {
-  return crypto.createHash("sha1").update(text).digest("hex")
-}
+    const snapshot = await adminDb.collection(VIDEOS_COLLECTION).get();
+    const videos: VideoData[] = [];
+    
+    snapshot.forEach(doc => {
+        videos.push(doc.data() as VideoData);
+    });
 
-export async function POST(req: Request) {
-  // Check for authorization (e.g., a secret key from environment variables)
-  const authHeader = req.headers.get("authorization");
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new NextResponse("Unauthorized", { status: 401 });
+    const vectorVideos = videos
+        .filter(v => !!v.contentText || !!v.title)
+        .map(v => ({
+            userId: "shared", // Public for all authenticated users
+            sourceId: v.id,
+            sourceType: "video" as const,
+            content: `${v.title}\n${v.contentText || ""}`,
+        }));
+
+    await vectorService.queueMany(vectorVideos);
+    
+    return NextResponse.json({ success: true, count: vectorVideos.length });
+  } catch (error: unknown) {
+    console.error("Erro na rota de sincronização de vídeos:", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Erro desconhecido" }, { status: 500 });
   }
-
-  const encoder = new TextEncoder()
-
-  const stream = new ReadableStream({
-    async start(controller) {
-      const sendUpdate = (data: Record<string, unknown>) => {
-        controller.enqueue(encoder.encode(JSON.stringify(data) + "\n"))
-      }
-
-      try {
-        sendUpdate({ type: 'start', message: 'Buscando lista de vídeos...' })
-
-        // 1. Obter todos os vídeos do crawler
-        const videos = await getAllVideos()
-        sendUpdate({ type: 'videos_fetched', count: videos.length })
-
-        let verifiedCount = 0
-        let newCount = 0
-        let errorCount = 0
-
-        // 2. Iterar sobre os vídeos
-        for (const video of videos) {
-          try {
-            verifiedCount++
-            const ref = doc(db, "videos", video.id)
-            const snap = await getDoc(ref)
-
-            let action = 'skipped'
-
-            // Só salva se NÃO existir
-            if (!snap.exists()) {
-              if (!video.subtitlesUrl) {
-                console.warn(`Vídeo ${video.title} sem URL de legenda.`)
-              } else {
-                sendUpdate({
-                  type: 'processing_new',
-                  current: video.title
-                })
-
-                const res = await fetch(video.subtitlesUrl)
-                if (!res.ok) {
-                  console.error(`Falha ao baixar legenda para ${video.title}`)
-                } else {
-                  const vtt = await res.text()
-                  const text = formatVttToText(vtt)
-                  const newHash = hash(text)
-
-                  await setDoc(ref, {
-                    ...video,
-                    contentText: text,
-                    tokens: tokenize(text),
-                    subtitlesHash: newHash,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                  })
-
-                  newCount++
-                  action = 'saved'
-                }
-              }
-            }
-
-            sendUpdate({
-              type: 'progress',
-              verified: verifiedCount,
-              new: newCount,
-              current: video.title,
-              action
-            })
-
-          } catch (err) {
-            console.error(`Erro ao processar ${video.title}:`, err)
-            errorCount++
-          }
-        }
-
-        sendUpdate({ type: 'done', verified: verifiedCount, new: newCount, errors: errorCount })
-        controller.close()
-
-      } catch (err) {
-        console.error("Stream error:", err)
-        sendUpdate({ type: 'error', message: String(err) })
-        controller.close()
-      }
-    }
-  })
-
-  return new NextResponse(stream, {
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Transfer-Encoding': 'chunked',
-    },
-  })
 }
