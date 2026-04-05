@@ -345,7 +345,8 @@ export default function ChatPage() {
                   onClick={toggleSidebar}
                 >
                   <Menu className="w-5 h-5 text-foreground/80" />
-                </Button>Histórico
+                </Button>
+                Histórico
               </DrawerTitle>
               <Button variant="ghost" size="icon" onClick={startNewChat} className="h-8 w-8">
                 <PlusIcon className="h-4 w-4" />

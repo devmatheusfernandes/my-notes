@@ -1,7 +1,9 @@
 "use client";
-import { Search, Globe, ChevronLeft, X, PanelRight } from "lucide-react";
+import { Search, Globe, ChevronLeft, X, PanelRight, Menu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
+import { useSidebar } from "../ui/sidebar";
 
 interface BibleHeaderProps {
   version: string;
@@ -37,6 +39,8 @@ export function BibleHeader({
     if (!isSearching) setTimeout(() => document.getElementById("bible-search-input")?.focus(), 100);
   };
 
+  const { toggleSidebar } = useSidebar();
+
   return (
     <header className="sticky top-0 z-50 w-full h-16 border-b border-zinc-200 dark:border-zinc-800 bg-background/80 backdrop-blur-md px-4 flex items-center justify-between gap-4">
       <AnimatePresence mode="wait">
@@ -47,7 +51,14 @@ export function BibleHeader({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             className="flex items-center gap-3 flex-1 min-w-0"
+          ><Button
+            variant="ghost"
+            className="rounded-full hover:bg-muted/50 transition-colors"
+            size="icon"
+            onClick={toggleSidebar}
           >
+              <Menu className="w-5 h-5 text-foreground/80" />
+            </Button>
             {onBack && (
               <button
                 onClick={onBack}
