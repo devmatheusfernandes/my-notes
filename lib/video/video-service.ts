@@ -14,6 +14,7 @@ import {
 import { VideoData } from "@/schemas/videos";
 import { selectBestVideoUrl } from "./video-utils";
 import { USERS_COLLECTION, VIDEOS_COLLECTION } from "../firebase/collections-name";
+import { findVideoInCache } from "./video-crawler";
 
 export const videoService = {
     // Subscribe to local state (imported notes, etc.)
@@ -49,51 +50,77 @@ export const videoService = {
     },
 
     async getVideoById(id: string): Promise<VideoData | null> {
+        console.log(`[videoService] Fetching video for ID: ${id}`);
+
+        // 0. Try Cache first (most reliable for recently listed videos)
+        const cached = findVideoInCache(id);
+        if (cached) {
+            console.log(`[videoService] Found video in crawler cache`);
+            return cached;
+        }
+
         // 1. Try Firestore first
         const ref = doc(db, VIDEOS_COLLECTION, id)
         const snap = await getDoc(ref)
         if (snap.exists()) {
+            console.log(`[videoService] Found video in Firestore`);
             return { id: snap.id, ...snap.data() } as VideoData
         }
 
         // 2. Fallback to API
-        try {
-            const url = `https://b.jw-cdn.org/apis/mediator/v1/media-items/T/${id}?clientType=www`
-            const res = await fetch(url)
-            if (!res.ok) return null
-            const data = await res.json()
-            const video = data.media[0]
+        console.log(`[videoService] Falling back to API...`);
+        const isPub = id.startsWith("pub-")
+        const prefixes = isPub ? ["PT", "T"] : ["T", "PT"]
 
-            if (!video) return null
-
-            let subtitlesUrl: string | undefined
-            for (const f of video.files || []) {
-                if (f?.subtitles?.url) {
-                    subtitlesUrl = f.subtitles.url
-                    break
+        for (const prefix of prefixes) {
+            try {
+                const url = `https://b.jw-cdn.org/apis/mediator/v1/media-items/${prefix}/${id}?clientType=www`
+                console.log(`[videoService] Trying URL: ${url}`);
+                const res = await fetch(url)
+                if (!res.ok) {
+                    console.warn(`[videoService] Failed with prefix ${prefix} (status: ${res.status})`);
+                    continue
                 }
-            }
 
-            const title: string = video.title || ""
-            const primaryCategory = video.primaryCategory || "VideoOnDemand"
-            const durationFormatted = video.durationFormattedMinSec || ""
-            const coverImage: string | undefined = video.images?.wss?.lg || video.images?.pnr?.lg || video.images?.sqr?.lg || undefined
-            const videoUrl = selectBestVideoUrl(video.files || [])
+                const data = await res.json()
+                const video = data?.media?.[0]
 
-            return {
-                id: video.naturalKey,
-                title,
-                categoryKey: video.primaryCategory || "VideoOnDemand",
-                primaryCategory,
-                durationFormatted,
-                coverImage,
-                subtitlesUrl,
-                videoUrl
+                if (!video) {
+                    console.warn(`[videoService] No media found in response for prefix ${prefix}`);
+                    continue
+                }
+
+                console.log(`[videoService] Successfully found video via API (${prefix})`);
+                let subtitlesUrl: string | undefined
+                for (const f of video.files || []) {
+                    if (f?.subtitles?.url) {
+                        subtitlesUrl = f.subtitles.url
+                        break
+                    }
+                }
+
+                const title: string = video.title || ""
+                const primaryCategory = video.primaryCategory || "VideoOnDemand"
+                const durationFormatted = video.durationFormattedMinSec || ""
+                const coverImage: string | undefined = video.images?.wss?.lg || video.images?.pnr?.lg || video.images?.sqr?.lg || undefined
+                const videoUrl = selectBestVideoUrl(video.files || [])
+
+                return {
+                    id: video.naturalKey,
+                    title,
+                    categoryKey: video.primaryCategory || "VideoOnDemand",
+                    primaryCategory,
+                    durationFormatted,
+                    coverImage,
+                    subtitlesUrl,
+                    videoUrl
+                }
+            } catch (err) {
+                console.warn(`Failed to fetch video with prefix ${prefix}:`, err)
             }
-        } catch (err) {
-            console.error("Error fetching video from API:", err)
-            return null
         }
+
+        return null
     },
 
     async getUserVideoState(userId: string, videoId: string): Promise<Partial<VideoData> | null> {

@@ -1,6 +1,12 @@
 import { CATEGORY_NAMES, ROOT_CATEGORY } from "@/lib/video/categories";
 import { CategoryGroup, VideoData } from "@/schemas/videos";
 import { extractBook, selectBestVideoUrl } from "./video-utils";
+ 
+let cachedVideos: VideoData[] = [];
+ 
+export function findVideoInCache(id: string): VideoData | undefined {
+    return cachedVideos.find(v => v.id === id);
+}
 
 interface VideoApiItem {
     naturalKey: string;
@@ -104,7 +110,8 @@ export async function crawlCategory(key: string, rootKey?: string, visited = new
 
 export async function getAllVideosGrouped(): Promise<CategoryGroup[]> {
     const allVideos = await crawlCategory(ROOT_CATEGORY)
-
+    cachedVideos = allVideos; // Cache for detail page
+ 
     // Group by rootCategoryKey
     const groupMap = new Map<string, VideoData[]>()
 
