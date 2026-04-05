@@ -28,7 +28,7 @@ import {
   ShieldCheck,
   HardDrive,
   Database,
-  Settings2,
+  Bot,
   Moon,
   Sun
 } from "lucide-react";
@@ -65,7 +65,7 @@ export default function SettingsPage() {
   } = useBackup(userId);
 
   const [isImporting, setIsImporting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"appearance" | "security" | "backup" | "storage" | "preferences">("security");
+  const [activeTab, setActiveTab] = useState<"appearance" | "security" | "backup" | "storage" | "IA">("security");
   const { theme, setTheme } = useTheme();
 
   const TABS = [
@@ -73,7 +73,7 @@ export default function SettingsPage() {
     { id: "security", label: "Segurança", icon: ShieldCheck },
     { id: "backup", label: "Backup", icon: HardDrive },
     { id: "storage", label: "Armazenamento", icon: Database },
-    { id: "preferences", label: "Preferências", icon: Settings2 },
+    { id: "IA", label: "IA", icon: Bot },
   ] as const;
 
   useEffect(() => {
@@ -602,25 +602,19 @@ export default function SettingsPage() {
               </motion.div>
             )}
 
-            {activeTab === "preferences" && (
+            {activeTab === "IA" && (
               <motion.div
-                key="preferences"
+                key="IA"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
                 className="space-y-6"
               >
-                <BulkImportStatus />
-                <section className="card-section">
-                  <div className="flex flex-col items-center justify-center p-12 text-center">
-                    <Settings2 className="w-12 h-12 text-muted-foreground/20 mb-4" />
-                    <h3 className="text-lg font-semibold">Preferências Gerais</h3>
-                    <p className="text-sm text-muted-foreground max-w-[300px]">
-                      Novas opções de customização e comportamentos do sistema estarão disponíveis em breve.
-                    </p>
-                  </div>
-                </section>
+                <div className="flex flex-col gap-2">
+                  <BulkImportStatus type="user" />
+                  <BulkImportStatus type="shared" />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

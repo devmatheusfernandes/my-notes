@@ -56,11 +56,26 @@ export function useJwpub() {
 
   const deletePublication = useCallback(async (symbol: string) => {
     try {
+      const pub = await indexedDbService.getPublication(symbol);
+      
       await indexedDbService.deletePublication(symbol);
+      
+      if (pub) {
+        const chapterIds = pub.chapters.map(ch => `${pub.symbol}-${ch.id}`);
+        fetch("/api/sync/remove", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+              sourceIds: chapterIds,
+              sourceType: "note",
+          })
+        }).catch(err => console.error("Erro ao remover capítulos do índice:", err));
+      }
+
       refresh();
       toast.success("Publicação removida.");
     } catch (err) {
-      getErrorMessage(err);
+      console.error("Erro ao remover publicação:", err);
       toast.error("Erro ao remover publicação.");
     }
   }, [refresh]);

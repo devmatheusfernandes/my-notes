@@ -110,7 +110,7 @@ export function StudyLibrary({ search, searchResults, isSearching }: StudyLibrar
   return (
     <>
       <div className="flex-1 overflow-y-auto">
-        <motion.div 
+        <motion.div
           variants={pageContainerVariants}
           initial="hidden"
           animate="visible"
@@ -188,7 +188,7 @@ export function StudyLibrary({ search, searchResults, isSearching }: StudyLibrar
             )}
           </div>
 
-          <div className="flex-1 lg:max-h-[calc(89vh-100px)] max-h-[calc(70vh-100px)] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="flex-1 lg:max-h-[calc(89vh-100px)] max-h-[calc(70vh-100px)] overflow-y-auto pr-2 mt-4">
             {isLoadingAll ? (
               <Loading />
             ) : hasSearch ? (
@@ -248,8 +248,8 @@ export function StudyLibrary({ search, searchResults, isSearching }: StudyLibrar
                 className="border rounded-sm divide-y bg-card overflow-hidden shadow-xs"
               >
                 {displayPubs.map((pub) => (
-                  <motion.div 
-                    key={pub.symbol} 
+                  <motion.div
+                    key={pub.symbol}
                     className="group flex flex-col p-0 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
                     variants={itemFadeInUpVariants}
                   >

@@ -104,6 +104,16 @@ export const noteService = {
               eq(embeddingsQueue.userId, userId)
             )
           );
+      } else {
+        // Client-side: call our sync-remove API
+        fetch("/api/sync/remove", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+              sourceIds: [noteId],
+              sourceType: "note",
+          })
+        }).catch(err => console.error("Erro ao remover nota do índice:", err));
       }
     } catch (error) {
       console.error("Erro ao deletar nota no Firebase:", error);

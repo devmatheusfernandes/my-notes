@@ -5,19 +5,20 @@ import useSWR from "swr";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
+  RefreshCw,
+  User,
+  Globe,
   Loader2,
-  Brain,
-  CheckCircle2,
   PlayCircle,
-  RefreshCw
+  CheckCircle2
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-export function BulkImportStatus() {
-  const { data, error, isLoading: isFetchingStatus, mutate } = useSWR("/api/notes/import/status", fetcher, {
+export function BulkImportStatus({ type = "user" }: { type?: "user" | "shared" }) {
+  const { data, error, isLoading: isFetchingStatus, mutate } = useSWR(`/api/notes/import/status?type=${type}`, fetcher, {
     refreshInterval: (data) => (data?.isComplete ? 0 : 5000),
   });
 
@@ -26,7 +27,7 @@ export function BulkImportStatus() {
   const handleManualProcess = async () => {
     setIsProcessing(true);
     try {
-      const res = await fetch("/api/notes/import/process", { method: "POST" });
+      const res = await fetch(`/api/notes/import/process?type=${type}`, { method: "POST" });
       const result = await res.json();
 
       if (result.success) {
@@ -55,14 +56,14 @@ export function BulkImportStatus() {
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-primary/10 text-primary">
-            <Brain className="h-5 w-5" />
+            {type === "user" ? <User className="h-5 w-5" /> : <Globe className="h-5 w-5" />}
           </div>
           <div>
             <span className="text-lg font-semibold text-foreground block leading-none">
-              Busca Semântica
+              {type === "user" ? "Busca Semântica (Pessoal)" : "Busca Semântica (Global/Vídeos)"}
             </span>
             <span className="text-xs text-muted-foreground">
-              {isComplete ? "Tudo sincronizado" : "Processando base de conhecimento"}
+              {isComplete ? "Tudo sincronizado" : (type === "user" ? "Processando suas notas" : "Processando base de vídeos")}
             </span>
           </div>
         </div>

@@ -34,7 +34,7 @@ export default function PersonalStudyPage() {
         />
       </div>
 
-      <Tabs className="block md:hidden" defaultValue="videos">
+      <Tabs className="block md:hidden px-4" defaultValue="videos">
         <TabsList className="min-w-full">
           <TabsTrigger value="videos">Vídeos</TabsTrigger>
           <TabsTrigger value="library">Biblioteca</TabsTrigger>

@@ -18,16 +18,20 @@ export async function POST(req: Request) {
     const videos: VideoData[] = [];
 
     snapshot.forEach(doc => {
-      videos.push(doc.data() as VideoData);
+      const data = doc.data() as VideoData;
+      videos.push({
+        ...data,
+        id: data.id || doc.id // Garante que o ID existe (do dado ou do documento)
+      });
     });
 
     const vectorVideos = videos
-      .filter(v => !!v.contentText || !!v.title)
+      .filter(v => (v.title || v.contentText)) // Filtra se tiver alguma coisa
       .map(v => ({
-        userId: "shared", // Public for all authenticated users
+        userId: "shared",
         sourceId: v.id,
         sourceType: "video" as const,
-        content: `${v.title}\n${v.contentText || ""}`,
+        content: `${v.title || "Sem título"}\n${v.contentText || ""}`,
       }));
 
     await vectorService.queueMany(vectorVideos);

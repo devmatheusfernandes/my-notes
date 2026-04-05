@@ -4,9 +4,12 @@ import { db } from "@/lib/db/turso";
 import { embeddingsQueue } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const user = await getUserFromSession();
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get("type") || "user";
+    const targetUserId = type === "shared" ? "shared" : user.uid;
 
     const result = await db
       .select({
@@ -17,7 +20,7 @@ export async function GET() {
       })
       .from(embeddingsQueue)
       .where(
-        eq(embeddingsQueue.userId, user.uid)
+        eq(embeddingsQueue.userId, targetUserId)
       );
 
     const counts = result[0] || { pending: 0, synced: 0, error: 0, total: 0 };

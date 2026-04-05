@@ -8,21 +8,25 @@ import { getUserFromSession } from "@/utils/auth-server";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const model = genAI.getGenerativeModel({ model: "gemini-embedding-2-preview" });
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const user = await getUserFromSession();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch up to 50 pending records specifically for THIS user
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get("type") || "user";
+    const targetUserId = type === "shared" ? "shared" : user.uid;
+
+    // Fetch up to 50 pending records specifically for the target context
     const pendingItems = await db
       .select()
       .from(embeddingsQueue)
       .where(
         and(
           eq(embeddingsQueue.syncStatus, "pending"),
-          eq(embeddingsQueue.userId, user.uid)
+          eq(embeddingsQueue.userId, targetUserId)
         )
       )
       .limit(50);

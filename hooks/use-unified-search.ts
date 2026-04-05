@@ -49,7 +49,7 @@ export function useUnifiedSearch(queryText: string, scope: SearchScope = "text")
             }
 
             try {
-                // 1. Search Videos (Keep current logic)
+                // 1. Search Videos
                 const videoCandidates = await searchVideoCandidates(parsedTerms);
                 const filteredVideos = videoCandidates.filter(video => {
                     const content = video.contentText || "";
@@ -79,11 +79,15 @@ export function useUnifiedSearch(queryText: string, scope: SearchScope = "text")
                 });
                 setVideos(filteredVideos);
 
-                // 2. Search Publications (Optimized)
+                // 2. Search Publications
                 if (allPubsMetadata) {
                     const pubResults: (JwpubMetadata & { matches: PublicationSearchMatch[] })[] = [];
+                    let totalMatches = 0;
+                    const GLOBAL_MATCH_LIMIT = 500;
 
                     for (const meta of allPubsMetadata) {
+                        if (totalMatches >= GLOBAL_MATCH_LIMIT) break;
+
                         const matches: PublicationSearchMatch[] = [];
 
                         // 2.1 Fast Title Match
@@ -96,7 +100,7 @@ export function useUnifiedSearch(queryText: string, scope: SearchScope = "text")
 
                         // 2.2 Token-based early exit (Optimization)
                         if (meta.tokens && meta.tokens.length > 0) {
-                            const tokenMatch = parsedTerms.every(t => 
+                            const tokenMatch = parsedTerms.every(t =>
                                 meta.tokens?.some(token => token.includes(t.term))
                             );
                             if (!tokenMatch && !titleMatch) continue;
@@ -110,16 +114,19 @@ export function useUnifiedSearch(queryText: string, scope: SearchScope = "text")
                             let foundInContent = false;
 
                             // Search in chapters/paragraphs
-                            for (let cIdx = 0; cIdx < fullPub.chapters.length; cIdx++) {
+                            searchLoop: for (let cIdx = 0; cIdx < fullPub.chapters.length; cIdx++) {
                                 const chapter = fullPub.chapters[cIdx];
                                 for (const para of chapter.paragraphs) {
                                     if (parsedTerms.every(t => checkMatch(para.content, t))) {
                                         foundInContent = true;
-                                        if (matches.length < 3) {
-                                            matches.push({
-                                                text: para.content,
-                                                chapterIndex: cIdx
-                                            });
+                                        matches.push({
+                                            text: para.content,
+                                            chapterIndex: cIdx
+                                        });
+                                        totalMatches++;
+
+                                        if (totalMatches >= GLOBAL_MATCH_LIMIT) {
+                                            break searchLoop;
                                         }
                                     }
                                 }
