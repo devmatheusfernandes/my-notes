@@ -1,6 +1,6 @@
-const { createClient } = require("@libsql/client");
-const dotenv = require("dotenv");
-const path = require("path");
+import { createClient } from "@libsql/client";
+import dotenv from "dotenv";
+import path from "path";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
 

@@ -1,5 +1,4 @@
 import { sqliteTable, text, integer, blob, unique } from "drizzle-orm/sqlite-core";
-import { sql } from "drizzle-orm";
 
 export const embeddingsQueue = sqliteTable("embeddings_queue", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),

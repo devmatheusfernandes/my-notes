@@ -15,8 +15,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid items" }, { status: 400 });
     }
 
+    interface EmbeddingItem {
+      userId: string;
+      sourceId: string;
+      sourceType: "note" | "video";
+      content: string;
+    }
+
     // Sanitize items: ensure userId is either 'shared' or matches the current user
-    const sanitizedItems = items.map((item: any) => {
+    const sanitizedItems = items.map((item: EmbeddingItem) => {
         const isShared = item.userId === "shared";
         return {
             ...item,

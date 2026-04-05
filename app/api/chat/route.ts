@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/firebase-admin";
 import { searchService } from "@/services/searchService";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { cookies } from "next/headers";
 import { getUserFromSession } from "@/utils/auth-server";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -22,7 +21,7 @@ export async function POST(req: Request) {
     try {
       const user = await getUserFromSession();
       userId = user.uid;
-    } catch (error) {
+    } catch {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -39,21 +38,21 @@ export async function POST(req: Request) {
         if (res.sourceType === "note") {
           // Check if it's actually a JWPUB Publication (Symbol-Chapter)
           if (id.includes("-") && id.split("-").length === 2 && !id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-             const [symbol, chapter] = id.split("-");
-             title = `Publicação ${symbol} - Cap. ${chapter}`;
-             url = `/hub/personal-study/${symbol}?c=${chapter}`;
+            const [symbol, chapter] = id.split("-");
+            title = `Publicação ${symbol} - Cap. ${chapter}`;
+            url = `/hub/personal-study/${symbol}?c=${chapter}`;
           } else {
-             // Real Firestore Note
-             const doc = await adminDb.collection("notes").doc(id).get();
-             const data = doc.data();
-             title = data?.title || "Nota Sem Título";
-             url = `/hub/notes/${id}`;
+            // Real Firestore Note
+            const doc = await adminDb.collection("notes").doc(id).get();
+            const data = doc.data();
+            title = data?.title || "Nota Sem Título";
+            url = `/hub/notes/${id}`;
           }
         } else if (res.sourceType === "video") {
-           const doc = await adminDb.collection("videos").doc(id).get();
-           const data = doc.data();
-           title = data?.title || "Vídeo Sem Título";
-           url = `/hub/personal-study/video/${id}`;
+          const doc = await adminDb.collection("videos").doc(id).get();
+          const data = doc.data();
+          title = data?.title || "Vídeo Sem Título";
+          url = `/hub/personal-study/video/${id}`;
         }
 
         return `[FONTE: ${title}]\nURL: ${url}\nCONTEÚDO: ${res.content}`;
@@ -96,9 +95,14 @@ export async function POST(req: Request) {
       createdAt: new Date(),
     });
 
+    interface ChatMessage {
+      role: string;
+      content: string;
+    }
+
     // 5. Generate Streaming Response
     const chatSession = model.startChat({
-      history: messages.slice(0, -1).map((m: any) => ({
+      history: messages.slice(0, -1).map((m: ChatMessage) => ({
         role: m.role === "user" ? "user" : "model",
         parts: [{ text: m.content }],
       })),

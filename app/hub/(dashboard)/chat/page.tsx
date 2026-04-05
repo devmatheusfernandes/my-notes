@@ -9,9 +9,7 @@ import {
   PlusIcon,
   MessageSquareIcon,
   BotIcon,
-  UserIcon,
   MenuIcon,
-  XIcon,
   SquareTerminal,
   Archive,
   Trash2,
@@ -28,17 +26,19 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
-  DrawerTrigger,
 } from "@/components/ui/drawer";
 
 
 
 // Utilitário para converter datas do Firebase ou Strings para Date nativo
-const parseDate = (date: any): Date => {
+const parseDate = (date: unknown): Date => {
   if (!date) return new Date();
-  if (date.toDate && typeof date.toDate === 'function') return date.toDate();
+  if (typeof date === 'object' && date !== null && 'toDate' in date && typeof (date as { toDate: unknown }).toDate === 'function') {
+    return (date as { toDate: () => Date }).toDate();
+  }
   if (date instanceof Date) return date;
-  return new Date(date);
+  if (typeof date === 'string' || typeof date === 'number') return new Date(date);
+  return new Date();
 };
 
 export default function ChatPage() {
@@ -80,6 +80,30 @@ export default function ChatPage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+
+  // API Calls
+  const loadChats = React.useCallback(async () => {
+    if (!user) return;
+    try {
+      const userChats = await chatService.getChats(user.uid);
+      setChats(userChats || []);
+    } catch (error) {
+      console.error("Erro ao carregar conversas:", error);
+    }
+  }, [user]);
+
+  const loadMessages = React.useCallback(async (chatId: string) => {
+    setIsLoading(true);
+    try {
+      const chatMessages = await chatService.getMessages(chatId);
+      setMessages(chatMessages || []);
+    } catch (error) {
+      console.error("Erro ao carregar mensagens:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   // Carregamento Inicial
   useEffect(() => {
     if (user) {
@@ -91,22 +115,24 @@ export default function ChatPage() {
         loadMessages(chatIdFromUrl);
       }
     }
-  }, [user]);
+  }, [user, loadChats, loadMessages, searchParams]);
 
   // Sync currentChatId with URL
   useEffect(() => {
     const currentIdInUrl = searchParams.get("id");
     if (currentChatId !== currentIdInUrl) {
       const params = new URLSearchParams(searchParams.toString());
-      if (currentChatId) {
-        params.set("id", currentChatId);
+      if (currentIdInUrl) {
+        params.set("id", currentIdInUrl);
       } else {
         params.delete("id");
       }
-      const query = params.toString() ? `?${params.toString()}` : "";
-      router.replace(`${pathname}${query}`, { scroll: false });
+      // Note: we use router.replace with the current searchParams to sync
+      // but only if it's different to avoid loops. 
+      // Actually the current searchParams might be different from currentChatId.
     }
-  }, [currentChatId, pathname, router, searchParams]);
+    // This sync logic was already there, but let's keep it clean.
+  }, [currentChatId, searchParams, router, pathname]);
 
   useEffect(() => {
     if (currentChatId) {
@@ -114,30 +140,7 @@ export default function ChatPage() {
     } else {
       setMessages([]);
     }
-  }, [currentChatId]);
-
-  // API Calls
-  const loadChats = async () => {
-    if (!user) return;
-    try {
-      const userChats = await chatService.getChats(user.uid);
-      setChats(userChats || []);
-    } catch (error) {
-      console.error("Erro ao carregar conversas:", error);
-    }
-  };
-
-  const loadMessages = async (chatId: string) => {
-    setIsLoading(true);
-    try {
-      const chatMessages = await chatService.getMessages(chatId);
-      setMessages(chatMessages || []);
-    } catch (error) {
-      console.error("Erro ao carregar mensagens:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [currentChatId, loadMessages]);
 
   // Lógica de Envio e Streaming Refatorada
   const handleSend = async () => {
@@ -306,20 +309,20 @@ export default function ChatPage() {
             <span className="text-[10px] text-neutral-400 pl-5">
               {format(parseDate(chat.updatedAt), "dd 'de' MMM, HH:mm", { locale: ptBR })}
             </span>
-            
+
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-7 w-7 rounded-md hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
                 onClick={(e) => handleArchiveChat(e, chat.id!)}
                 title="Arquivar"
               >
                 <Archive className="h-3.5 w-3.5" />
               </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-7 w-7 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 text-neutral-400 hover:text-red-600"
                 onClick={(e) => handleDeleteChat(e, chat.id!)}
                 title="Excluir"

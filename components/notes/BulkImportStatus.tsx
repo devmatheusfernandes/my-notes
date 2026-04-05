@@ -4,15 +4,13 @@ import { useState } from "react";
 import useSWR from "swr";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { 
-  Loader2, 
-  AlertCircle, 
-  Brain, 
-  CheckCircle2, 
+import {
+  Loader2,
+  Brain,
+  CheckCircle2,
   PlayCircle,
   RefreshCw
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +28,7 @@ export function BulkImportStatus() {
     try {
       const res = await fetch("/api/notes/import/process", { method: "POST" });
       const result = await res.json();
-      
+
       if (result.success) {
         toast.success(`Processados ${result.successCount} itens com sucesso!`);
         mutate(); // Refresh status
@@ -68,25 +66,25 @@ export function BulkImportStatus() {
             </span>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {!isComplete && (
-            <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleManualProcess}
-                disabled={isProcessing}
-                className="h-8 gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleManualProcess}
+              disabled={isProcessing}
+              className="h-8 gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
             >
-                {isProcessing ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                    <PlayCircle className="h-3.5 w-3.5" />
-                )}
-                <span className="hidden sm:inline">Continuar Processo</span>
+              {isProcessing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <PlayCircle className="h-3.5 w-3.5" />
+              )}
+              <span className="hidden sm:inline">Continuar Processo</span>
             </Button>
           )}
-          
+
           <button
             onClick={() => mutate()}
             className="p-1.5 rounded-md hover:bg-accent text-muted-foreground transition-colors"
@@ -104,8 +102,8 @@ export function BulkImportStatus() {
               {data.synced} de {data.total} itens processados
             </p>
             <span className={cn(
-                "text-xs font-bold px-2 py-0.5 rounded-full",
-                isComplete ? "bg-emerald-500/10 text-emerald-500" : "bg-primary/10 text-primary"
+              "text-xs font-bold px-2 py-0.5 rounded-full",
+              isComplete ? "bg-emerald-500/10 text-emerald-500" : "bg-primary/10 text-primary"
             )}>
               {percentage}%
             </span>
@@ -114,25 +112,25 @@ export function BulkImportStatus() {
         </div>
 
         <div className="flex items-center justify-between pt-2 border-t border-dashed">
-            <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Sincronizados: {data.synced}</span>
-                </div>
-                {data.error > 0 && (
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-destructive" />
-                        <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Erros: {data.error}</span>
-                    </div>
-                )}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Sincronizados: {data.synced}</span>
             </div>
-            
-            {isComplete && (
-                <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-bold uppercase tracking-widest">
-                    <CheckCircle2 className="w-3 h-3" />
-                    Concluído
-                </div>
+            {data.error > 0 && (
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-destructive" />
+                <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Erros: {data.error}</span>
+              </div>
             )}
+          </div>
+
+          {isComplete && (
+            <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-bold uppercase tracking-widest">
+              <CheckCircle2 className="w-3 h-3" />
+              Concluído
+            </div>
+          )}
         </div>
       </div>
     </div>

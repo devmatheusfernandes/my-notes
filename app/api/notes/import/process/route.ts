@@ -8,7 +8,7 @@ import { getUserFromSession } from "@/utils/auth-server";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const model = genAI.getGenerativeModel({ model: "gemini-embedding-2-preview" });
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
     const user = await getUserFromSession();
     if (!user) {
@@ -21,8 +21,8 @@ export async function POST(req: Request) {
       .from(embeddingsQueue)
       .where(
         and(
-            eq(embeddingsQueue.syncStatus, "pending"),
-            eq(embeddingsQueue.userId, user.uid)
+          eq(embeddingsQueue.syncStatus, "pending"),
+          eq(embeddingsQueue.userId, user.uid)
         )
       )
       .limit(50);
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
             updatedAt: new Date(),
           })
           .where(eq(embeddingsQueue.id, item.id));
-        
+
         successCount++;
       } catch (err) {
         console.error(`Error embedding item ${item.id}:`, err);
@@ -63,16 +63,16 @@ export async function POST(req: Request) {
             updatedAt: new Date(),
           })
           .where(eq(embeddingsQueue.id, item.id));
-        
+
         errorCount++;
       }
     }
 
-    return NextResponse.json({ 
-        success: true, 
-        processed: pendingItems.length,
-        successCount,
-        errorCount
+    return NextResponse.json({
+      success: true,
+      processed: pendingItems.length,
+      successCount,
+      errorCount
     });
   } catch (error: unknown) {
     console.error("Manual Process Error:", error);

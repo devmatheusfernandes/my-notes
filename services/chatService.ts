@@ -1,14 +1,12 @@
-import { 
-  collection, 
-  addDoc, 
-  query, 
-  where, 
-  orderBy, 
-  getDocs, 
-  Timestamp, 
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  orderBy,
+  getDocs,
   serverTimestamp,
   doc,
-  getDoc,
   deleteDoc,
   updateDoc
 } from "firebase/firestore";
@@ -18,15 +16,15 @@ export type Message = {
   id?: string;
   role: "user" | "model";
   content: string;
-  createdAt: any;
+  createdAt: Date | string | { toDate: () => Date };
 };
 
 export type Chat = {
   id?: string;
   userId: string;
   title: string;
-  createdAt: any;
-  updatedAt: any;
+  createdAt: Date | string | { toDate: () => Date };
+  updatedAt: Date | string | { toDate: () => Date };
   status?: "active" | "archived";
 };
 

@@ -103,7 +103,7 @@ export function useNotes(userId?: string) {
         setLoading(false);
       }
     },
-    [cacheKey, mutate, notes, setError, setLoading]
+    [cacheKey, mutate, notes, setError, setLoading, userId]
   );
 
   const updateNoteStore = useCallback(
@@ -134,7 +134,7 @@ export function useNotes(userId?: string) {
         setLoading(false);
       }
     },
-    [cacheKey, mutate, notes, setError, setLoading]
+    [cacheKey, mutate, notes, setError, setLoading, userId]
   );
 
   return {
