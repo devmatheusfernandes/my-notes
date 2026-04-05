@@ -1,21 +1,29 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { VideoData } from "@/schemas/videos";
 import { Loading } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Play, Clock, BookOpen, ExternalLink, Share2, FileText } from "lucide-react";
+import { ChevronLeft, Play, Clock, BookOpen, ExternalLink, Share2, FileText, Check, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatVttToText } from "@/lib/video/video-utils";
 import { videoService } from "@/lib/video/video-service";
+import { useAuthStore } from "@/store/authStore";
+import { useNotes } from "@/hooks/use-notes";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export default function VideoPlaybackPage() {
   const { id } = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuthStore();
+  const { createNote } = useNotes(user?.uid);
   const [video, setVideo] = useState<VideoData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isImported, setIsImported] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   const highlightTerm = searchParams.get("h") || undefined;
 
@@ -37,6 +45,13 @@ export default function VideoPlaybackPage() {
           }
         }
 
+        if (user && data) {
+          const userState = await videoService.getUserVideoState(user.uid, data.id);
+          if (userState?.importedAsNote) {
+            setIsImported(true);
+          }
+        }
+
         setVideo(data);
       } catch (err) {
         console.error("Error fetching video:", err);
@@ -46,7 +61,47 @@ export default function VideoPlaybackPage() {
     };
 
     fetchVideo();
-  }, [id]);
+  }, [id, user]);
+
+  const handleCreateNote = useCallback(async () => {
+    if (!user) {
+      toast.error("Você precisa estar logado para criar notas.");
+      return;
+    }
+
+    if (isImported) {
+      toast.error("Este vídeo já foi importado como nota.");
+      return;
+    }
+
+    if (!video || !video.contentText) {
+      toast.error("Não há conteúdo disponível para criar uma nota.");
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const fullTitle = `Nota: ${video.title}`;
+      const truncatedTitle = fullTitle.length > 150 ? fullTitle.substring(0, 147) + "..." : fullTitle;
+
+      const newNote = await createNote(user.uid, {
+        title: truncatedTitle,
+        content: video.contentText,
+        type: "note",
+      });
+
+      if (newNote) {
+        await videoService.setVideoNoteLink(user.uid, video.id, newNote.id);
+        setIsImported(true);
+        toast.success("Nota criada com sucesso!");
+      }
+    } catch (err) {
+      console.error("Erro ao criar nota:", err);
+      toast.error("Erro ao criar nota a partir do vídeo.");
+    } finally {
+      setIsCreating(false);
+    }
+  }, [user, video, createNote, isImported]);
 
   // Handle automatic scrolling to highlight
   useEffect(() => {
@@ -63,7 +118,7 @@ export default function VideoPlaybackPage() {
 
   const highlightedParagraphs = useMemo(() => {
     if (!video?.contentText) return [];
-    
+
     const paras = video.contentText.split("\n\n");
     if (!highlightTerm) return paras;
 
@@ -79,9 +134,9 @@ export default function VideoPlaybackPage() {
     if (terms.length === 0) return paras;
 
     const highlightPattern = new RegExp(`(${terms.join("|")})`, "gi");
-    
-    return paras.map(p => 
-      p.replace(highlightPattern, (m) => 
+
+    return paras.map(p =>
+      p.replace(highlightPattern, (m) =>
         `<mark class="bg-yellow-400/30 dark:bg-yellow-500/50 rounded-sm px-0.5 ring-1 ring-yellow-400/20 text-foreground video-highlight">${m}</mark>`
       )
     );
@@ -134,9 +189,22 @@ export default function VideoPlaybackPage() {
             <Share2 className="w-4 h-4" />
             Compartilhar
           </Button>
-          <Button className="gap-2 rounded-full shadow-sm">
-            <BookOpen className="w-4 h-4" />
-            Criar Nota
+          <Button
+            className={cn(
+              "gap-2 rounded-full shadow-sm transition-all",
+              isImported && "bg-green-600 hover:bg-green-700 text-white"
+            )}
+            onClick={handleCreateNote}
+            disabled={isCreating}
+          >
+            {isCreating ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : isImported ? (
+              <Check className="w-4 h-4" />
+            ) : (
+              <BookOpen className="w-4 h-4" />
+            )}
+            {isImported ? "Vídeo Importado" : "Criar Nota"}
           </Button>
         </div>
       </div>
@@ -188,6 +256,12 @@ export default function VideoPlaybackPage() {
                     {video.book}
                   </Badge>
                 )}
+                {isImported && (
+                  <Badge variant="default" className="rounded-full px-3 bg-green-500/10 text-green-600 border-green-200/50 dark:bg-green-500/20 dark:text-green-400 dark:border-green-800/50 flex gap-1.5 items-center">
+                    <Check className="w-3 h-3" />
+                    Já virou nota
+                  </Badge>
+                )}
               </div>
               <h2 className="text-3xl font-extrabold tracking-tight underline decoration-primary/30 underline-offset-8">
                 {video.title}
@@ -205,8 +279,8 @@ export default function VideoPlaybackPage() {
               {video.contentText ? (
                 <div className="space-y-4">
                   {highlightedParagraphs.map((paragraph, idx) => (
-                    <p 
-                      key={idx} 
+                    <p
+                      key={idx}
                       className="text-foreground/80 leading-relaxed text-lg font-serif"
                       dangerouslySetInnerHTML={{ __html: paragraph }}
                     />
@@ -228,9 +302,19 @@ export default function VideoPlaybackPage() {
                 Ações Rápidas
               </h3>
               <div className="space-y-3">
-                <Button className="w-full justify-start gap-3 h-12 rounded-xl" variant="outline">
-                  <BookOpen className="w-5 h-5" />
-                  Ver notas vinculadas
+                <Button
+                  className={cn("w-full justify-start gap-3 h-12 rounded-xl", isImported && "border-green-200 dark:border-green-900/50 bg-green-50/50 dark:bg-green-900/10")}
+                  variant="outline"
+                  onClick={() => {
+                    if (isImported) {
+                      router.push("/hub/personal-study"); // Or direct to the note if we had the note ID stored in state
+                    } else {
+                      handleCreateNote();
+                    }
+                  }}
+                >
+                  {isImported ? <Check className="w-5 h-5 text-green-600" /> : <BookOpen className="w-5 h-5" />}
+                  {isImported ? "Ver notas vinculadas" : "Criar nota do vídeo"}
                 </Button>
                 <Button className="w-full justify-start gap-3 h-12 rounded-xl" variant="outline">
                   <ExternalLink className="w-5 h-5" />

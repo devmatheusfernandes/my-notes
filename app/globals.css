@@ -162,7 +162,6 @@
   * {
     -ms-overflow-style: none;
     scrollbar-width: none;
-    overflow: hidden;
   }
 
   *::-webkit-scrollbar {

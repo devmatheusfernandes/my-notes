@@ -96,6 +96,15 @@ export const videoService = {
         }
     },
 
+    async getUserVideoState(userId: string, videoId: string): Promise<Partial<VideoData> | null> {
+        const ref = doc(db, USERS_COLLECTION, userId, "all_videos", videoId)
+        const snap = await getDoc(ref)
+        if (snap.exists()) {
+            return snap.data() as Partial<VideoData>
+        }
+        return null
+    },
+
     async getLastUpdated(): Promise<Date | null> {
         const q = query(
             collection(db, VIDEOS_COLLECTION),
