@@ -83,7 +83,7 @@ export const useReaderStore = create<ReaderState>((set, get) => ({
   reset: () => set({
     currentChapterIndex: 0,
     isChapterDrawerOpen: false,
-    isSidebarOpen: true,
+    isSidebarOpen: false,
     activeReferences: [],
     lastReference: null,
     docReferences: [],
