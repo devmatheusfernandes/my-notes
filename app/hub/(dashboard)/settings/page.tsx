@@ -257,14 +257,21 @@ export default function SettingsPage() {
     setIsImportDrawerOpen(false);
 
     try {
-      const notesToImport: CreateNoteDTO[] = rawImportNotes.map((item) => ({
-        title: (String(item.title || "Nota Importada")).substring(0, 150),
-        content: (item.content as any) || "",
-        pinned: importOptions.pinned ? (!!item.pinned || !!item.isFavorite) : false,
-        tagIds: importOptions.tags ? (Array.isArray(item.tagIds) ? item.tagIds : []) : [],
-        folderId: importOptions.folders ? (item.folderId as string) : undefined,
-        isLocked: importOptions.isLocked ? !!item.isLocked : false,
-      }));
+      const notesToImport: CreateNoteDTO[] = rawImportNotes.map((item) => {
+        const baseNote: CreateNoteDTO = {
+          title: (String(item.title || "Nota Importada")).substring(0, 150),
+          content: (item.content as any) || "",
+          pinned: importOptions.pinned ? (!!item.pinned || !!item.isFavorite) : false,
+          tagIds: importOptions.tags ? (Array.isArray(item.tagIds) ? item.tagIds : []) : [],
+          isLocked: importOptions.isLocked ? !!item.isLocked : false,
+        };
+
+        if (importOptions.folders && item.folderId) {
+          baseNote.folderId = item.folderId as string;
+        }
+
+        return baseNote;
+      });
 
       await noteService.createManyNotes(userId, notesToImport);
       toast.success(`${notesToImport.length} nota(s) importada(s) com sucesso!`);
