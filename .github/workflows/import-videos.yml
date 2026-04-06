@@ -1,0 +1,21 @@
+name: Import Weekly Videos
+
+on:
+  schedule:
+    - cron: '0 2 * * 0' # Sunday at 02:00 AM UTC
+  workflow_dispatch: # Allow manual trigger for testing
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30 # Aumentado pois o crawl/import pode demorar
+    steps:
+      - name: Trigger Import API
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          # Chama o endpoint de importação com o segredo do cron
+          curl -X POST "https://$APP_URL/api/videos/import" \
+          -H "Authorization: Bearer $CRON_SECRET" \
+          -H "Content-Type: application/json"

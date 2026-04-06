@@ -114,6 +114,30 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Coleção de Vídeos (Metadados Globais)
+    match /videos/{videoId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Gerenciado via Admin SDK/Scripts
+    }
+
+    // Coleção de Usuários (Dados Privados e Subcoleções)
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      match /{allSubcollections=**} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Coleção de Chats e Mensagens
+    match /chats/{chatId} {
+      allow read, update, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+      
+      match /messages/{messageId} {
+        allow read, create: if isAuthenticated() && get(/databases/$(database)/documents/chats/$(chatId)).data.userId == request.auth.uid;
+      }
+    }
+
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;

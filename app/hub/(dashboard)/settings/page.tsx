@@ -57,6 +57,16 @@ import { BulkImportStatus } from "@/components/notes/BulkImportStatus";
 import { AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 
+interface ImportedNote {
+  title?: string;
+  content?: string;
+  pinned?: boolean;
+  isFavorite?: boolean;
+  tagIds?: string[];
+  isLocked?: boolean;
+  folderId?: string | number;
+}
+
 export default function SettingsPage() {
   const { user } = useAuthStore();
   const userId = user?.uid ?? "";
@@ -82,7 +92,7 @@ export default function SettingsPage() {
 
   // Import Drawer State
   const [isImportDrawerOpen, setIsImportDrawerOpen] = useState(false);
-  const [rawImportNotes, setRawImportNotes] = useState<any[]>([]);
+  const [rawImportNotes, setRawImportNotes] = useState<ImportedNote[]>([]);
   const [importOptions, setImportOptions] = useState({
     folders: false,
     tags: false,
@@ -206,7 +216,7 @@ export default function SettingsPage() {
     reader.onload = async (event) => {
       try {
         const text = event.target?.result as string;
-        let notes: any[] = [];
+        let notes: ImportedNote[] = [];
 
         if (file.name.endsWith(".json")) {
           const json = JSON.parse(text);
@@ -260,14 +270,14 @@ export default function SettingsPage() {
       const notesToImport: CreateNoteDTO[] = rawImportNotes.map((item) => {
         const baseNote: CreateNoteDTO = {
           title: (String(item.title || "Nota Importada")).substring(0, 150),
-          content: (item.content as any) || "",
+          content: item.content || "",
           pinned: importOptions.pinned ? (!!item.pinned || !!item.isFavorite) : false,
           tagIds: importOptions.tags ? (Array.isArray(item.tagIds) ? item.tagIds : []) : [],
           isLocked: importOptions.isLocked ? !!item.isLocked : false,
         };
 
         if (importOptions.folders && item.folderId) {
-          baseNote.folderId = item.folderId as string;
+          baseNote.folderId = String(item.folderId);
         }
 
         return baseNote;

@@ -105,11 +105,7 @@ export async function POST(req: Request) {
     // 4. Execute all updates
     // Drizzle Batch for Turso
     if (dbUpdates.length > 0) {
-      // Drizzle db.batch expects an array of query objects (at least for Turso/Sqlite)
-      // We must cast them correctly or just execute them. 
-      // Note: db.batch in Drizzle is typically typed and requires a fixed tuple or an array.
-      // For Turso/libsql:
-      await db.batch(dbUpdates as any);
+      await db.batch(dbUpdates as unknown as [Parameters<typeof db.batch>[0][0], ...Parameters<typeof db.batch>[0][0][]]);
     }
 
     // Parallel Firestore updates

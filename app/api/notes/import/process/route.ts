@@ -107,7 +107,7 @@ export async function POST(req: Request) {
 
     // 4. Execute all updates
     if (dbUpdates.length > 0) {
-      await db.batch(dbUpdates as any);
+      await db.batch(dbUpdates as unknown as [Parameters<typeof db.batch>[0][0], ...Parameters<typeof db.batch>[0][0][]]);
     }
 
     // Parallel Firestore updates

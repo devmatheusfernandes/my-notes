@@ -24,6 +24,7 @@ import { useSelectionActions } from "@/hooks/use-selection-actions";
 import { useFolders } from "@/hooks/use-folders";
 import { cn } from "@/lib/utils";
 
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -78,6 +79,7 @@ export function SelectionActionBar() {
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
   const [isTagDrawerOpen, setIsTagDrawerOpen] = useState(false);
   const [isMoveDrawerOpen, setIsMoveDrawerOpen] = useState(false);
+  const [moveSearchQuery, setMoveSearchQuery] = useState("");
 
   const lockButtonMode = actions.selectedItemsLockState.allLocked ? "unlock" : "lock";
 
@@ -94,9 +96,15 @@ export function SelectionActionBar() {
 
   const availableFolders = folders.filter((f) => !selectedFolderIds.has(f.id));
 
+  const filteredMoveFolders = availableFolders.filter((f) =>
+    (f.title ?? "").toLowerCase().includes(moveSearchQuery.toLowerCase())
+  );
+
+  const folderIdToTitle = new Map(folders.map(f => [f.id, f.title]));
+
   return (
-    <div className="w-full animate-in fade-in slide-in-from-top-2 duration-200 ease-in-out">
-      <div className="flex w-full items-center justify-between bg-card text-card-foreground p-2 rounded-lg shadow-sm border border-border overflow-x-auto gap-2">
+    <div className="fixed bottom-6 inset-x-0 z-50 px-4 pointer-events-none animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out">
+      <div className="flex w-fit max-w-[95vw] mx-auto items-center justify-center bg-card/80 backdrop-blur-xl text-card-foreground p-2 rounded-2xl shadow-2xl border border-border/50 overflow-x-auto gap-2 pointer-events-auto ring-1 ring-black/5">
         <div className="flex items-center gap-1 sm:gap-2 whitespace-nowrap min-w-max">
           <span className="text-sm font-medium mr-2 px-2">
             {actions.totalCount} selecionados
@@ -405,6 +413,15 @@ export function SelectionActionBar() {
             </DrawerHeader>
 
             <div className="px-4 pb-8">
+              <div className="mb-4">
+                <Input
+                  placeholder="Buscar pasta..."
+                  value={moveSearchQuery}
+                  onChange={(e) => setMoveSearchQuery(e.target.value)}
+                  className="h-10 rounded-xl"
+                />
+              </div>
+
               <ScrollArea className="h-[40vh]">
                 <div className="flex flex-col gap-1 pr-4">
                   <Button
@@ -426,40 +443,50 @@ export function SelectionActionBar() {
 
                   <Separator className="my-1" />
 
-                  {availableFolders.length === 0 ? (
+                  {filteredMoveFolders.length === 0 ? (
                     <div className="text-sm text-muted-foreground text-center py-8">
-                      Nenhuma pasta disponível para destino.
+                      {moveSearchQuery ? "Nenhuma pasta encontrada." : "Nenhuma pasta disponível para destino."}
                     </div>
                   ) : (
-                    availableFolders.map((folder) => (
-                      <Button
-                        key={folder.id}
-                        variant="ghost"
-                        className="w-full justify-start gap-3 h-11"
-                        onClick={() => {
-                          actions.handleMoveToFolder(folder.id);
-                          setIsMoveDrawerOpen(false);
-                        }}
-                      >
-                        <div
-                          className={cn(
-                            "size-8 rounded-md flex items-center justify-center text-white",
-                            folder.color || "bg-primary/20 text-primary"
-                          )}
-                          style={folder.color ? { backgroundColor: folder.color } : {}}
+                    filteredMoveFolders.map((folder) => {
+                      const parentTitle = folder.parentId ? folderIdToTitle.get(folder.parentId) : null;
+                      
+                      return (
+                        <Button
+                          key={folder.id}
+                          variant="ghost"
+                          className="w-full justify-start gap-3 h-14"
+                          onClick={() => {
+                            actions.handleMoveToFolder(folder.id);
+                            setIsMoveDrawerOpen(false);
+                            setMoveSearchQuery("");
+                          }}
                         >
-                          <FolderIcon className="size-4 fill-current" />
-                        </div>
-                        <div className="flex flex-col items-start text-left truncate">
-                          <span className="text-sm font-medium truncate">{folder.title}</span>
-                          {folder.parentId && (
-                            <span className="text-[10px] text-muted-foreground">
-                              Pasta filha
-                            </span>
-                          )}
-                        </div>
-                      </Button>
-                    ))
+                          <div
+                            className={cn(
+                              "size-9 rounded-md flex items-center justify-center text-white shrink-0",
+                              folder.color || "bg-primary/20 text-primary"
+                            )}
+                            style={folder.color ? { backgroundColor: folder.color } : {}}
+                          >
+                            <FolderIcon className="size-5 fill-current" />
+                          </div>
+                          <div className="flex flex-col items-start text-left truncate">
+                            <span className="text-sm font-semibold truncate">{folder.title}</span>
+                            {parentTitle ? (
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <ChevronRight className="size-2" />
+                                Subpasta de: <span className="font-medium text-foreground/70">{parentTitle}</span>
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground">
+                                Pasta raiz
+                              </span>
+                            )}
+                          </div>
+                        </Button>
+                      );
+                    })
                   )}
                 </div>
               </ScrollArea>

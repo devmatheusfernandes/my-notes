@@ -36,6 +36,7 @@ export function VideoCard({ video, searchQuery, variant = "grid" }: VideoCardPro
             height={500}
             src={video.coverImage}
             alt={video.title}
+            loading="eager"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (

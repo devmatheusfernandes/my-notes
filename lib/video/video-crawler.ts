@@ -1,9 +1,9 @@
 import { CATEGORY_NAMES, ROOT_CATEGORY } from "@/lib/video/categories";
 import { CategoryGroup, VideoData } from "@/schemas/videos";
 import { extractBook, selectBestVideoUrl } from "./video-utils";
- 
+
 let cachedVideos: VideoData[] = [];
- 
+
 export function findVideoInCache(id: string): VideoData | undefined {
     return cachedVideos.find(v => v.id === id);
 }
@@ -46,8 +46,6 @@ export async function crawlCategory(key: string, rootKey?: string, visited = new
     if (visited.has(key)) return []
     visited.add(key)
 
-    // Determine the root for this branch
-    // If the current key is in CATEGORY_NAMES, it becomes the new root for all its descendants
     const currentIsMain = !!CATEGORY_NAMES[key] && key !== ROOT_CATEGORY;
     const activeRoot = currentIsMain ? key : rootKey;
 
@@ -110,9 +108,8 @@ export async function crawlCategory(key: string, rootKey?: string, visited = new
 
 export async function getAllVideosGrouped(): Promise<CategoryGroup[]> {
     const allVideos = await crawlCategory(ROOT_CATEGORY)
-    cachedVideos = allVideos; // Cache for detail page
- 
-    // Group by rootCategoryKey
+    cachedVideos = allVideos;
+
     const groupMap = new Map<string, VideoData[]>()
 
     for (const v of allVideos) {
@@ -132,7 +129,6 @@ export async function getAllVideosGrouped(): Promise<CategoryGroup[]> {
         })
     })
 
-    // Sort according to CATEGORY_NAMES order
     const order = Object.keys(CATEGORY_NAMES)
     return groups.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key))
 }

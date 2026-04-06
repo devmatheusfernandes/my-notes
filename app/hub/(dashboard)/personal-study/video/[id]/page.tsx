@@ -299,7 +299,7 @@ export default function VideoPlaybackPage() {
                   variant="outline"
                   onClick={() => {
                     if (isImported) {
-                      router.push("/hub/personal-study"); // Or direct to the note if we had the note ID stored in state
+                      router.push("/hub/personal-study");
                     } else {
                       handleCreateNote();
                     }
