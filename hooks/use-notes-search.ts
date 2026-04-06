@@ -1,15 +1,25 @@
 import { useMemo, useState } from "react";
 import type { Note } from "@/schemas/noteSchema";
+import { normalizeText } from "@/lib/utils/tokenizer";
 
 export function useNotesSearch(notes: Note[]) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredNotes = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return notes;
+    const rawQuery = searchQuery.trim();
+    if (!rawQuery) return notes;
+
+    const query = normalizeText(rawQuery);
+
     return notes.filter((note) => {
-      const title = (note.title || "").toLowerCase();
-      const searchText = (note.searchText || "").toLowerCase();
+      // 1. Favor processed tokens (fast & robust)
+      if (note.searchTokens) {
+        return note.searchTokens.includes(query);
+      }
+
+      // 2. Fallback for notes not yet processed by Cron
+      const title = normalizeText(note.title || "");
+      const searchText = normalizeText(note.searchText || "");
       return title.includes(query) || searchText.includes(query);
     });
   }, [notes, searchQuery]);

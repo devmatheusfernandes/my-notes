@@ -21,6 +21,8 @@ export const note = z.object({
   type: z.enum(["note", "pdf"]).default("note"),
   fileUrl: z.string().optional(),
   isLocked: z.boolean().default(false),
+  searchTokens: z.string().optional().nullable(),
+  searchTokensUpdatedAt: z.string().optional().nullable(),
 });
 
 export type Note = z.infer<typeof note>;

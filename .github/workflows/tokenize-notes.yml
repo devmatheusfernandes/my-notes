@@ -1,0 +1,28 @@
+name: Tokenize Notes Job
+
+on:
+  schedule:
+    - cron: '0 5 * * *' # Runs at 02:00 AM BRT (05:00 UTC)
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  tokenize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Trigger Tokenize API
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "Error: APP_URL secret is not set."
+            exit 1
+          fi
+          if [ -z "$CRON_SECRET" ]; then
+            echo "Error: CRON_SECRET secret is not set."
+            exit 1
+          fi
+          
+          curl -f -X GET "https://$APP_URL/api/cron/tokenize" \
+          -H "Authorization: Bearer $CRON_SECRET"
