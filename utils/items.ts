@@ -60,11 +60,6 @@ export function buildNotesGridItems({
   folders: Folder[];
   folderId: string | null;
 }) {
-  const noteItems: NotesGridItem[] = notes.map((note) => ({
-    kind: "note",
-    note,
-    createdAt: note.createdAt,
-  }));
   const folderItems: NotesGridItem[] = filterFoldersByParent(
     folders,
     folderId,
@@ -74,5 +69,25 @@ export function buildNotesGridItems({
     createdAt: folder.createdAt,
   }));
 
-  return sortByCreatedAtDesc([...folderItems, ...noteItems]);
+  const pinnedNoteItems: NotesGridItem[] = notes
+    .filter((n) => n.pinned)
+    .map((note) => ({
+      kind: "note",
+      note,
+      createdAt: note.createdAt,
+    }));
+
+  const regularNoteItems: NotesGridItem[] = notes
+    .filter((n) => !n.pinned)
+    .map((note) => ({
+      kind: "note",
+      note,
+      createdAt: note.createdAt,
+    }));
+
+  return [
+    ...sortByCreatedAtDesc(folderItems),
+    ...sortByCreatedAtDesc(pinnedNoteItems),
+    ...sortByCreatedAtDesc(regularNoteItems),
+  ];
 }

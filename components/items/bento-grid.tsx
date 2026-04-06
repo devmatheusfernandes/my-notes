@@ -52,7 +52,7 @@ import { UnlockDrawer } from "@/components/modals/unlock-drawer";
 
 export default function BentoGrid({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid grid-flow-dense auto-rows-[170px] grid-cols-2 gap-4 md:auto-rows-[190px] md:grid-cols-4">
+    <div className="grid grid-flow-dense grid-cols-2 gap-4  md:grid-cols-4">
       {children}
     </div>
   );
