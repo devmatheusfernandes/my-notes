@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       .select()
       .from(embeddingsQueue)
       .where(eq(embeddingsQueue.syncStatus, "pending"))
-      .limit(50);
+      .limit(150);
 
     if (pendingItems.length === 0) {
       return NextResponse.json({ message: "No pending items found" });
