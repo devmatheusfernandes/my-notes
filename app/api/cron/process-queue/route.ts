@@ -15,12 +15,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch up to 50 pending records
+    // Fetch up to 100 pending records
     const pendingItems = await db
       .select()
       .from(embeddingsQueue)
       .where(eq(embeddingsQueue.syncStatus, "pending"))
-      .limit(50);
+      .limit(100);
 
     if (pendingItems.length === 0) {
       return NextResponse.json({ message: "No pending items found" });
