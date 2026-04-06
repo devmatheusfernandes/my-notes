@@ -150,44 +150,42 @@ const MainToolbarContent = ({
             />
           </div>
         ) : (
-        <Drawer>
-          <DrawerTrigger asChild>
-            <Button
-              variant="ghost"
-              size="small"
-              className="tiptap-toolbar-button h-8 w-8 text-zinc-500 hover:text-amber-500"
-            >
-              <PencilIcon className="w-4 h-4" />
-            </Button>
-          </DrawerTrigger>
-          <DrawerContent className="rounded-t-2xl px-6 pb-12">
-            <DrawerHeader className="mb-6">
-              <DrawerTitle>Editar Título</DrawerTitle>
-            </DrawerHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="mobile-title"
-                  className="text-xs font-semibold uppercase tracking-wider text-zinc-500"
-                >
-                  Título
-                </Label>
-                <Input
-                  id="mobile-title"
-                  value={title}
-                  onChange={(e) => onTitleChange(e.target.value)}
-                  placeholder="Digite o título..."
-                  autoFocus
-                  className="h-12 text-base rounded-xl border-zinc-200 dark:border-zinc-800"
-                />
+          <Drawer>
+            <DrawerTrigger asChild>
+              <Button
+                variant="ghost"
+                size="small"
+                className="tiptap-toolbar-button h-8 w-8 text-zinc-500 hover:text-amber-500"
+              >
+                <PencilIcon className="w-4 h-4" />
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent className="rounded-t-2xl px-6 pb-12">
+              <DrawerHeader className="mb-6">
+                <DrawerTitle>Editar Título</DrawerTitle>
+              </DrawerHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="mobile-title"
+                    className="text-xs font-semibold uppercase tracking-wider text-zinc-500"
+                  >
+                    Título
+                  </Label>
+                  <Input
+                    id="mobile-title"
+                    value={title}
+                    onChange={(e) => onTitleChange(e.target.value)}
+                    placeholder="Digite o título..."
+                    autoFocus
+                    className="h-12 text-base rounded-xl border-zinc-200 dark:border-zinc-800"
+                  />
+                </div>
               </div>
-            </div>
-          </DrawerContent>
-        </Drawer>
+            </DrawerContent>
+          </Drawer>
         )}
       </ToolbarGroup>
-
-      <ToolbarSeparator />
 
       <Spacer />
 
@@ -215,22 +213,13 @@ const MainToolbarContent = ({
         <ToolbarGroup>
           <MarkButton type="bold" />
           <MarkButton type="italic" />
-          <MarkButton type="strike" />
           <MarkButton type="code" />
-          <MarkButton type="underline" />
           {!isMobile ? (
             <ColorHighlightPopover />
           ) : (
             <ColorHighlightPopoverButton onClick={onHighlighterClick} />
           )}
           {!isMobile ? <LinkPopover /> : <LinkButton onClick={onLinkClick} />}
-        </ToolbarGroup>
-
-        <ToolbarSeparator />
-
-        <ToolbarGroup>
-          <MarkButton type="superscript" />
-          <MarkButton type="subscript" />
         </ToolbarGroup>
 
         <ToolbarSeparator />
@@ -250,8 +239,6 @@ const MainToolbarContent = ({
       </div>
 
       <Spacer />
-
-      <ToolbarSeparator />
 
       {/* RIGHT: System Tools */}
       <ToolbarGroup className="flex-shrink-0">
@@ -326,7 +313,7 @@ export function SimpleEditor({
   const router = useRouter()
   const toolbarRef = useRef<HTMLDivElement>(null)
   const { addReference, setDocReferences, isSidebarOpen, setIsSidebarOpen } = useReaderStore()
-  
+
   // Sync local title with prop when it changing externally (e.g. from parent)
   // Moved to render-time sync to avoid cascading renders in useEffect
 
@@ -436,16 +423,16 @@ export function SimpleEditor({
       },
       handleClick: (view, pos) => {
         const { state } = view
-        
+
         // Find marks at this position
         const $pos = state.doc.resolve(pos)
         const marks = $pos.marks()
-        
+
         const noteLinkMark = marks.find(m => m.type.name === 'noteLink')
         if (noteLinkMark) {
           const { id } = noteLinkMark.attrs
           const foundNote = notes.find(n => n.id === id)
-          
+
           if (foundNote && foundNote.content) {
             // Define exactly the same extensions as used in the editor
             const extensions = [
@@ -463,7 +450,7 @@ export function SimpleEditor({
               NoteLinkExtension,
               HashtagExtension,
             ]
-            
+
             try {
               const html = generateHTML(foundNote.content as JSONContent, extensions)
               addReference({
@@ -552,7 +539,7 @@ export function SimpleEditor({
     if (highlightTerm) {
       // @ts-expect-error - Tiptap setOptions signature can vary or not be perfectly typed in all versions
       editor.setOptions('searchHighlight', { searchTerm: highlightTerm })
-      
+
       // Small timeout to allow decorations to render
       const timer = setTimeout(() => {
         const firstHighlight = document.querySelector(".search-highlight")

@@ -27,7 +27,7 @@ export default function HubBreadcrumb() {
 
     const segments = pathname.split("/").filter(Boolean).slice(1);
     const items: Array<{ label: string; href?: string }> = [
-      { label: "Hub", href: "/hub/items" },
+      { label: "Início", href: "/hub/items" },
     ];
 
     let previous: string | null = null;
@@ -37,7 +37,6 @@ export default function HubBreadcrumb() {
       accPath += `/${segment}`;
 
       if (segment === "items") {
-        items.push({ label: "Itens", href: "/hub/items" });
         previous = "items";
         return;
       }

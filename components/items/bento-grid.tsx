@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useSelection } from "@/components/hub/selection-context";
+import { usePathname } from "next/navigation";
 import type { Folder } from "@/schemas/folderSchema";
 import type { Note } from "@/schemas/noteSchema";
 import { useNotesSearch } from "@/hooks/use-notes-search";
@@ -24,11 +25,11 @@ import {
 } from "@/components/ui/empty";
 import { useFolderId } from "@/utils/searchParams";
 import { cn } from "@/lib/utils";
-import { 
-  DndContext, 
-  DragEndEvent, 
-  PointerSensor, 
-  useSensor, 
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  useSensor,
   useSensors,
   closestCenter
 } from "@dnd-kit/core";
@@ -36,6 +37,18 @@ import { useNotes } from "@/hooks/use-notes";
 import { useFolders } from "@/hooks/use-folders";
 import { useAuthStore } from "@/store/authStore";
 import { toast } from "sonner";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerClose,
+} from "@/components/ui/drawer";
+import { Button } from "@/components/ui/button";
+import { storageService } from "@/services/storageService";
+import { UnlockDrawer } from "@/components/modals/unlock-drawer";
 
 export default function BentoGrid({ children }: { children: React.ReactNode }) {
   return (
@@ -58,8 +71,21 @@ export function ItemsBentoGrid({
   const { user } = useAuthStore();
   const userId = user?.uid || "";
   const { setVisibleItems } = useSelection();
-  const { updateNote } = useNotes(userId);
-  const { updateFolder } = useFolders(userId);
+  const { updateNote, deleteNote } = useNotes(userId);
+  const { updateFolder, deleteFolder } = useFolders(userId);
+
+  // Global Modals State
+  const [itemToDelete, setItemToDelete] = useState<{
+    id: string;
+    kind: "note" | "folder";
+    title: string;
+    type?: string;
+  } | null>(null);
+  const [itemToUnlock, setItemToUnlock] = useState<{
+    id: string;
+    kind: "note" | "folder";
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -139,6 +165,51 @@ export function ItemsBentoGrid({
     }
   };
 
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    setIsDeleting(true);
+    const { id, kind, type } = itemToDelete;
+    const isTrashPageItem = pathname === "/hub/trash";
+
+    try {
+      if (kind === "note") {
+        const promise = isTrashPageItem
+          ? (async () => {
+            if (type === "pdf" && userId) {
+              await storageService.deleteFile(userId, `pdf/${id}.pdf`);
+            }
+            await deleteNote(id);
+          })()
+          : updateNote(id, { trashed: true });
+
+        await toast.promise(promise, {
+          loading: isTrashPageItem ? "Excluindo nota..." : "Movendo nota para a lixeira...",
+          success: isTrashPageItem ? "Nota excluída com sucesso." : "Nota movida para a lixeira.",
+          error: isTrashPageItem ? "Erro ao excluir nota." : "Erro ao mover nota.",
+        });
+      } else {
+        const promise = isTrashPageItem
+          ? deleteFolder(id)
+          : updateFolder(id, { trashed: true });
+
+        await toast.promise(promise, {
+          loading: isTrashPageItem ? "Excluindo pasta..." : "Movendo pasta para a lixeira...",
+          success: isTrashPageItem ? "Pasta excluída com sucesso." : "Pasta movida para a lixeira.",
+          error: isTrashPageItem ? "Erro ao excluir pasta." : "Erro ao mover pasta.",
+        });
+      }
+      setItemToDelete(null);
+    } catch (err) {
+      console.error("Delete error:", err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const pathname = usePathname();
+  const isTrashPage = pathname === "/hub/trash";
+
   if (gridItems.length === 0) {
     return (
       <Empty className="mt-8">
@@ -160,8 +231,8 @@ export function ItemsBentoGrid({
   }
 
   return (
-    <DndContext 
-      sensors={sensors} 
+    <DndContext
+      sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
@@ -170,24 +241,65 @@ export function ItemsBentoGrid({
           const bentoClasses =
             item.kind === "note"
               ? cn(getBentoClasses(index), "h-full")
-              : cn(getFolderBentoClasses(), "h-full");
+              : cn(getFolderBentoClasses(), "h-fit");
           return item.kind === "note" ? (
             <NoteCard
               key={`note-${item.note.id}`}
-              note={item.note}
+              note={item.note as Note}
               className={bentoClasses}
               searchQuery={searchQuery}
+              onOpenDelete={(note: Note) => setItemToDelete({ id: note.id, kind: "note", title: note.title || "Sem Título", type: note.type })}
+              onOpenUnlock={(note: Note) => setItemToUnlock({ id: note.id, kind: "note" })}
             />
           ) : (
             <FolderCard
               key={`folder-${item.folder.id}`}
-              folder={item.folder}
+              folder={item.folder as Folder}
               className={bentoClasses}
               searchQuery={searchQuery}
+              onOpenDelete={(folder: Folder) => setItemToDelete({ id: folder.id, kind: "folder", title: folder.title })}
+              onOpenUnlock={(folder: Folder) => setItemToUnlock({ id: folder.id, kind: "folder" })}
             />
           );
         })}
       </BentoGrid>
+
+      <Drawer open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+        <DrawerContent>
+          <div className="mx-auto w-full max-w-sm">
+            <DrawerHeader>
+              <DrawerTitle>
+                {isTrashPage ? "Excluir Definitivamente?" : "Mover para a Lixeira?"}
+              </DrawerTitle>
+              <DrawerDescription>
+                {isTrashPage
+                  ? `Tem certeza que deseja excluir permanentemente "${itemToDelete?.title}"? Essa ação não pode ser desfeita.`
+                  : `Tem certeza que deseja mover "${itemToDelete?.title}" para a lixeira? Você poderá restaurá-la mais tarde.`}
+              </DrawerDescription>
+            </DrawerHeader>
+            <DrawerFooter>
+              <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
+                {isTrashPage ? "Confirmar Exclusão" : "Mover para Lixeira"}
+              </Button>
+              <DrawerClose asChild>
+                <Button variant="outline">Cancelar</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Global Unlock Drawer */}
+      {itemToUnlock && (
+        <UnlockDrawer
+          open={!!itemToUnlock}
+          onOpenChange={(open) => !open && setItemToUnlock(null)}
+          item={itemToUnlock}
+          onUnlocked={() => {
+            setItemToUnlock(null);
+          }}
+        />
+      )}
     </DndContext>
   );
 }

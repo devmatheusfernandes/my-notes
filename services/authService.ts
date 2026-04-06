@@ -1,5 +1,6 @@
 import { auth } from "@/lib/firebase/firebase";
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { redirect } from "next/navigation";
 
 export const authService = {
   async logInWithGoogle() {
@@ -28,6 +29,7 @@ export const authService = {
 
       // Call session API to delete cookie
       await fetch("/api/auth/session", { method: "DELETE" });
+      redirect("/signin");
     } catch (error) {
       console.error("Error signing out:", error);
       throw error;

@@ -51,7 +51,7 @@ export default function TermsOfService() {
             <section>
               <h2 className="text-xl font-bold text-foreground">5. Limitação de Responsabilidade</h2>
               <p>
-                O MyNotes é fornecido "como está". Embora nos esforcemos para garantir a máxima disponibilidade e segurança, não seremos responsáveis por quaisquer perdas de dados, lucros interrompidos ou outros danos decorrentes do uso do serviço.
+                O MyNotes é fornecido &quot;como está&quot;. Embora nos esforcemos para garantir a máxima disponibilidade e segurança, não seremos responsáveis por quaisquer perdas de dados, lucros interrompidos ou outros danos decorrentes do uso do serviço.
               </p>
             </section>
 

@@ -159,13 +159,23 @@
     @apply font-sans;
   }
 
+  /* Hide native scrollbars */
+  html,
+  body,
   * {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
 
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
   *::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Hide custom ScrollArea scrollbars (Shadcn/Radix) */
+  [data-slot="scroll-area-scrollbar"] {
+    display: none !important;
   }
 }
 

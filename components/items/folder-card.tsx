@@ -19,23 +19,12 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerClose,
-} from "@/components/ui/drawer";
-import { Button } from "@/components/ui/button";
 import { useLongPress } from "@/hooks/use-long-press";
 import { useFolders } from "@/hooks/use-folders";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
 import { useFolderStore } from "@/store/folderStore";
-import { UnlockDrawer } from "@/components/modals/unlock-drawer";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { Input } from "@/components/ui/input";
 import { HighlightedText } from "@/components/ui/highlighted-text";
@@ -44,10 +33,14 @@ export default function FolderCard({
   folder,
   className,
   searchQuery = "",
+  onOpenDelete,
+  onOpenUnlock,
 }: {
   folder: Folder;
   className?: string;
   searchQuery?: string;
+  onOpenDelete?: (folder: Folder) => void;
+  onOpenUnlock?: (folder: Folder) => void;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -57,11 +50,9 @@ export default function FolderCard({
   const { user } = useAuthStore();
   const userId = user?.uid ?? "";
   const { selectedFolderIds, toggleFolder, isSelectionActive } = useSelection();
-  const { deleteFolder, updateFolder } = useFolders(userId);
+  const { updateFolder } = useFolders(userId);
   const { unlockedFolders } = useFolderStore();
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isUnlockDrawerOpen, setIsUnlockDrawerOpen] = useState(false);
+  const [isDeleting] = useState(false);
 
   // Inline Rename State
   const [isRenaming, setIsRenaming] = useState(false);
@@ -114,7 +105,8 @@ export default function FolderCard({
     if (isMasked) {
       e.preventDefault();
       e.stopPropagation();
-      setIsUnlockDrawerOpen(true);
+      (e.currentTarget as HTMLElement).blur();
+      onOpenUnlock?.(folder);
       return;
     } else {
       router.push(`/hub/items/${folder.id}`);
@@ -127,33 +119,11 @@ export default function FolderCard({
   };
 
   const attemptDelete = (e?: Event | React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setIsDrawerOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    setIsDrawerOpen(false);
-    setIsDeleting(true);
-
-    const promise = isTrashPage
-      ? deleteFolder(folder.id)
-      : updateFolder(folder.id, { trashed: true });
-
-    toast.promise(promise, {
-      loading: isTrashPage
-        ? "Excluindo pasta..."
-        : "Movendo pasta para a lixeira...",
-      success: () =>
-        isTrashPage
-          ? "Pasta excluída com sucesso."
-          : "Pasta movida para a lixeira.",
-      error: () => {
-        setIsDeleting(false);
-        return isTrashPage
-          ? "Não foi possível excluir a pasta."
-          : "Não foi possível mover a pasta.";
-      },
-    });
+    if (e) {
+      e.stopPropagation();
+      if (e.currentTarget) (e.currentTarget as HTMLElement).blur();
+    }
+    onOpenDelete?.(folder);
   };
 
   const handleArchive = async (e?: Event | React.MouseEvent) => {
@@ -221,7 +191,7 @@ export default function FolderCard({
             onClick={handleClick}
             {...longPressProps}
             className={cn(
-              "group relative flex items-center gap-3 cursor-pointer overflow-hidden rounded-2xl p-3 pr-2 transition-all duration-200 active:scale-[0.98]",
+              "group relative flex items-center gap-3 cursor-pointer overflow-hidden rounded-sm p-3 pr-2 transition-all duration-200 active:scale-[0.98]",
               "bg-card border hover:bg-muted/80",
               isSelected
                 ? "border-primary/50 bg-primary/10 hover:bg-primary/15"
@@ -294,7 +264,10 @@ export default function FolderCard({
             <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-foreground/10 hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <button
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-foreground/10 hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
                     <MoreVertical className="h-4 w-4" />
                   </button>
                 </DropdownMenuTrigger>
@@ -347,7 +320,10 @@ export default function FolderCard({
         </ContextMenuTrigger>
 
         <ContextMenuContent className="w-48">
-          <ContextMenuItem onClick={handleToggle}>
+          <ContextMenuItem onClick={(e) => {
+            e.stopPropagation();
+            handleToggle();
+          }}>
             {isSelected ? "Desmarcar" : "Selecionar"}
           </ContextMenuItem>
 
@@ -379,43 +355,6 @@ export default function FolderCard({
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
-
-      <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-        <DrawerContent>
-          <div className="mx-auto w-full max-w-sm">
-            <DrawerHeader>
-              <DrawerTitle>
-                {isTrashPage
-                  ? "Excluir Definitivamente?"
-                  : "Mover para a Lixeira?"}
-              </DrawerTitle>
-              <DrawerDescription>
-                {isTrashPage
-                  ? `Tem certeza que deseja excluir permanentemente "${folder.title}"? Essa ação não pode ser desfeita.`
-                  : `Tem certeza que deseja mover "${folder.title}" para a lixeira? Tudo dentro da pasta poderá ser perdido senão existir mecanismo de restauração em massa.`}
-              </DrawerDescription>
-            </DrawerHeader>
-            <DrawerFooter>
-              <Button variant="destructive" onClick={handleConfirmDelete}>
-                {isTrashPage ? "Confirmar Exclusão" : "Mover para Lixeira"}
-              </Button>
-              <DrawerClose asChild>
-                <Button variant="outline">Cancelar</Button>
-              </DrawerClose>
-            </DrawerFooter>
-          </div>
-        </DrawerContent>
-      </Drawer>
-
-      <UnlockDrawer
-        open={isUnlockDrawerOpen}
-        onOpenChange={setIsUnlockDrawerOpen}
-        item={{ kind: "folder", id: folder.id }}
-        onUnlocked={() => {
-          setIsUnlockDrawerOpen(false);
-          router.push(`/hub/items/${folder.id}`);
-        }}
-      />
     </>
   );
 }

@@ -16,10 +16,10 @@ if (!admin.apps.length) {
     try {
       admin.initializeApp({
         credential: admin.credential.cert({
-          project_id: projectId,
-          client_email: clientEmail,
-          private_key: privateKey,
-        } as any),
+          projectId: projectId,
+          clientEmail: clientEmail,
+          privateKey: privateKey,
+        }),
         storageBucket: storageBucket,
       });
     } catch (error) {
