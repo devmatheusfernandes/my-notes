@@ -124,6 +124,7 @@ export const ReferenceExtension = Mark.create<ReferenceOptions>({
     return [
       suggestion({
         editor: this.editor,
+        pluginKey: new PluginKey('suggestion-reference'),
         ...this.options.suggestion,
       }),
       new Plugin({

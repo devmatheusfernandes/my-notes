@@ -58,6 +58,30 @@ export default function NotePage() {
     },
     [noteId, updateNote]
   );
+  
+  const handleTitleChange = useCallback(
+    async (newTitle: string) => {
+      setSaveStatus("saving");
+
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      saveTimeoutRef.current = setTimeout(async () => {
+        try {
+          if (noteId) {
+            await updateNote(noteId, {
+              title: newTitle,
+            });
+            setSaveStatus("saved");
+          }
+        } catch {
+          setSaveStatus("error");
+        }
+      }, 1500);
+    },
+    [noteId, updateNote]
+  );
 
   const isUnlockedInSession = !!noteId && unlockedNotes.has(noteId);
   const isBlocked = !!note?.isLocked && !isUnlockedInSession;
@@ -130,8 +154,10 @@ export default function NotePage() {
         ) : (
           <SimpleEditor
             content={note.content || ""}
+            title={note.title || ""}
             userId={userId}
             onChange={handleUpdate}
+            onTitleChange={handleTitleChange}
             highlightTerm={highlightTerm}
           />
         )
@@ -148,23 +174,23 @@ export default function NotePage() {
       )}
 
       {/* Sync Status Indicator */}
-      <div className="fixed bottom-6 right-6 flex items-center gap-2 rounded-full border bg-background/80 px-4 py-2 text-xs font-medium shadow-lg backdrop-blur-sm transition-all hover:bg-background z-50">
+      <div className="fixed top-4 right-4 sm:top-auto sm:bottom-6 sm:right-6 flex items-center gap-2 rounded-full border bg-background/80 p-2 sm:px-4 sm:py-2 text-xs font-medium shadow-lg backdrop-blur-sm transition-all hover:bg-background z-[100]">
         {saveStatus === "saving" && (
           <>
             <Loader2 className="h-3 w-3 animate-spin text-primary" />
-            <span className="text-muted-foreground">Salvando...</span>
+            <span className="hidden sm:inline text-muted-foreground line-clamp-1">Salvando...</span>
           </>
         )}
         {saveStatus === "saved" && (
           <>
-            <CheckCircle2 className="h-3 w-3 text-green-500" />
-            <span className="text-muted-foreground">Sincronizado</span>
+            <CheckCircle2 className="h-4 w-4 sm:h-3 sm:w-3 text-green-500" />
+            <span className="hidden sm:inline text-muted-foreground line-clamp-1">Sincronizado</span>
           </>
         )}
         {saveStatus === "error" && (
           <>
-            <AlertCircle className="h-3 w-3 text-destructive" />
-            <span className="text-destructive">Erro ao salvar</span>
+            <AlertCircle className="h-4 w-4 sm:h-3 sm:w-3 text-destructive" />
+            <span className="hidden sm:inline text-destructive line-clamp-1">Erro ao salvar</span>
           </>
         )}
       </div>

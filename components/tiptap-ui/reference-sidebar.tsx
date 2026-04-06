@@ -9,6 +9,7 @@ import * as Tabs from "@radix-ui/react-tabs"
 import * as Accordion from "@radix-ui/react-accordion"
 import { parseBibleReference } from "@/lib/bible/bible-utils"
 import { jwpubReference } from "@/lib/jwpub/jwpub-reference"
+import Link from "next/link"
 
 export function ReferenceSidebar() {
   const {
@@ -122,20 +123,39 @@ function ReferenceCard({ reference, onRemove }: { reference: ReferenceInstance; 
       <div className="flex items-center justify-between mb-3 border-b border-zinc-100 dark:border-zinc-800/50 pb-2">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-            <Info className="w-3 px-0 text-amber-600 dark:text-amber-400" />
+            {reference.type === "note" ? (
+              <FileText className="w-3 text-amber-600 dark:text-amber-400" />
+            ) : (
+              <Info className="w-3 px-0 text-amber-600 dark:text-amber-400" />
+            )}
           </div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 truncate max-w-[120px]">
             {reference.label}
           </span>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={onRemove}
-        >
-          <X className="w-3 h-3 text-zinc-400" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {reference.type === "note" && reference.noteId && (
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="h-7 px-2 text-[9px] font-bold gap-1.5 text-zinc-600 dark:text-zinc-400 hover:text-amber-600 dark:hover:text-amber-400 border-none shadow-none bg-transparent"
+            >
+              <Link href={`/hub/notes/${reference.noteId}`}>
+                <BookOpen className="w-3 h-3" />
+                ABRIR
+              </Link>
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={onRemove}
+          >
+            <X className="w-3 h-3 text-zinc-400" />
+          </Button>
+        </div>
       </div>
       <div className="jwpub-content text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
         {reference.type === "bible" ? (

@@ -70,7 +70,7 @@ export default function Header({
   };
 
   return (
-    <div className="sticky top-0 z-50 bg-background/50 backdrop-blur-md transition-colors duration-300 shadow-sm">
+    <div className="sticky top-0 z-50 bg-background/50 backdrop-blur-md transition-colors duration-300">
       <div className="w-full">
         <div className="flex flex-row items-center justify-between w-full gap-4 py-2 px-2 md:px-4">
           <div className="flex flex-row items-center gap-2">

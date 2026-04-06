@@ -1,7 +1,8 @@
 "use client"
 
 import { useRef, useState, useMemo, useEffect } from "react"
-import { EditorContent, EditorContext, useEditor, type Content, Editor } from "@tiptap/react"
+import { EditorContent, EditorContext, useEditor, type Content, Editor, JSONContent } from "@tiptap/react"
+import { generateHTML } from "@tiptap/html"
 import { Node, Mark } from "@tiptap/pm/model"
 
 // --- Tiptap Core Extensions ---
@@ -16,11 +17,17 @@ import { Superscript } from "@tiptap/extension-superscript"
 import { Selection } from "@tiptap/extensions"
 import { ReferenceExtension } from "@/components/tiptap-extension/reference-extension"
 import { SearchHighlight } from "@/components/tiptap-extension/search-highlight-extension"
+import { NoteLinkExtension } from "@/components/tiptap-extension/note-link-extension"
+import { HashtagExtension } from "@/components/tiptap-extension/hashtag-extension"
+import { createSuggestionRender } from "@/components/tiptap-extension/suggestion-factory"
 import { publicationSuggestion } from "@/components/tiptap-extension/publication-suggestion"
 import { useReaderStore, type ReferenceInstance } from "@/store/readerStore"
+import { useNotes } from "@/hooks/use-notes"
+import { useTags } from "@/hooks/use-tags"
 import { parseBibleReference } from "@/lib/bible/bible-utils"
 import { jwpubReference } from "@/lib/jwpub/jwpub-reference"
 import throttle from "lodash.throttle"
+import { useRouter } from "next/navigation"
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button"
@@ -67,7 +74,16 @@ import { UndoRedoButton } from "@/components/tiptap-ui/undo-redo-button"
 import { ArrowLeftIcon } from "@/components/tiptap-icons/arrow-left-icon"
 import { HighlighterIcon } from "@/components/tiptap-icons/highlighter-icon"
 import { LinkIcon } from "@/components/tiptap-icons/link-icon"
-import { PanelRightOpen, PanelRightClose } from "lucide-react"
+import { PanelRightOpen, PanelRightClose, PencilIcon } from "lucide-react"
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 // --- Hooks ---
 import { useIsBreakpoint } from "@/hooks/use-is-breakpoint"
@@ -85,8 +101,10 @@ import "@/components/tiptap-editor/simple-editor.scss"
 
 interface SimpleEditorProps {
   content: Content
+  title?: string
   userId: string
   onChange?: (data: { json: Content; text: string }) => void
+  onTitleChange?: (newTitle: string) => void
   highlightTerm?: string
 }
 
@@ -96,77 +114,147 @@ const MainToolbarContent = ({
   isMobile,
   isSidebarOpen,
   onToggleSidebar,
+  title,
+  onTitleChange,
+  onBack,
 }: {
   onHighlighterClick: () => void
   onLinkClick: () => void
   isMobile: boolean
   isSidebarOpen: boolean
   onToggleSidebar: () => void
+  title: string
+  onTitleChange: (v: string) => void
+  onBack: () => void
 }) => {
   return (
-    <>
-      <Spacer />
+    <div className="flex items-center w-full min-w-0">
+      {/* LEFT: Back + Title */}
+      <ToolbarGroup className="flex-shrink-0">
+        <Button
+          variant="ghost"
+          size="small"
+          onClick={onBack}
+          className="tiptap-toolbar-button h-8 w-8 text-zinc-500 hover:text-amber-500"
+        >
+          <ArrowLeftIcon className="w-4 h-4" />
+        </Button>
 
-      <ToolbarGroup>
-        <UndoRedoButton action="undo" />
-        <UndoRedoButton action="redo" />
-      </ToolbarGroup>
-
-      <ToolbarSeparator />
-
-      <ToolbarGroup>
-        <HeadingDropdownMenu modal={false} levels={[1, 2, 3, 4]} />
-        <ListDropdownMenu
-          modal={false}
-          types={["bulletList", "orderedList", "taskList"]}
-        />
-        <BlockquoteButton />
-        <CodeBlockButton />
-      </ToolbarGroup>
-
-      <ToolbarSeparator />
-
-      <ToolbarGroup>
-        <MarkButton type="bold" />
-        <MarkButton type="italic" />
-        <MarkButton type="strike" />
-        <MarkButton type="code" />
-        <MarkButton type="underline" />
         {!isMobile ? (
-          <ColorHighlightPopover />
+          <div className="w-[200px] transition-all duration-200">
+            <Input
+              value={title}
+              onChange={(e) => onTitleChange(e.target.value)}
+              placeholder="Título da nota..."
+              className="h-8 border-none bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800 focus:bg-white dark:focus:bg-zinc-900 focus:ring-1 focus:ring-amber-500/30 text-sm font-semibold transition-colors"
+            />
+          </div>
         ) : (
-          <ColorHighlightPopoverButton onClick={onHighlighterClick} />
+        <Drawer>
+          <DrawerTrigger asChild>
+            <Button
+              variant="ghost"
+              size="small"
+              className="tiptap-toolbar-button h-8 w-8 text-zinc-500 hover:text-amber-500"
+            >
+              <PencilIcon className="w-4 h-4" />
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent className="rounded-t-2xl px-6 pb-12">
+            <DrawerHeader className="mb-6">
+              <DrawerTitle>Editar Título</DrawerTitle>
+            </DrawerHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="mobile-title"
+                  className="text-xs font-semibold uppercase tracking-wider text-zinc-500"
+                >
+                  Título
+                </Label>
+                <Input
+                  id="mobile-title"
+                  value={title}
+                  onChange={(e) => onTitleChange(e.target.value)}
+                  placeholder="Digite o título..."
+                  autoFocus
+                  className="h-12 text-base rounded-xl border-zinc-200 dark:border-zinc-800"
+                />
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
         )}
-        {!isMobile ? <LinkPopover /> : <LinkButton onClick={onLinkClick} />}
       </ToolbarGroup>
 
       <ToolbarSeparator />
-
-      <ToolbarGroup>
-        <MarkButton type="superscript" />
-        <MarkButton type="subscript" />
-      </ToolbarGroup>
-
-      <ToolbarSeparator />
-
-      <ToolbarGroup>
-        <TextAlignButton align="left" />
-        <TextAlignButton align="center" />
-        <TextAlignButton align="right" />
-        <TextAlignButton align="justify" />
-      </ToolbarGroup>
-
-      <ToolbarSeparator />
-
-      <ToolbarGroup>
-        <ImageUploadButton text="Add" />
-      </ToolbarGroup>
 
       <Spacer />
 
-      {isMobile && <ToolbarSeparator />}
+      {/* CENTER: Editor Tools */}
+      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1">
+        <ToolbarGroup>
+          <UndoRedoButton action="undo" />
+          <UndoRedoButton action="redo" />
+        </ToolbarGroup>
 
-      <ToolbarGroup>
+        <ToolbarSeparator />
+
+        <ToolbarGroup>
+          <HeadingDropdownMenu modal={false} levels={[1, 2, 3, 4]} />
+          <ListDropdownMenu
+            modal={false}
+            types={["bulletList", "orderedList", "taskList"]}
+          />
+          <BlockquoteButton />
+          <CodeBlockButton />
+        </ToolbarGroup>
+
+        <ToolbarSeparator />
+
+        <ToolbarGroup>
+          <MarkButton type="bold" />
+          <MarkButton type="italic" />
+          <MarkButton type="strike" />
+          <MarkButton type="code" />
+          <MarkButton type="underline" />
+          {!isMobile ? (
+            <ColorHighlightPopover />
+          ) : (
+            <ColorHighlightPopoverButton onClick={onHighlighterClick} />
+          )}
+          {!isMobile ? <LinkPopover /> : <LinkButton onClick={onLinkClick} />}
+        </ToolbarGroup>
+
+        <ToolbarSeparator />
+
+        <ToolbarGroup>
+          <MarkButton type="superscript" />
+          <MarkButton type="subscript" />
+        </ToolbarGroup>
+
+        <ToolbarSeparator />
+
+        <ToolbarGroup>
+          <TextAlignButton align="left" />
+          <TextAlignButton align="center" />
+          <TextAlignButton align="right" />
+          <TextAlignButton align="justify" />
+        </ToolbarGroup>
+
+        <ToolbarSeparator />
+
+        <ToolbarGroup>
+          <ImageUploadButton text="Add" />
+        </ToolbarGroup>
+      </div>
+
+      <Spacer />
+
+      <ToolbarSeparator />
+
+      {/* RIGHT: System Tools */}
+      <ToolbarGroup className="flex-shrink-0">
         <ThemeToggle />
         <Button
           variant="ghost"
@@ -181,7 +269,7 @@ const MainToolbarContent = ({
           )}
         </Button>
       </ToolbarGroup>
-    </>
+    </div>
   )
 }
 
@@ -214,14 +302,37 @@ const MobileToolbarContent = ({
   </>
 )
 
-export function SimpleEditor({ content, userId, onChange, highlightTerm }: SimpleEditorProps) {
+export function SimpleEditor({
+  content,
+  title,
+  userId,
+  onChange,
+  onTitleChange,
+  highlightTerm,
+}: SimpleEditorProps) {
+  const [localTitle, setLocalTitle] = useState(title ?? "")
+  const [prevTitle, setPrevTitle] = useState(title)
+
+  if (title !== prevTitle) {
+    setLocalTitle(title ?? "")
+    setPrevTitle(title)
+  }
+
   const isMobile = useIsBreakpoint()
   const { height } = useWindowSize()
   const [mobileView, setMobileView] = useState<"main" | "highlighter" | "link">(
     "main"
   )
+  const router = useRouter()
   const toolbarRef = useRef<HTMLDivElement>(null)
   const { addReference, setDocReferences, isSidebarOpen, setIsSidebarOpen } = useReaderStore()
+  
+  // Sync local title with prop when it changing externally (e.g. from parent)
+  // Moved to render-time sync to avoid cascading renders in useEffect
+
+
+  const { notes } = useNotes(userId)
+  const { tags } = useTags(userId)
 
   // Scan document for all references
   const scanReferences = useMemo(() => throttle((editor: Editor) => {
@@ -293,6 +404,26 @@ export function SimpleEditor({ content, userId, onChange, highlightTerm }: Simpl
     }
   }
 
+  const noteSuggestion = useMemo(() => ({
+    items: ({ query }: { query: string }) => {
+      return notes
+        .filter(n => n.title.toLowerCase().includes(query.toLowerCase()))
+        .map(n => ({ id: n.id, label: n.title, type: 'note' }))
+        .slice(0, 10)
+    },
+    render: createSuggestionRender()
+  }), [notes])
+
+  const tagSuggestion = useMemo(() => ({
+    items: ({ query }: { query: string }) => {
+      return tags
+        .filter(t => t.title.toLowerCase().includes(query.toLowerCase()))
+        .map(t => ({ id: t.id, label: `#${t.title}`, type: 'tag' }))
+        .slice(0, 10)
+    },
+    render: createSuggestionRender()
+  }), [tags])
+
   const editor = useEditor({
     immediatelyRender: false,
     editorProps: {
@@ -303,6 +434,64 @@ export function SimpleEditor({ content, userId, onChange, highlightTerm }: Simpl
         "aria-label": "Main content area, start typing to enter text.",
         class: "simple-editor",
       },
+      handleClick: (view, pos) => {
+        const { state } = view
+        
+        // Find marks at this position
+        const $pos = state.doc.resolve(pos)
+        const marks = $pos.marks()
+        
+        const noteLinkMark = marks.find(m => m.type.name === 'noteLink')
+        if (noteLinkMark) {
+          const { id } = noteLinkMark.attrs
+          const foundNote = notes.find(n => n.id === id)
+          
+          if (foundNote && foundNote.content) {
+            // Define exactly the same extensions as used in the editor
+            const extensions = [
+              StarterKit,
+              HorizontalRule,
+              TextAlign.configure({ types: ["heading", "paragraph"] }),
+              TaskList,
+              TaskItem,
+              Highlight,
+              Image,
+              Typography,
+              Superscript,
+              Subscript,
+              Selection,
+              NoteLinkExtension,
+              HashtagExtension,
+            ]
+            
+            try {
+              const html = generateHTML(foundNote.content as JSONContent, extensions)
+              addReference({
+                label: foundNote.title,
+                content: html,
+                type: "note",
+                noteId: id,
+              })
+            } catch (error) {
+              console.error("Error generating HTML for note preview:", error)
+              // Fallback to direct navigation if preview fails
+              router.push(`/hub/notes/${id}`)
+            }
+          } else {
+            router.push(`/hub/notes/${id}`)
+          }
+          return true
+        }
+
+        const hashtagMark = marks.find(m => m.type.name === 'hashtag')
+        if (hashtagMark) {
+          const { id } = hashtagMark.attrs
+          router.push(`/hub/items?tagIds=${id}`)
+          return true
+        }
+
+        return false
+      }
     },
     extensions: [
       StarterKit.configure({
@@ -335,6 +524,12 @@ export function SimpleEditor({ content, userId, onChange, highlightTerm }: Simpl
       }),
       SearchHighlight.configure({
         searchTerm: highlightTerm || "",
+      }),
+      NoteLinkExtension.configure({
+        suggestion: noteSuggestion,
+      }),
+      HashtagExtension.configure({
+        suggestion: tagSuggestion,
       }),
     ],
     content,
@@ -401,6 +596,12 @@ export function SimpleEditor({ content, userId, onChange, highlightTerm }: Simpl
               isMobile={isMobile}
               isSidebarOpen={isSidebarOpen}
               onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+              title={localTitle}
+              onTitleChange={(v) => {
+                setLocalTitle(v)
+                onTitleChange?.(v)
+              }}
+              onBack={() => router.push("/hub/items")}
             />
           ) : (
             <MobileToolbarContent

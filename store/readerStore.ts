@@ -4,7 +4,8 @@ export interface ReferenceInstance {
   id: string;
   label: string;
   content: string;
-  type: "footnote" | "bible" | "publication";
+  type: "footnote" | "bible" | "publication" | "note";
+  noteId?: string;
 }
 
 interface ReaderState {
