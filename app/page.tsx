@@ -9,22 +9,22 @@ export default function Home() {
           My Notes
         </h1>
         <p className="text-zinc-500 dark:text-zinc-400">
-          A simple note-taking app
+          Um app simples para anotações
         </p>
         <Link href="/signin">
           <Button variant="default" size="lg">
-            Get Started
+            Começar
           </Button>
         </Link>
       </div>
       <Link className="hidden" href="/terms">
         <Button variant="link" size="sm">
-          Terms of Service
+          Termos de Serviço
         </Button>
       </Link>
       <Link className="hidden" href="/privacy">
         <Button variant="link" size="sm">
-          Privacy Policy
+          Política de Privacidade
         </Button>
       </Link>
     </div>
