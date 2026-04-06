@@ -17,6 +17,16 @@ export default function Home() {
           </Button>
         </Link>
       </div>
+      <Link className="hidden" href="/terms">
+        <Button variant="link" size="sm">
+          Terms of Service
+        </Button>
+      </Link>
+      <Link className="hidden" href="/privacy">
+        <Button variant="link" size="sm">
+          Privacy Policy
+        </Button>
+      </Link>
     </div>
   );
 }
