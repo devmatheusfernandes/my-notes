@@ -41,6 +41,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import { noteService } from "@/services/noteService";
 import { CreateNoteDTO } from "@/schemas/noteSchema";
 import Header from "@/components/hub/hub-header";
@@ -71,6 +79,16 @@ export default function SettingsPage() {
   const [isImporting, setIsImporting] = useState(false);
   const [activeTab, setActiveTab] = useState<"appearance" | "security" | "backup" | "storage" | "IA">("security");
   const { theme, setTheme } = useTheme();
+
+  // Import Drawer State
+  const [isImportDrawerOpen, setIsImportDrawerOpen] = useState(false);
+  const [rawImportNotes, setRawImportNotes] = useState<any[]>([]);
+  const [importOptions, setImportOptions] = useState({
+    folders: false,
+    tags: false,
+    isLocked: false,
+    pinned: false,
+  });
 
   const TABS = [
     { id: "appearance", label: "Aparência", icon: Palette },
@@ -184,73 +202,79 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file || !userId) return;
 
-    setIsImporting(true);
     const reader = new FileReader();
-
     reader.onload = async (event) => {
       try {
         const text = event.target?.result as string;
-        let notesToImport: CreateNoteDTO[] = [];
+        let notes: any[] = [];
 
         if (file.name.endsWith(".json")) {
           const json = JSON.parse(text);
-          const data = Array.isArray(json) ? json : [json];
-          notesToImport = (data as Record<string, unknown>[]).map((item) => ({
-            title: ((item.title as string) || "Nota Importada").substring(0, 150),
-            content: (item.content as string) || "",
-            pinned: !!item.pinned || !!item.isFavorite,
-            tagIds: [],
-            isLocked: false,
-          }));
+          notes = Array.isArray(json) ? json : [json];
         } else if (file.name.endsWith(".csv")) {
           const lines = text.split(/\r?\n/).filter(line => line.trim());
-          if (lines.length < 2) throw new Error("CSV inválido ou vazio");
-
+          if (lines.length < 2) throw new Error("CSV inválido");
           const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
           const titleIdx = headers.indexOf("title");
           const contentIdx = headers.indexOf("content");
+          if (titleIdx === -1 || contentIdx === -1) throw new Error("CSV sem colunas obrigatórias");
 
-          if (titleIdx === -1 || contentIdx === -1) {
-            throw new Error("CSV deve conter colunas 'title' e 'content'");
-          }
-
-          notesToImport = lines.slice(1).map(line => {
+          notes = lines.slice(1).map(line => {
             const cells = line.split(",");
             return {
-              title: (cells[titleIdx]?.trim() || "Sem título").substring(0, 150),
-              content: cells[contentIdx]?.trim() || "",
-              pinned: false,
-              tagIds: [],
-              isLocked: false,
+              title: cells[titleIdx]?.trim(),
+              content: cells[contentIdx]?.trim(),
             };
           });
         } else if (file.name.endsWith(".txt")) {
-          notesToImport = [{
-            title: file.name.replace(".txt", "").substring(0, 150),
+          notes = [{
+            title: file.name.replace(".txt", ""),
             content: text,
-            pinned: false,
-            tagIds: [],
-            isLocked: false,
           }];
         }
 
-        if (notesToImport.length === 0) {
-          toast.error("Nenhuma nota encontrada para importar.");
+        if (notes.length === 0) {
+          toast.error("Nenhuma nota encontrada.");
           return;
         }
 
-        await noteService.createManyNotes(userId, notesToImport);
-        toast.success(`${notesToImport.length} nota(s) importada(s) com sucesso!`);
+        setRawImportNotes(notes);
+        setIsImportDrawerOpen(true);
       } catch (err) {
-        console.error("Erro na importação:", err);
-        toast.error("Erro ao importar arquivo. Verifique o formato.");
+        console.error("Erro ao ler arquivo:", err);
+        toast.error("Erro ao processar arquivo.");
       } finally {
-        setIsImporting(false);
-        e.target.value = ""; // Reset input
+        e.target.value = "";
       }
     };
-
     reader.readAsText(file);
+  };
+
+  const confirmImport = async () => {
+    if (!userId || rawImportNotes.length === 0) return;
+
+    setIsImporting(true);
+    setIsImportDrawerOpen(false);
+
+    try {
+      const notesToImport: CreateNoteDTO[] = rawImportNotes.map((item) => ({
+        title: (String(item.title || "Nota Importada")).substring(0, 150),
+        content: (item.content as any) || "",
+        pinned: importOptions.pinned ? (!!item.pinned || !!item.isFavorite) : false,
+        tagIds: importOptions.tags ? (Array.isArray(item.tagIds) ? item.tagIds : []) : [],
+        folderId: importOptions.folders ? (item.folderId as string) : undefined,
+        isLocked: importOptions.isLocked ? !!item.isLocked : false,
+      }));
+
+      await noteService.createManyNotes(userId, notesToImport);
+      toast.success(`${notesToImport.length} nota(s) importada(s) com sucesso!`);
+    } catch (err) {
+      console.error("Erro na importação:", err);
+      toast.error("Falha ao importar notas.");
+    } finally {
+      setIsImporting(false);
+      setRawImportNotes([]);
+    }
   };
 
   const isInitializing = isLoading && !settings;
@@ -657,6 +681,101 @@ export default function SettingsPage() {
           </AnimatePresence>
         </div>
       </motion.main>
+
+      <Drawer open={isImportDrawerOpen} onOpenChange={setIsImportDrawerOpen}>
+        <DrawerContent className="max-w-md mx-auto">
+          <DrawerHeader>
+            <DrawerTitle>Opções de Importação</DrawerTitle>
+            <DrawerDescription>
+              Selecione quais informações deseja trazer para o MyNotes.
+              <br />
+              <span className="text-xs font-semibold text-primary mt-1 block">
+                {rawImportNotes.length} nota(s) prontas para importar.
+              </span>
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <div className="p-6 space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-accent/5 border border-dashed opacity-70">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Título e Conteúdo</span>
+                  <span className="text-xs text-muted-foreground">Obrigatório para criar a nota.</span>
+                </div>
+                <Checkbox checked disabled />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                <div 
+                  className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-accent/5 transition-colors cursor-pointer"
+                  onClick={() => setImportOptions(prev => ({ ...prev, folders: !prev.folders }))}
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">Pastas (Folders)</span>
+                    <span className="text-xs text-muted-foreground">Importar vínculo com pastas.</span>
+                  </div>
+                  <Checkbox 
+                    checked={importOptions.folders} 
+                    onCheckedChange={(checked) => setImportOptions(prev => ({ ...prev, folders: !!checked }))} 
+                  />
+                </div>
+
+                <div 
+                  className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-accent/5 transition-colors cursor-pointer"
+                  onClick={() => setImportOptions(prev => ({ ...prev, tags: !prev.tags }))}
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">Tags</span>
+                    <span className="text-xs text-muted-foreground">Importar etiquetas associadas.</span>
+                  </div>
+                  <Checkbox 
+                    checked={importOptions.tags} 
+                    onCheckedChange={(checked) => setImportOptions(prev => ({ ...prev, tags: !!checked }))} 
+                  />
+                </div>
+
+                <div 
+                  className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-accent/5 transition-colors cursor-pointer"
+                  onClick={() => setImportOptions(prev => ({ ...prev, isLocked: !prev.isLocked }))}
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">Segurança (Cadeado)</span>
+                    <span className="text-xs text-muted-foreground">Manter notas bloqueadas se estiverem no arquivo.</span>
+                  </div>
+                  <Checkbox 
+                    checked={importOptions.isLocked} 
+                    onCheckedChange={(checked) => setImportOptions(prev => ({ ...prev, isLocked: !!checked }))} 
+                  />
+                </div>
+
+                <div 
+                  className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-accent/5 transition-colors cursor-pointer"
+                  onClick={() => setImportOptions(prev => ({ ...prev, pinned: !prev.pinned }))}
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">Fixar (Pinned)</span>
+                    <span className="text-xs text-muted-foreground">Importar status de favorita/fixada.</span>
+                  </div>
+                  <Checkbox 
+                    checked={importOptions.pinned} 
+                    onCheckedChange={(checked) => setImportOptions(prev => ({ ...prev, pinned: !!checked }))} 
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DrawerFooter className="flex flex-row gap-3">
+            <Button variant="outline" className="flex-1" onClick={() => setIsImportDrawerOpen(false)}>
+              Cancelar
+            </Button>
+            <Button className="flex-1" onClick={confirmImport} disabled={isImporting}>
+              {isImporting ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <FileUp className="w-4 h-4 mr-2" />}
+              Confirmar Importação
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }

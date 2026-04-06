@@ -7,7 +7,7 @@ import { getUserFromSession } from "@/utils/auth-server";
 import { creditService } from "@/services/creditService";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = genAI.getGenerativeModel({ model: "gemini-embedding-2-preview" });
+const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
 
 export async function POST(req: Request) {
   try {
@@ -47,56 +47,75 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Nenhum item pendente encontrado para este usuário." });
     }
 
-    // Process in batch
+    // 2. Process in Gemini Batch
+    const batchRequests = pendingItems.map(item => ({
+      content: { role: "user", parts: [{ text: item.contentToEmbed }] }
+    }));
+
+    const result = await model.batchEmbedContents({
+      requests: batchRequests,
+    });
+
+    // 3. Prepare Database and Firestore Batch Operations
+    const dbUpdates = [];
+    const logPromises = [];
     let successCount = 0;
     let errorCount = 0;
 
-    for (const item of pendingItems) {
-      try {
-        const result = await model.embedContent(item.contentToEmbed);
-        const embeddingArray = result.embedding.values;
+    for (let i = 0; i < pendingItems.length; i++) {
+      const item = pendingItems[i];
+      const embedding = result.embeddings[i];
 
-        // Convert float array to f32 blob (Buffer)
-        const buffer = Buffer.alloc(embeddingArray.length * 4);
-        embeddingArray.forEach((val, i) => buffer.writeFloatLE(val, i * 4));
+      if (!embedding || !embedding.values) {
+        //console.error(`[VECTOR-MANUAL] Erro ao gerar embedding para item ${item.id}`);
+        dbUpdates.push(
+          db.update(embeddingsQueue)
+            .set({ syncStatus: "error", updatedAt: new Date() })
+            .where(eq(embeddingsQueue.id, item.id))
+        );
+        errorCount++;
+        continue;
+      }
 
-        await db
-          .update(embeddingsQueue)
+      // Convert float array to f32 blob (Buffer)
+      const buffer = Buffer.alloc(embedding.values.length * 4);
+      embedding.values.forEach((val, index) => buffer.writeFloatLE(val, index * 4));
+
+      // Prepare sync update
+      dbUpdates.push(
+        db.update(embeddingsQueue)
           .set({
             embedding: buffer,
             syncStatus: "synced",
             updatedAt: new Date(),
           })
-          .where(eq(embeddingsQueue.id, item.id));
+          .where(eq(embeddingsQueue.id, item.id))
+      );
 
-        // 2. Deduct credit
-        if (targetUserId !== "shared") {
-          await creditService.deductCredits(user.uid, 1);
-          await creditService.logTransaction({
-            userId: user.uid,
-            amount: 1,
-            type: "manual_process",
-            details: {
-              sourceId: item.id,
-              sourceType: item.sourceType
-            }
-          });
-          console.log(`[VECTOR-MANUAL] Usuário: ${user.uid} | Fonte: ${item.sourceId} | Crédito: 1`);
-        }
-
-        successCount++;
-      } catch (err) {
-        console.error(`Error embedding item ${item.id}:`, err);
-        await db
-          .update(embeddingsQueue)
-          .set({
-            syncStatus: "error",
-            updatedAt: new Date(),
-          })
-          .where(eq(embeddingsQueue.id, item.id));
-
-        errorCount++;
+      // Accumulate credit logs
+      if (targetUserId !== "shared") {
+        logPromises.push(creditService.logTransaction({
+          userId: user.uid,
+          amount: 1,
+          type: "manual_process",
+          details: { sourceId: item.id, sourceType: item.sourceType }
+        }));
       }
+
+      successCount++;
+    }
+
+    // 4. Execute all updates
+    if (dbUpdates.length > 0) {
+      await db.batch(dbUpdates as any);
+    }
+
+    // Parallel Firestore updates
+    if (targetUserId !== "shared" && successCount > 0) {
+      await Promise.all([
+        creditService.deductCredits(user.uid, successCount),
+        ...logPromises
+      ]);
     }
 
     return NextResponse.json({

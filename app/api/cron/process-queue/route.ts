@@ -6,7 +6,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { creditService } from "@/services/creditService";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = genAI.getGenerativeModel({ model: "gemini-embedding-2-preview" });
+const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
 
 export async function POST(req: Request) {
   try {
@@ -26,60 +26,106 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "No pending items found" });
     }
 
-    // Process in batch
-    for (const item of pendingItems) {
-      try {
-        // 1. Credit Check per User
-        const hasCredits = await creditService.hasCredits(item.userId);
-        if (!hasCredits && item.userId !== 'shared') {
-          // Skip this item if user has no credits, keep as pending for next month
-          console.warn(`Skipping item ${item.id} for user ${item.userId}: No credits`);
-          continue;
-        }
+    // 1. Pre-filter by credits (parallel check)
+    const uniqueUserIds = [...new Set(pendingItems.map(i => i.userId as string))];
+    const userCreditStatus = new Map<string, boolean>();
 
-        const result = await model.embedContent(item.contentToEmbed);
-        const embeddingArray = result.embedding.values;
+    await Promise.all(uniqueUserIds.map(async (uid) => {
+      if (uid === 'shared') {
+        userCreditStatus.set(uid, true);
+        return;
+      }
+      const has = await creditService.hasCredits(uid);
+      userCreditStatus.set(uid, has);
+    }));
 
-        // Convert float array to f32 blob (Buffer)
-        const buffer = Buffer.alloc(embeddingArray.length * 4);
-        embeddingArray.forEach((val, i) => buffer.writeFloatLE(val, i * 4));
+    const validItems = pendingItems.filter(item => userCreditStatus.get(item.userId as string));
 
-        await db
-          .update(embeddingsQueue)
+    if (validItems.length === 0) {
+      //console.warn("[VECTOR-CRON] Todos os itens ignorados por falta de créditos.");
+      return NextResponse.json({ message: "No items with available credits found" });
+    }
+
+    // 2. Process in Gemini Batch
+    const batchRequests = validItems.map(item => ({
+      content: { role: "user", parts: [{ text: item.contentToEmbed }] }
+    }));
+
+    const result = await model.batchEmbedContents({
+      requests: batchRequests,
+    });
+
+    // 3. Prepare Database and Firestore Batch Operations
+    const dbUpdates = [];
+    const logPromises = [];
+    const deductPromises: Record<string, number> = {};
+
+    for (let i = 0; i < validItems.length; i++) {
+      const item = validItems[i];
+      const embedding = result.embeddings[i];
+
+      if (!embedding || !embedding.values) {
+        //console.error(`[VECTOR-CRON] Erro ao gerar embedding para item ${item.id}`);
+        // Prepare update for error status
+        dbUpdates.push(
+          db.update(embeddingsQueue)
+            .set({ syncStatus: "error", updatedAt: new Date() })
+            .where(eq(embeddingsQueue.id, item.id))
+        );
+        continue;
+      }
+
+      // Convert float array to f32 blob (Buffer)
+      const buffer = Buffer.alloc(embedding.values.length * 4);
+      embedding.values.forEach((val, index) => buffer.writeFloatLE(val, index * 4));
+
+      // Prepare sync update
+      dbUpdates.push(
+        db.update(embeddingsQueue)
           .set({
             embedding: buffer,
             syncStatus: "synced",
             updatedAt: new Date(),
           })
-          .where(eq(embeddingsQueue.id, item.id));
+          .where(eq(embeddingsQueue.id, item.id))
+      );
 
-        // 2. Deduct 1 credit for successful vectorization
-        if (item.userId !== 'shared') {
-          await creditService.deductCredits(item.userId, 1);
-          await creditService.logTransaction({
-            userId: item.userId,
-            amount: 1,
-            type: "vectorize",
-            details: {
-              sourceId: item.sourceId,
-              sourceType: item.sourceType
-            }
-          });
-          console.log(`[VECTOR-CRON] Usuário: ${item.userId} | Fonte: ${item.sourceId} | Crédito: 1`);
-        }
-      } catch (err) {
-        console.error(`Error embedding item ${item.id}:`, err);
-        await db
-          .update(embeddingsQueue)
-          .set({
-            syncStatus: "error",
-            updatedAt: new Date(),
-          })
-          .where(eq(embeddingsQueue.id, item.id));
+      // Accumulate credit deductions (avoiding too many parallel requests to Firestore)
+      if (item.userId !== 'shared') {
+        deductPromises[item.userId] = (deductPromises[item.userId] || 0) + 1;
+        logPromises.push(creditService.logTransaction({
+          userId: item.userId,
+          amount: 1,
+          type: "vectorize",
+          details: { sourceId: item.sourceId, sourceType: item.sourceType }
+        }));
       }
     }
 
-    return NextResponse.json({ success: true, processed: pendingItems.length });
+    // 4. Execute all updates
+    // Drizzle Batch for Turso
+    if (dbUpdates.length > 0) {
+      // Drizzle db.batch expects an array of query objects (at least for Turso/Sqlite)
+      // We must cast them correctly or just execute them. 
+      // Note: db.batch in Drizzle is typically typed and requires a fixed tuple or an array.
+      // For Turso/libsql:
+      await db.batch(dbUpdates as any);
+    }
+
+    // Parallel Firestore updates
+    const creditOperations = Object.entries(deductPromises).map(([uid, amount]) =>
+      creditService.deductCredits(uid, amount)
+    );
+
+    await Promise.all([...creditOperations, ...logPromises]);
+
+    //console.log(`[VECTOR-CRON] Processados: ${validItems.length} | Sucesso: ${dbUpdates.length} | Créditos deduzidos.`);
+
+    return NextResponse.json({
+      success: true,
+      processed: validItems.length,
+      skipped: pendingItems.length - validItems.length
+    });
   } catch (error: unknown) {
     console.error("Cron Error:", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Erro desconhecido" }, { status: 500 });

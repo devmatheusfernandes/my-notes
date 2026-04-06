@@ -4,7 +4,7 @@ import { eq, and, or, sql } from "drizzle-orm";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = genAI.getGenerativeModel({ model: "gemini-embedding-2-preview" });
+const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
 
 export const searchService = {
   async semanticSearch(queryText: string, userId: string, limit: number = 20) {
@@ -30,11 +30,11 @@ export const searchService = {
       .from(embeddingsQueue)
       .where(
         and(
-            eq(embeddingsQueue.syncStatus, 'synced'),
-            or(
-                eq(embeddingsQueue.userId, userId),
-                eq(embeddingsQueue.userId, 'shared')
-            )
+          eq(embeddingsQueue.syncStatus, 'synced'),
+          or(
+            eq(embeddingsQueue.userId, userId),
+            eq(embeddingsQueue.userId, 'shared')
+          )
         )
       )
       .orderBy(sql`vector_distance_cos(${embeddingsQueue.embedding}, ${buffer}) DESC`)
