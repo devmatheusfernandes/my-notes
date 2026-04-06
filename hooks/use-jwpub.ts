@@ -50,21 +50,38 @@ export function useJwpub() {
 
       await indexedDbService.savePublication(pub);
       
-      // Sync chapters to Turso
-      const chaptersToSync = pub.chapters.map(ch => ({
+      // Sync chapters to Turso - only if not already there
+      const allChapters = pub.chapters.map(ch => ({
         sourceId: `${pub.symbol}-${ch.id}`,
         sourceType: "publication" as const, 
         content: `${pub.title} - ${ch.title}\n${ch.paragraphs.map(p => p.content).join("\n")}`,
       }));
 
-      const syncResponse = await fetch("/api/sync/queue", {
+      // Check which ones are already in the cloud
+      const checkResponse = await fetch("/api/sync/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: chaptersToSync })
+        body: JSON.stringify({ symbol: pub.symbol, sourceType: "publication" })
       });
 
-      if (!syncResponse.ok) {
-        throw new Error("Falha ao sincronizar capítulos com a nuvem.");
+      let chaptersToSync = allChapters;
+      if (checkResponse.ok) {
+        const { existingSourceIds } = await checkResponse.json();
+        if (Array.isArray(existingSourceIds)) {
+            chaptersToSync = allChapters.filter(ch => !existingSourceIds.includes(ch.sourceId));
+        }
+      }
+
+      if (chaptersToSync.length > 0) {
+        const syncResponse = await fetch("/api/sync/queue", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: chaptersToSync })
+        });
+
+        if (!syncResponse.ok) {
+          throw new Error("Falha ao sincronizar capítulos com a nuvem.");
+        }
       }
 
       refresh();

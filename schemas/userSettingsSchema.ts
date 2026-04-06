@@ -14,6 +14,9 @@ export const userSettings = z.object({
   lastBackupAt: z.string().nullable().default(null),
   driveRefreshToken: z.string().nullable().default(null),
 
+  // Chat Settings
+  showSearchAccuracy: z.boolean().default(false),
+
   createdAt: z.string(),
   updatedAt: z.string(),
 });

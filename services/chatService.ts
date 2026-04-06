@@ -16,6 +16,7 @@ export type Message = {
   id?: string;
   role: "user" | "model";
   content: string;
+  accuracy?: number;
   createdAt: Date | string | { toDate: () => Date };
 };
 

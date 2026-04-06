@@ -104,6 +104,7 @@ export const settingsService = {
           autoBackupFrequency: "daily",
           lastBackupAt: null,
           driveRefreshToken: null,
+          showSearchAccuracy: false,
           createdAt: now,
           updatedAt: now,
         };

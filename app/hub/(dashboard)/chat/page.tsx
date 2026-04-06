@@ -32,6 +32,11 @@ import {
 } from "@/components/ui/drawer";
 import { motion, AnimatePresence } from "framer-motion";
 import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
+import { SettingsIcon, CheckCircle2Icon, ShieldAlertIcon, ShieldCheckIcon } from "lucide-react";
+import { useSettings } from "@/hooks/use-settings";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 const parseDate = (date: unknown): Date => {
   if (!date) return new Date();
@@ -157,8 +162,11 @@ export default function ChatPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
+  const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState(false);
   const [chatToDeleteId, setChatToDeleteId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"active" | "archived">("active");
+  
+  const { settings, updateSettings } = useSettings();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -286,6 +294,9 @@ export default function ChatPage() {
         loadChats();
       }
 
+      const accuracyHeader = response.headers.get("X-Search-Accuracy");
+      const accuracy = accuracyHeader ? parseInt(accuracyHeader, 10) : undefined;
+
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
@@ -307,7 +318,8 @@ export default function ChatPage() {
           if (updatedMessages[lastIndex].role === "model") {
             updatedMessages[lastIndex] = {
               ...updatedMessages[lastIndex],
-              content: aiText
+              content: aiText,
+              accuracy: accuracy
             };
           }
           return updatedMessages;
@@ -391,6 +403,41 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-[100dvh] w-full bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 overflow-hidden font-sans">
+      <Drawer open={isSettingsDrawerOpen} onOpenChange={setIsSettingsDrawerOpen}>
+        <DrawerContent>
+          <div className="mx-auto w-full max-w-lg p-6">
+            <DrawerHeader className="px-0">
+              <DrawerTitle className="text-xl">Configurações do Assistente</DrawerTitle>
+              <DrawerDescription>
+                Personalize sua experiência com a IA.
+              </DrawerDescription>
+            </DrawerHeader>
+
+            <div className="py-6 space-y-6">
+              <div className="flex items-center justify-between p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
+                <div className="space-y-0.5">
+                  <Label htmlFor="accuracy" className="text-base font-semibold">Mostrar Precisão da Busca</Label>
+                  <p className="text-sm text-neutral-500">Exibe a percentagem de similaridade média dos resultados encontrados no banco de dados.</p>
+                </div>
+                <Checkbox 
+                  id="accuracy"
+                  checked={settings?.showSearchAccuracy ?? false}
+                  onCheckedChange={(checked) => {
+                    if (user) updateSettings(user.uid, { showSearchAccuracy: !!checked });
+                  }}
+                  className="h-6 w-6 rounded-md"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 pb-6">
+              <DrawerClose asChild>
+                <Button variant="outline" className="w-full h-12 rounded-xl">Fechar</Button>
+              </DrawerClose>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
 
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} direction="left">
         <DrawerContent className="h-full w-72 rounded-none border-r">
@@ -407,9 +454,14 @@ export default function ChatPage() {
                 </Button>
                 Histórico
               </DrawerTitle>
-              <Button variant="ghost" size="icon" onClick={startNewChat} className="h-8 w-8">
-                <PlusIcon className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" onClick={() => setIsSettingsDrawerOpen(true)} className="h-8 w-8">
+                  <SettingsIcon className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={startNewChat} className="h-8 w-8">
+                  <PlusIcon className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div className="flex bg-neutral-100 dark:bg-neutral-800 p-1 rounded-lg mt-4">
               <button
@@ -497,9 +549,14 @@ export default function ChatPage() {
             </Button>
             <h2 className="font-semibold text-sm">Histórico</h2>
           </div>
-          <Button variant="ghost" size="icon" onClick={startNewChat} className="h-8 w-8">
-            <PlusIcon className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={() => setIsSettingsDrawerOpen(true)} className="h-8 w-8" title="Configurações">
+              <SettingsIcon className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={startNewChat} className="h-8 w-8" title="Nova Conversa">
+              <PlusIcon className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         <div className="px-4 py-3">
           <div className="flex bg-neutral-200/50 dark:bg-neutral-800/50 p-1 rounded-lg">
@@ -606,7 +663,28 @@ export default function ChatPage() {
                           {message.content}
                         </div>
                       ) : (
-                        <div className="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none break-words text-[15px] leading-relaxed">
+                        <div className="flex flex-col gap-2">
+                          {settings?.showSearchAccuracy && message.accuracy !== undefined && (
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge 
+                                variant={message.accuracy > 85 ? "default" : message.accuracy > 65 ? "secondary" : "destructive"}
+                                className={cn(
+                                  "text-[10px] py-0 px-2 h-5 font-bold uppercase tracking-wider rounded-full flex items-center gap-1",
+                                  message.accuracy > 85 ? "bg-green-500/10 text-green-600 border-green-200" : ""
+                                )}
+                              >
+                                {message.accuracy > 85 ? (
+                                  <ShieldCheckIcon className="w-3 h-3" />
+                                ) : message.accuracy > 65 ? (
+                                  <CheckCircle2Icon className="w-3 h-3" />
+                                ) : (
+                                  <ShieldAlertIcon className="w-3 h-3" />
+                                )}
+                                RAG Match: {message.accuracy}%
+                              </Badge>
+                            </div>
+                          )}
+                          <div className="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none break-words text-[15px] leading-relaxed">
                           {message.content === "" && isLoading && i === messages.length - 1 ? (
                             <div className="flex gap-1.5 items-center py-2">
                               <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
@@ -624,6 +702,7 @@ export default function ChatPage() {
                               className="inline-block w-2.5 h-5 bg-blue-500 dark:bg-blue-400 ml-1 align-middle rounded-sm"
                             />
                           )}
+                          </div>
                         </div>
                       )}
                     </div>

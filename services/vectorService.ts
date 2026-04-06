@@ -1,6 +1,6 @@
 import { db } from "@/lib/db/turso";
 import { embeddingsQueue } from "@/lib/db/schema";
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 export const vectorService = {
   async queueForEmbedding(params: {
@@ -32,7 +32,7 @@ export const vectorService = {
   async queueMany(items: {
     userId: string;
     sourceId: string;
-    sourceType: "note" | "video";
+    sourceType: "note" | "video" | "publication";
     content: string;
   }[]) {
     if (items.length === 0) return;
@@ -54,6 +54,21 @@ export const vectorService = {
             updatedAt: new Date(),
         }
     });
+  },
+
+  async getExistingSourceIdsByPrefix(userId: string, prefix: string, sourceType: "note" | "video" | "publication") {
+    const results = await db
+      .select({ sourceId: embeddingsQueue.sourceId })
+      .from(embeddingsQueue)
+      .where(
+        and(
+          eq(embeddingsQueue.userId, userId),
+          eq(embeddingsQueue.sourceType, sourceType),
+          sql`${embeddingsQueue.sourceId} LIKE ${prefix + "%"}`
+        )
+      );
+    
+    return results.map(r => r.sourceId);
   }
 };
 

@@ -48,18 +48,15 @@ export async function POST(req: Request) {
         const id = res.sourceId;
 
         if (res.sourceType === "note") {
-          // Check if it's actually a JWPUB Publication (Symbol-Chapter)
-          if (id.includes("-") && id.split("-").length === 2 && !id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-            const [symbol, chapter] = id.split("-");
-            title = `Publicação ${symbol} - Cap. ${chapter}`;
-            url = `/hub/personal-study/${symbol}?c=${chapter}`;
-          } else {
-            // Real Firestore Note
-            const doc = await adminDb.collection("notes").doc(id).get();
-            const data = doc.data();
-            title = data?.title || "Nota Sem Título";
-            url = `/hub/notes/${id}`;
-          }
+          const doc = await adminDb.collection("notes").doc(id).get();
+          const data = doc.data();
+          title = data?.title || "Nota Sem Título";
+          url = `/hub/notes/${id}`;
+        } else if (res.sourceType === "publication") {
+          const [symbol, chapter] = id.split("-");
+          // Extract the first line which contains "Publication Title - Chapter Title"
+          title = res.content.split("\n")[0] || `Publicação ${symbol}`;
+          url = `/hub/personal-study/${symbol}?c=${chapter}`;
         } else if (res.sourceType === "video") {
           const doc = await adminDb.collection("videos").doc(id).get();
           const data = doc.data();
@@ -77,21 +74,21 @@ export async function POST(req: Request) {
     const systemInstruction = `Você é um assistente pessoal inteligente. Seu objetivo é ajudar o usuário com base exclusivamente em suas próprias notas, vídeos e publicações.
 
 DIRETRIZES DE RESPOSTA:
-1. **POLIDEZ**: Você pode ser amigável e responder saudações (ex: "Olá", "Tudo bem?") de forma natural.
-2. **FONTE DE VERDADE**: Para qualquer pergunta sobre temas específicos, fatos ou informações, use **APENAS** o [CONTEXTO DO USUÁRIO] fornecido abaixo.
-3. **MENSAGEM DE ERRO**: Se a informação solicitada não estiver presente no contexto, responda exatamente: "Desculpe, não encontrei informações sobre isso nas suas notas ou biblioteca por enquanto." 
-   *Não tente inventar respostas, usar seu conhecimento de treinamento para fatos ou sugerir coisas que não estão nas notas do usuário.*
-4. **CITAÇÕES E TRECHOS**: Para cada informação que você retirar do contexto:
-   - Cite a fonte usando um link Markdown que inclua obrigatoriamente um parâmetro de destaque na URL, por exemplo: [Título da Fonte](URL?h=frase+exata+literal). 
-   - **REGRA DE OURO PARA "h"**: O valor de 'h' deve ser uma sequência de palavras extraída **LITERALMENTE** do Contexto do Usuário. Escolha de 3 a 7 palavras que apareçam exatamente no documento.
-   - **PROIBIDO**: Não mude nada (nem acentuação, nem maiúsculas/minúsculas). Deve ser uma cópia IDÊNTICA. Se o texto diz "conselho de maneira amorosa", a URL deve ter '?h=conselho+de+maneira+amorosa'. Não resuma e não parafraseie no parâmetro 'h'.
-   - **OBRIGATÓRIO**: Logo após a citação, inclua o trecho específico do texto que justifica sua resposta usando um blockquote de Markdown (>).
-5. **ESTILO**: Responda em Português do Brasil de forma clara, organizada e objetiva.
+1. **POLIDEZ**: Você pode ser amigável e responder saudações de forma natural.
+2. **FONTE DE VERDADE**: Para qualquer pergunta, use APENAS o [CONTEXTO DO USUÁRIO] fornecido abaixo.
+3. **MENSAGEM DE ERRO**: Se não encontrar a informação, responda exatamente: "Desculpe, não encontrei informações sobre isso nas suas notas ou biblioteca por enquanto."
+4. **CITAÇÕES E TRECHOS**: Para cada informação retirada do contexto:
+   - Cite a fonte usando um link Markdown no formato: [Título da Fonte](URL_DA_FONTE_COM_H).
+   - Use exatamente a 'URL' fornecida no contexto e anexe o parâmetro 'h' ao final.
+   - Como anexar 'h': Se a URL já tiver '?', use '&h=texto'. Se não tiver, use '?h=texto'.
+   - O valor de 'h' deve ser de 3 a 7 palavras extraídas LITERALMENTE do documento (sem mudar nada).
+   - Logo após a citação, inclua o trecho que justifica sua resposta usando um blockquote (>).
+5. **ESTILO**: Responda em Português do Brasil de forma clara e organizada.
 
 [CONTEXTO DO USUÁRIO]:
 ${context}
 
-Lembre-se: Se não houver nada relevante no contexto acima para a pergunta feita, você deve admitir que não encontrou nada.`;
+Lembre-se: Se não houver nada relevante no contexto, admita que não encontrou nada.`;
 
     // 4. Create/Get Chat in Firestore
     let chatId = existingChatId;
@@ -118,6 +115,12 @@ Lembre-se: Se não houver nada relevante no contexto acima para a pergunta feita
     }
 
     // 5. Generate Streaming Response with AI SDK
+    // Calculate accuracy (average of all 3 results)
+    const avgDistance = searchResults.length > 0
+      ? searchResults.reduce((acc, res) => acc + res.score, 0) / searchResults.length
+      : 1; // Default to 1 (0% similarity) if no results
+    const accuracy = Math.max(0, Math.round((1 - avgDistance) * 100));
+
     const result = streamText({
       model: google("gemini-flash-latest"),
       system: systemInstruction,
@@ -129,9 +132,10 @@ Lembre-se: Se não houver nada relevante no contexto acima para a pergunta feita
         // Save the AI message to the database when it finishes streaming
         if (chatId) {
           await adminDb.collection("chats").doc(chatId).collection("messages").add({
-            role: "model", // consistent with existing schema "model" instead of "assistant"
+            role: "model",
             content: text,
             createdAt: new Date(),
+            accuracy // Save accuracy to message history
           });
 
           await adminDb.collection("chats").doc(chatId).update({
@@ -143,8 +147,6 @@ Lembre-se: Se não houver nada relevante no contexto acima para a pergunta feita
         if (usage) {
           const { promptTokens = 0, completionTokens = 0, totalTokens = (promptTokens + completionTokens) } = usage as { promptTokens?: number; completionTokens?: number; totalTokens?: number };
           const creditsToDeduct = Math.ceil(totalTokens / 1000);
-
-          //console.log(`[AI-CHAT] Usuário: ${userId} | Prompt: ${promptTokens} | Completion: ${completionTokens} | Total: ${totalTokens} | Créditos Aplicados: ${creditsToDeduct}`);
 
           await creditService.deductCredits(userId, creditsToDeduct);
           await creditService.logTransaction({
@@ -162,10 +164,11 @@ Lembre-se: Se não houver nada relevante no contexto acima para a pergunta feita
       },
     });
 
-    // Return the stream response with the Chat-Id header
+    // Return the stream response with accuracy in headers
     return result.toTextStreamResponse({
       headers: {
         "X-Chat-Id": chatId,
+        "X-Search-Accuracy": accuracy.toString(),
       },
     });
 

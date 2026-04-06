@@ -37,7 +37,7 @@ export const searchService = {
           )
         )
       )
-      .orderBy(sql`vector_distance_cos(${embeddingsQueue.embedding}, ${buffer}) DESC`)
+      .orderBy(sql`vector_distance_cos(${embeddingsQueue.embedding}, ${buffer}) ASC`)
       .limit(limit);
 
     return results;
