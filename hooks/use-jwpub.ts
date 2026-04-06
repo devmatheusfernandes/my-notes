@@ -22,20 +22,50 @@ export function useJwpub() {
     setIsProcessing(true);
     try {
       const pub = await jwpubService.processFile(file);
+      
+      // Re-import protection: check if exists
+      const existingSymbols = await indexedDbService.listPublications();
+      if (existingSymbols.includes(pub.symbol)) {
+        const confirm = await new Promise<boolean>((resolve) => {
+          toast.warning(`A publicação "${pub.symbol}" já está instalada.`, {
+            description: "Deseja reinstalar? Isso consumirá créditos de IA para gerar novos embeddings.",
+            duration: Infinity,
+            action: {
+              label: "Reinstalar",
+              onClick: () => resolve(true),
+            },
+            cancel: {
+              label: "Cancelar",
+              onClick: () => resolve(false),
+            },
+            onDismiss: () => resolve(false),
+          });
+        });
+
+        if (!confirm) {
+          setIsProcessing(false);
+          return null;
+        }
+      }
+
       await indexedDbService.savePublication(pub);
       
       // Sync chapters to Turso
       const chaptersToSync = pub.chapters.map(ch => ({
         sourceId: `${pub.symbol}-${ch.id}`,
-        sourceType: "note" as const, // JWPUB chapters are treated like notes for embedding
+        sourceType: "publication" as const, 
         content: `${pub.title} - ${ch.title}\n${ch.paragraphs.map(p => p.content).join("\n")}`,
       }));
 
-      fetch("/api/sync/queue", {
+      const syncResponse = await fetch("/api/sync/queue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: chaptersToSync })
-      }).catch(err => console.error("Erro ao sincronizar capítulos JWPUB:", err));
+      });
+
+      if (!syncResponse.ok) {
+        throw new Error("Falha ao sincronizar capítulos com a nuvem.");
+      }
 
       refresh();
       toast.success(`Publicação ${pub.symbol} carregada com sucesso!`);
@@ -58,22 +88,34 @@ export function useJwpub() {
     try {
       const pub = await indexedDbService.getPublication(symbol);
       
-      await indexedDbService.deletePublication(symbol);
-      
-      if (pub) {
+      if (!pub) return;
+
+      toast.promise(async () => {
+        // 1. Remove from cloud first to ensure it's done before local is gone
         const chapterIds = pub.chapters.map(ch => `${pub.symbol}-${ch.id}`);
-        fetch("/api/sync/remove", {
+        const response = await fetch("/api/sync/remove", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
               sourceIds: chapterIds,
-              sourceType: "note",
+              sourceType: "publication",
           })
-        }).catch(err => console.error("Erro ao remover capítulos do índice:", err));
-      }
+        });
 
-      refresh();
-      toast.success("Publicação removida.");
+        if (!response.ok) {
+          throw new Error("Erro ao limpar dados na nuvem.");
+        }
+
+        // 2. Remove locally (including images, handled inside indexedDbService)
+        await indexedDbService.deletePublication(symbol);
+        
+        refresh();
+      }, {
+        loading: `Removendo ${symbol}...`,
+        success: "Publicação removida com sucesso.",
+        error: (err) => `Erro ao remover: ${getErrorMessage(err)}`
+      });
+
     } catch (err) {
       console.error("Erro ao remover publicação:", err);
       toast.error("Erro ao remover publicação.");

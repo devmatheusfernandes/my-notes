@@ -115,7 +115,48 @@ export const indexedDbService = {
     });
   },
 
+  async deleteImages(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    const db = await this.openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_IMAGES, "readwrite");
+      const store = transaction.objectStore(STORE_IMAGES);
+      
+      let completed = 0;
+      let hasError = false;
+
+      ids.forEach(id => {
+        const request = store.delete(id);
+        request.onsuccess = () => {
+          completed++;
+          if (completed === ids.length) resolve();
+        };
+        request.onerror = () => {
+          if (!hasError) {
+            hasError = true;
+            reject(request.error);
+          }
+        };
+      });
+    });
+  },
+
   async deletePublication(symbol: string): Promise<void> {
+    const pub = await this.getPublication(symbol);
+    if (pub) {
+      // Find all image IDs in all paragraphs of all chapters
+      const imageIds = new Set<string>();
+      pub.chapters.forEach(ch => {
+        ch.paragraphs.forEach(p => {
+          p.images.forEach(imgId => imageIds.add(imgId));
+        });
+      });
+      
+      if (imageIds.size > 0) {
+        await this.deleteImages(Array.from(imageIds));
+      }
+    }
+
     const db = await this.openDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(STORE_PUBS, "readwrite");

@@ -41,7 +41,7 @@ export async function POST(req: Request) {
           eq(embeddingsQueue.userId, targetUserId)
         )
       )
-      .limit(50);
+      .limit(100);
 
     if (pendingItems.length === 0) {
       return NextResponse.json({ message: "Nenhum item pendente encontrado para este usuário." });

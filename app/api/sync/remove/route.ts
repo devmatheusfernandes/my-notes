@@ -21,18 +21,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, removedCount: 0 });
     }
 
-    // Only allow users to delete their own data
-    await db
-      .delete(embeddingsQueue)
-      .where(
-        and(
-          eq(embeddingsQueue.sourceType, sourceType),
-          inArray(embeddingsQueue.sourceId, sourceIds),
-          or(
-            eq(embeddingsQueue.userId, user.uid)
-          )
-        )
-      );
+    // Process in chunks of 500 to avoid SQLite limits
+    const CHUNK_SIZE = 500;
+    for (let i = 0; i < sourceIds.length; i += CHUNK_SIZE) {
+        const chunk = sourceIds.slice(i, i + CHUNK_SIZE);
+        await db
+          .delete(embeddingsQueue)
+          .where(
+            and(
+              eq(embeddingsQueue.sourceType, sourceType),
+              inArray(embeddingsQueue.sourceId, chunk),
+              eq(embeddingsQueue.userId, user.uid)
+            )
+          );
+    }
 
     return NextResponse.json({ success: true, removedCount: sourceIds.length });
   } catch (error: unknown) {
