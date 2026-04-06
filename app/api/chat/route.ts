@@ -37,36 +37,48 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. RAG: Search for context (Reduced from 5 to 3 for efficiency)
+    // 2. RAG: Search for context
     const searchResults = await searchService.semanticSearch(lastMessage, userId, 3);
 
-    // Fetch content & titles for attribution links
-    const contextParts = await Promise.all(
-      searchResults.map(async (res) => {
-        let title = "Sem Título";
-        let url = "";
-        const id = res.sourceId;
+    // Filter IDs by type for batch fetching
+    const noteIds = [...new Set(searchResults.filter(r => r.sourceType === "note").map(r => r.sourceId))];
+    const videoIds = [...new Set(searchResults.filter(r => r.sourceType === "video").map(r => r.sourceId))];
 
-        if (res.sourceType === "note") {
-          const doc = await adminDb.collection("notes").doc(id).get();
-          const data = doc.data();
-          title = data?.title || "Nota Sem Título";
-          url = `/hub/notes/${id}`;
-        } else if (res.sourceType === "publication") {
-          const [symbol, chapter] = id.split("-");
-          // Extract the first line which contains "Publication Title - Chapter Title"
-          title = res.content.split("\n")[0] || `Publicação ${symbol}`;
-          url = `/hub/personal-study/${symbol}?c=${chapter}`;
-        } else if (res.sourceType === "video") {
-          const doc = await adminDb.collection("videos").doc(id).get();
-          const data = doc.data();
-          title = data?.title || "Vídeo Sem Título";
-          url = `/hub/personal-study/video/${id}`;
-        }
+    // Batch fetch from Firestore
+    const noteRefs = noteIds.map(id => adminDb.collection("notes").doc(id));
+    const videoRefs = videoIds.map(id => adminDb.collection("videos").doc(id));
 
-        return `### FONTE: ${title}\nURL: ${url}\nCONTEÚDO PARA REFERÊNCIA:\n"""\n${res.content.substring(0, 4000)}${res.content.length > 4000 ? '... [Conteúdo truncado para economia de créditos]' : ''}\n"""`;
-      })
-    );
+    const [noteDocs, videoDocs] = await Promise.all([
+      noteRefs.length > 0 ? adminDb.getAll(...noteRefs) : Promise.resolve([]),
+      videoRefs.length > 0 ? adminDb.getAll(...videoRefs) : Promise.resolve([]),
+    ]);
+
+    // Create maps for quick lookup
+    const noteMap = new Map(noteDocs.map(d => [d.id, d.data()]));
+    const videoMap = new Map(videoDocs.map(d => [d.id, d.data()]));
+
+    // 2.1 Prepare context parts using batch-fetched data
+    const contextParts = searchResults.map((res) => {
+      let title = "Sem Título";
+      let url = "";
+      const id = res.sourceId;
+
+      if (res.sourceType === "note") {
+        const data = noteMap.get(id);
+        title = data?.title || "Nota Sem Título";
+        url = `/hub/notes/${id}`;
+      } else if (res.sourceType === "publication") {
+        const [symbol, chapter] = id.split("-");
+        title = res.content.split("\n")[0] || `Publicação ${symbol}`;
+        url = `/hub/personal-study/${symbol}?c=${chapter}`;
+      } else if (res.sourceType === "video") {
+        const data = videoMap.get(id);
+        title = data?.title || "Vídeo Sem Título";
+        url = `/hub/personal-study/video/${id}`;
+      }
+
+      return `### FONTE: ${title}\nURL: ${url}\nCONTEÚDO PARA REFERÊNCIA:\n"""\n${res.content.substring(0, 4000)}${res.content.length > 4000 ? '... [Conteúdo truncado]' : ''}\n"""`;
+    });
 
     const context = contextParts.join("\n\n---\n\n");
 
@@ -170,6 +182,7 @@ Lembre-se: Se não houver nada relevante no contexto, admita que não encontrou 
       headers: {
         "X-Chat-Id": chatId,
         "X-Search-Accuracy": accuracy.toString(),
+        "X-Accel-Buffering": "no",
       },
     });
 

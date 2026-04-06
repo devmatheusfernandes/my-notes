@@ -397,26 +397,32 @@ export default function ChatPage() {
 
       let aiText = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        aiText += chunk;
+          const chunk = decoder.decode(value, { stream: true });
+          aiText += chunk;
 
-        setMessages((prev) => {
-          const updatedMessages = [...prev];
-          const lastIndex = updatedMessages.length - 1;
+          setMessages((prev) => {
+            const updatedMessages = [...prev];
+            const lastIndex = updatedMessages.length - 1;
 
-          if (updatedMessages[lastIndex].role === "model") {
-            updatedMessages[lastIndex] = {
-              ...updatedMessages[lastIndex],
-              content: aiText,
-              accuracy: accuracy
-            };
-          }
-          return updatedMessages;
-        });
+            if (updatedMessages[lastIndex].role === "model") {
+              updatedMessages[lastIndex] = {
+                ...updatedMessages[lastIndex],
+                content: aiText,
+                accuracy: accuracy
+              };
+            }
+            return updatedMessages;
+          });
+        }
+      } catch (streamError) {
+        console.error("Stream reader error:", streamError);
+        // Don't throw, just finish with partial text if any
+        toast.error("Conexão interrompida. Verifique sua rede.");
       }
     } catch (error) {
       console.error("Erro no chat:", error);

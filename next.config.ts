@@ -1,9 +1,20 @@
-import withPWAInit from "@ducanh2912/next-pwa";
+import withPWAInit, { runtimeCaching } from "@ducanh2912/next-pwa";
 
 const withPWA = withPWAInit({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
   register: true,
+  // Force API routes to be NetworkOnly to prevent buffering of streaming responses
+  extendDefaultRuntimeCaching: true,
+  workboxOptions: {
+    runtimeCaching: [
+      {
+        urlPattern: /^\/api\/.*/i,
+        handler: "NetworkOnly",
+      },
+      ...runtimeCaching,
+    ],
+  },
 });
 
 /** @type {import('next').NextConfig} */
