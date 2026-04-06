@@ -48,22 +48,14 @@ export function ChapterRenderer({
 
     // 4. Implement Highlighting (New)
     if (highlightTerm?.trim()) {
-      // Simple regex to identify parsed terms (same logic as search)
-      const termRegex = /(['"])(.*?)\1|(\S+)/g;
-      const cleanQuery = highlightTerm.replace(/[,\.]/g, " ");
-      const terms: string[] = [];
-      let match;
-      while ((match = termRegex.exec(cleanQuery)) !== null) {
-        const t = (match[2] || match[3] || "").trim();
-        if (t.length > 1) terms.push(t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-      }
+      const escapedTerm = highlightTerm.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-      if (terms.length > 0) {
-        // We want to highlight only text, not inside HTML tags
-        // Regex: (terms)|(<[^>]+>) - if group 1 matches, it's our term.
-        const highlightPattern = new RegExp(`(${terms.join("|")})|(<[^>]+>)`, "gi");
+      if (escapedTerm.length > 0) {
+        // We want to highlight only the exact phrase, not inside HTML tags
+        // Regex: (escapedTerm)|(<[^>]+>) - if group 1 matches, it's our term.
+        const highlightPattern = new RegExp(`(${escapedTerm})|(<[^>]+>)`, "gi");
         result = result.replace(highlightPattern, (m, g1) => {
-          if (g1) return `<mark class="bg-yellow-400/30 dark:bg-yellow-500/50 rounded-sm px-0.5 ring-1 ring-yellow-400/20 text-foreground search-highlight">${m}</mark>`;
+          if (g1) return `<mark class="bg-amber-500/30 dark:bg-amber-500/50 rounded-sm px-0.5 ring-1 ring-amber-500/20 text-foreground search-highlight">${m}</mark>`;
           return m; // Keep tags as they are
         });
       }

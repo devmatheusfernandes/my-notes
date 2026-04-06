@@ -1,11 +1,13 @@
-import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/firebase-admin";
 import { searchService } from "@/services/searchService";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { streamText } from "ai";
 import { getUserFromSession } from "@/utils/auth-server";
+import { NextResponse } from "next/server";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+const google = createGoogleGenerativeAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
 export async function POST(req: Request) {
   try {
@@ -55,26 +57,31 @@ export async function POST(req: Request) {
           url = `/hub/personal-study/video/${id}`;
         }
 
-        return `[FONTE: ${title}]\nURL: ${url}\nCONTEÚDO: ${res.content}`;
+        return `### FONTE: ${title}\nURL: ${url}\nCONTEÚDO PARA REFERÊNCIA:\n"""\n${res.content}\n"""`;
       })
     );
 
     const context = contextParts.join("\n\n---\n\n");
 
     // 3. Prepare AI Prompt
-    const systemInstruction = `Você é um assistente pessoal inteligente e útil. Seu objetivo é ajudar o usuário com base em suas próprias notas, vídeos e publicações.
-    
-    DIRETRIZES DE RESPOSTA:
-    1. Use o CONTEXTO DO USUÁRIO abaixo para responder.
-    2. SEMPRE cite a fonte de onde tirou a informação usando LINKS MARKDOWN com o título exato, por exemplo: [Título da Nota](/hub/notes/id).
-    3. Se a informação vier de múltiplas fontes, cite todas elas com seus respectivos links.
-    4. Responda em Markdown (use negrito, listas, tabelas se necessário).
-    5. Se não encontrar a resposta no contexto, responda com base no seu conhecimento geral, mas priorize os dados do usuário.
-    
-    CONTEXTO DO USUÁRIO:
-    ${context}
-    
-    Responda em Português do Brasil de forma clara e organizada.`;
+    const systemInstruction = `Você é um assistente pessoal inteligente. Seu objetivo é ajudar o usuário com base exclusivamente em suas próprias notas, vídeos e publicações.
+
+DIRETRIZES DE RESPOSTA:
+1. **POLIDEZ**: Você pode ser amigável e responder saudações (ex: "Olá", "Tudo bem?") de forma natural.
+2. **FONTE DE VERDADE**: Para qualquer pergunta sobre temas específicos, fatos ou informações, use **APENAS** o [CONTEXTO DO USUÁRIO] fornecido abaixo.
+3. **MENSAGEM DE ERRO**: Se a informação solicitada não estiver presente no contexto, responda exatamente: "Desculpe, não encontrei informações sobre isso nas suas notas ou biblioteca por enquanto." 
+   *Não tente inventar respostas, usar seu conhecimento de treinamento para fatos ou sugerir coisas que não estão nas notas do usuário.*
+4. **CITAÇÕES E TRECHOS**: Para cada informação que você retirar do contexto:
+   - Cite a fonte usando um link Markdown que inclua obrigatoriamente um parâmetro de destaque na URL, por exemplo: [Título da Fonte](URL?h=frase+exata+literal). 
+   - **REGRA DE OURO PARA "h"**: O valor de 'h' deve ser uma sequência de palavras extraída **LITERALMENTE** do Contexto do Usuário. Escolha de 3 a 7 palavras que apareçam exatamente no documento.
+   - **PROIBIDO**: Não mude nada (nem acentuação, nem maiúsculas/minúsculas). Deve ser uma cópia IDÊNTICA. Se o texto diz "conselho de maneira amorosa", a URL deve ter '?h=conselho+de+maneira+amorosa'. Não resuma e não parafraseie no parâmetro 'h'.
+   - **OBRIGATÓRIO**: Logo após a citação, inclua o trecho específico do texto que justifica sua resposta usando um blockquote de Markdown (>).
+5. **ESTILO**: Responda em Português do Brasil de forma clara, organizada e objetiva.
+
+[CONTEXTO DO USUÁRIO]:
+${context}
+
+Lembre-se: Se não houver nada relevante no contexto acima para a pergunta feita, você deve admitir que não encontrou nada.`;
 
     // 4. Create/Get Chat in Firestore
     let chatId = existingChatId;
@@ -88,7 +95,7 @@ export async function POST(req: Request) {
       chatId = chatRef.id;
     }
 
-    // Save user message
+    // Save user message to database
     await adminDb.collection("chats").doc(chatId).collection("messages").add({
       role: "user",
       content: lastMessage,
@@ -100,50 +107,33 @@ export async function POST(req: Request) {
       content: string;
     }
 
-    // 5. Generate Streaming Response
-    const chatSession = model.startChat({
-      history: messages.slice(0, -1).map((m: ChatMessage) => ({
-        role: m.role === "user" ? "user" : "model",
-        parts: [{ text: m.content }],
+    // 5. Generate Streaming Response with AI SDK
+    const result = streamText({
+      model: google("gemini-flash-latest"),
+      system: systemInstruction,
+      messages: messages.map((m: ChatMessage) => ({
+        role: (m.role === "model" ? "assistant" : m.role) as "user" | "assistant",
+        content: m.content,
       })),
-      systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
-    });
-
-    const result = await chatSession.sendMessageStream(lastMessage);
-
-    // Setup streaming
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        let fullResponse = "";
-        try {
-          for await (const chunk of result.stream) {
-            const chunkText = chunk.text();
-            fullResponse += chunkText;
-            controller.enqueue(encoder.encode(chunkText));
-          }
-
-          // Save AI message to Firestore after stream ends
+      onFinish: async ({ text }) => {
+        // Save the AI message to the database when it finishes streaming
+        if (chatId) {
           await adminDb.collection("chats").doc(chatId).collection("messages").add({
-            role: "model",
-            content: fullResponse,
+            role: "model", // consistent with existing schema "model" instead of "assistant"
+            content: text,
             createdAt: new Date(),
           });
 
           await adminDb.collection("chats").doc(chatId).update({
             updatedAt: new Date(),
           });
-
-          controller.close();
-        } catch (err) {
-          controller.error(err);
         }
       },
     });
 
-    return new Response(stream, {
+    // Return the stream response with the Chat-Id header
+    return result.toTextStreamResponse({
       headers: {
-        "Content-Type": "text/plain; charset=utf-8",
         "X-Chat-Id": chatId,
       },
     });

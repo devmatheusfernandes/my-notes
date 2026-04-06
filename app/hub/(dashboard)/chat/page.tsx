@@ -12,7 +12,8 @@ import {
   MenuIcon,
   Archive,
   Trash2,
-  Menu
+  Menu,
+  RotateCcw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -41,6 +42,105 @@ const parseDate = (date: unknown): Date => {
   return new Date();
 };
 
+interface ChatHistoryListProps {
+  chats: Chat[];
+  currentChatId: string | null;
+  setCurrentChatId: (id: string | null) => void;
+  handleArchiveChat: (e: React.MouseEvent, chatId: string) => Promise<void>;
+  handleUnarchiveChat: (e: React.MouseEvent, chatId: string) => Promise<void>;
+  handleDeleteChat: (e: React.MouseEvent, chatId: string) => void;
+  viewMode: "active" | "archived";
+  onSelect?: () => void;
+}
+
+const ChatHistoryList = ({ 
+  chats, 
+  currentChatId, 
+  setCurrentChatId, 
+  handleArchiveChat, 
+  handleUnarchiveChat,
+  handleDeleteChat, 
+  viewMode,
+  onSelect 
+}: ChatHistoryListProps) => {
+  const filteredChats = chats.filter(chat => 
+    viewMode === "archived" ? chat.status === "archived" : chat.status !== "archived"
+  );
+
+  return (
+    <motion.div
+      className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar"
+      variants={pageContainerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {filteredChats.length === 0 ? (
+        <motion.p variants={itemFadeInUpVariants} className="text-xs text-neutral-500 text-center py-6">
+          {viewMode === "archived" ? "Nenhuma conversa arquivada." : "Sem conversas anteriores."}
+        </motion.p>
+      ) : (
+        filteredChats.map((chat) => (
+          <motion.div
+            key={chat.id}
+            variants={itemFadeInUpVariants}
+            onClick={() => {
+              setCurrentChatId(chat.id ?? null);
+              if (onSelect) onSelect();
+            }}
+            className={cn(
+              "w-full text-left p-3 rounded-lg text-sm transition-colors flex flex-col gap-1 group relative cursor-pointer",
+              currentChatId === chat.id
+                ? "bg-white dark:bg-neutral-800 shadow-sm border border-neutral-200 dark:border-neutral-700 font-medium"
+                : "hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 text-neutral-600 dark:text-neutral-400"
+            )}
+          >
+            <div className="flex items-center gap-2 truncate w-full pr-12">
+              <MessageSquareIcon className="h-3.5 w-3.5 shrink-0 opacity-70" />
+              <span className="truncate">{chat.title || "Nova Conversa"}</span>
+            </div>
+            <span className="text-[10px] text-neutral-400 pl-5">
+              {format(parseDate(chat.updatedAt), "dd 'de' MMM, HH:mm", { locale: ptBR })}
+            </span>
+
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {viewMode === "active" ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-md hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+                  onClick={(e) => handleArchiveChat(e, chat.id!)}
+                  title="Arquivar"
+                >
+                  <Archive className="h-3.5 w-3.5" />
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-md hover:bg-green-100 dark:hover:bg-green-900/30 text-neutral-400 hover:text-green-600"
+                  onClick={(e) => handleUnarchiveChat(e, chat.id!)}
+                  title="Desarquivar"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 text-neutral-400 hover:text-red-600"
+                onClick={(e) => handleDeleteChat(e, chat.id!)}
+                title="Excluir"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </motion.div>
+        ))
+      )}
+    </motion.div>
+  );
+};
+
 export default function ChatPage() {
   const { user } = useAuthStore();
   const { toggleSidebar } = useSidebar();
@@ -57,18 +157,19 @@ export default function ChatPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
   const [chatToDeleteId, setChatToDeleteId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"active" | "archived">("active");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      messagesEndRef.current.scrollIntoView({ behavior });
     }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    scrollToBottom(isLoading ? "auto" : "smooth");
   }, [messages, isLoading]);
 
   useEffect(() => {
@@ -115,13 +216,14 @@ export default function ChatPage() {
     const currentIdInUrl = searchParams.get("id");
     if (currentChatId !== currentIdInUrl) {
       const params = new URLSearchParams(searchParams.toString());
-      if (currentIdInUrl) {
-        params.set("id", currentIdInUrl);
+      if (currentChatId) {
+        params.set("id", currentChatId);
       } else {
         params.delete("id");
       }
+      router.replace(`${pathname}?${params.toString()}`);
     }
-  }, [currentChatId, searchParams, router, pathname]);
+  }, [currentChatId, router, pathname, searchParams]);
 
   useEffect(() => {
     if (currentChatId) {
@@ -148,7 +250,8 @@ export default function ChatPage() {
       createdAt: new Date(),
     };
 
-    setMessages((prev) => [...prev, newUserMessage]);
+    // 1. Pre-add user message and AI placeholder immediately for instant feedback
+    setMessages((prev) => [...prev, newUserMessage, { role: "model", content: "", createdAt: new Date() }]);
     setIsLoading(true);
 
     try {
@@ -172,11 +275,6 @@ export default function ChatPage() {
         setCurrentChatId(newChatId);
         loadChats();
       }
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "model", content: "", createdAt: new Date() },
-      ]);
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
@@ -239,13 +337,23 @@ export default function ChatPage() {
     e.stopPropagation();
     try {
       await chatService.archiveChat(chatId);
-      setChats(prev => prev.filter(c => c.id !== chatId));
+      setChats(prev => prev.map(c => c.id === chatId ? { ...c, status: "archived" } : c));
       if (currentChatId === chatId) {
         setCurrentChatId(null);
         setMessages([]);
       }
     } catch (error) {
       console.error("Erro ao arquivar chat:", error);
+    }
+  };
+
+  const handleUnarchiveChat = async (e: React.MouseEvent, chatId: string) => {
+    e.stopPropagation();
+    try {
+      await chatService.unarchiveChat(chatId);
+      setChats(prev => prev.map(c => c.id === chatId ? { ...c, status: "active" } : c));
+    } catch (error) {
+      console.error("Erro ao desarquivar chat:", error);
     }
   };
 
@@ -271,65 +379,6 @@ export default function ChatPage() {
     }
   };
 
-  const ChatHistoryList = ({ onSelect }: { onSelect?: () => void }) => (
-    <motion.div
-      className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar"
-      variants={pageContainerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      {chats.length === 0 ? (
-        <motion.p variants={itemFadeInUpVariants} className="text-xs text-neutral-500 text-center py-6">Sem conversas anteriores.</motion.p>
-      ) : (
-        chats.map((chat) => (
-          <motion.div
-            key={chat.id}
-            variants={itemFadeInUpVariants}
-            onClick={() => {
-              setCurrentChatId(chat.id ?? null);
-              if (onSelect) onSelect();
-            }}
-            className={cn(
-              "w-full text-left p-3 rounded-lg text-sm transition-colors flex flex-col gap-1 group relative cursor-pointer",
-              currentChatId === chat.id
-                ? "bg-white dark:bg-neutral-800 shadow-sm border border-neutral-200 dark:border-neutral-700 font-medium"
-                : "hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 text-neutral-600 dark:text-neutral-400"
-            )}
-          >
-            <div className="flex items-center gap-2 truncate w-full pr-12">
-              <MessageSquareIcon className="h-3.5 w-3.5 shrink-0 opacity-70" />
-              <span className="truncate">{chat.title || "Nova Conversa"}</span>
-            </div>
-            <span className="text-[10px] text-neutral-400 pl-5">
-              {format(parseDate(chat.updatedAt), "dd 'de' MMM, HH:mm", { locale: ptBR })}
-            </span>
-
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 rounded-md hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
-                onClick={(e) => handleArchiveChat(e, chat.id!)}
-                title="Arquivar"
-              >
-                <Archive className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 text-neutral-400 hover:text-red-600"
-                onClick={(e) => handleDeleteChat(e, chat.id!)}
-                title="Excluir"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </motion.div>
-        ))
-      )}
-    </motion.div>
-  );
-
   return (
     <div className="flex h-[100dvh] w-full bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 overflow-hidden font-sans">
 
@@ -352,8 +401,37 @@ export default function ChatPage() {
                 <PlusIcon className="h-4 w-4" />
               </Button>
             </div>
+            <div className="flex bg-neutral-100 dark:bg-neutral-800 p-1 rounded-lg mt-4">
+              <button
+                onClick={() => setViewMode("active")}
+                className={cn(
+                  "flex-1 py-1.5 text-xs font-medium rounded-md transition-all",
+                  viewMode === "active" ? "bg-white dark:bg-neutral-700 shadow-sm" : "text-neutral-500"
+                )}
+              >
+                Ativos
+              </button>
+              <button
+                onClick={() => setViewMode("archived")}
+                className={cn(
+                  "flex-1 py-1.5 text-xs font-medium rounded-md transition-all",
+                  viewMode === "archived" ? "bg-white dark:bg-neutral-700 shadow-sm" : "text-neutral-500"
+                )}
+              >
+                Arquivados
+              </button>
+            </div>
           </DrawerHeader>
-          <ChatHistoryList onSelect={() => setIsDrawerOpen(false)} />
+          <ChatHistoryList 
+            chats={chats}
+            currentChatId={currentChatId}
+            setCurrentChatId={setCurrentChatId}
+            handleArchiveChat={handleArchiveChat}
+            handleUnarchiveChat={handleUnarchiveChat}
+            handleDeleteChat={handleDeleteChat}
+            viewMode={viewMode}
+            onSelect={() => setIsDrawerOpen(false)} 
+          />
         </DrawerContent>
       </Drawer>
 
@@ -413,7 +491,37 @@ export default function ChatPage() {
             <PlusIcon className="h-4 w-4" />
           </Button>
         </div>
-        <ChatHistoryList />
+        <div className="px-4 py-3">
+          <div className="flex bg-neutral-200/50 dark:bg-neutral-800/50 p-1 rounded-lg">
+            <button
+              onClick={() => setViewMode("active")}
+              className={cn(
+                "flex-1 py-1.5 text-xs font-medium rounded-md transition-all",
+                viewMode === "active" ? "bg-white dark:bg-neutral-700 shadow-sm" : "text-neutral-500"
+              )}
+            >
+              Ativos
+            </button>
+            <button
+              onClick={() => setViewMode("archived")}
+              className={cn(
+                "flex-1 py-1.5 text-xs font-medium rounded-md transition-all",
+                viewMode === "archived" ? "bg-white dark:bg-neutral-700 shadow-sm" : "text-neutral-500"
+              )}
+            >
+              Arquivados
+            </button>
+          </div>
+        </div>
+        <ChatHistoryList 
+          chats={chats}
+          currentChatId={currentChatId}
+          setCurrentChatId={setCurrentChatId}
+          handleArchiveChat={handleArchiveChat}
+          handleUnarchiveChat={handleUnarchiveChat}
+          handleDeleteChat={handleDeleteChat}
+          viewMode={viewMode}
+        />
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#212121] relative h-full">
@@ -471,11 +579,13 @@ export default function ChatPage() {
                   <motion.div
                     key={i}
                     variants={itemFadeInUpVariants}
-                    layout
                     className={cn("flex gap-4 w-full", message.role === "user" ? "justify-end" : "justify-start")}
                   >
                     {message.role === "model" && (
-                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 flex items-center justify-center shrink-0 mt-1">
+                      <div className={cn(
+                        "w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 flex items-center justify-center shrink-0 mt-1",
+                        message.content === "" && isLoading && i === messages.length - 1 && "animate-pulse"
+                      )}>
                         <BotIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       </div>
                     )}
@@ -488,9 +598,21 @@ export default function ChatPage() {
                       ) : (
                         <div className="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none break-words text-[15px] leading-relaxed">
                           {message.content === "" && isLoading && i === messages.length - 1 ? (
-                            <span className="inline-block w-2 h-4 bg-neutral-400 animate-pulse ml-1 align-middle" />
+                            <div className="flex gap-1.5 items-center py-2">
+                              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" />
+                            </div>
                           ) : (
                             <ReactMarkdown>{message.content}</ReactMarkdown>
+                          )}
+                          {message.role === "model" && isLoading && i === messages.length - 1 && message.content !== "" && (
+                            <motion.span
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
+                              className="inline-block w-2.5 h-5 bg-blue-500 dark:bg-blue-400 ml-1 align-middle rounded-sm"
+                            />
                           )}
                         </div>
                       )}

@@ -122,22 +122,14 @@ export default function VideoPlaybackPage() {
     const paras = video.contentText.split("\n\n");
     if (!highlightTerm) return paras;
 
-    const termRegex = /(['"])(.*?)\1|(\S+)/g;
-    const cleanQuery = highlightTerm.replace(/[,\.]/g, " ");
-    const terms: string[] = [];
-    let match;
-    while ((match = termRegex.exec(cleanQuery)) !== null) {
-      const t = (match[2] || match[3] || "").trim();
-      if (t.length > 1) terms.push(t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    }
+    const escapedTerm = highlightTerm.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (!escapedTerm) return paras;
 
-    if (terms.length === 0) return paras;
-
-    const highlightPattern = new RegExp(`(${terms.join("|")})`, "gi");
+    const highlightPattern = new RegExp(`(${escapedTerm})`, "gi");
 
     return paras.map(p =>
       p.replace(highlightPattern, (m) =>
-        `<mark class="bg-yellow-400/30 dark:bg-yellow-500/50 rounded-sm px-0.5 ring-1 ring-yellow-400/20 text-foreground video-highlight">${m}</mark>`
+        `<mark class="bg-amber-500/30 dark:bg-amber-500/50 rounded-sm px-0.5 ring-1 ring-amber-500/20 text-foreground video-highlight">${m}</mark>`
       )
     );
   }, [video?.contentText, highlightTerm]);

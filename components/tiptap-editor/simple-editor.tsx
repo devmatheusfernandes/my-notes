@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useMemo } from "react"
+import { useRef, useState, useMemo, useEffect } from "react"
 import { EditorContent, EditorContext, useEditor, type Content, Editor } from "@tiptap/react"
 import { Node, Mark } from "@tiptap/pm/model"
 
@@ -15,6 +15,7 @@ import { Subscript } from "@tiptap/extension-subscript"
 import { Superscript } from "@tiptap/extension-superscript"
 import { Selection } from "@tiptap/extensions"
 import { ReferenceExtension } from "@/components/tiptap-extension/reference-extension"
+import { SearchHighlight } from "@/components/tiptap-extension/search-highlight-extension"
 import { publicationSuggestion } from "@/components/tiptap-extension/publication-suggestion"
 import { useReaderStore, type ReferenceInstance } from "@/store/readerStore"
 import { parseBibleReference } from "@/lib/bible/bible-utils"
@@ -86,6 +87,7 @@ interface SimpleEditorProps {
   content: Content
   userId: string
   onChange?: (data: { json: Content; text: string }) => void
+  highlightTerm?: string
 }
 
 const MainToolbarContent = ({
@@ -212,7 +214,7 @@ const MobileToolbarContent = ({
   </>
 )
 
-export function SimpleEditor({ content, userId, onChange }: SimpleEditorProps) {
+export function SimpleEditor({ content, userId, onChange, highlightTerm }: SimpleEditorProps) {
   const isMobile = useIsBreakpoint()
   const { height } = useWindowSize()
   const [mobileView, setMobileView] = useState<"main" | "highlighter" | "link">(
@@ -331,6 +333,9 @@ export function SimpleEditor({ content, userId, onChange }: SimpleEditorProps) {
         onReferenceClick: handleReferenceClick,
         suggestion: publicationSuggestion,
       }),
+      SearchHighlight.configure({
+        searchTerm: highlightTerm || "",
+      }),
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -344,6 +349,28 @@ export function SimpleEditor({ content, userId, onChange }: SimpleEditorProps) {
       scanReferences(editor)
     }
   }, [userId])
+
+  // Handle highlighting update and scrolling
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return
+
+    if (highlightTerm) {
+      // @ts-expect-error - Tiptap setOptions signature can vary or not be perfectly typed in all versions
+      editor.setOptions('searchHighlight', { searchTerm: highlightTerm })
+      
+      // Small timeout to allow decorations to render
+      const timer = setTimeout(() => {
+        const firstHighlight = document.querySelector(".search-highlight")
+        if (firstHighlight) {
+          firstHighlight.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+      }, 500)
+      return () => clearTimeout(timer)
+    } else {
+      // @ts-expect-error - Tiptap setOptions signature can vary or not be perfectly typed in all versions
+      editor.setOptions('searchHighlight', { searchTerm: '' })
+    }
+  }, [editor, highlightTerm])
 
   const rect = useCursorVisibility({
     editor,

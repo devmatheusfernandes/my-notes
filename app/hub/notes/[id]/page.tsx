@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useNotes } from "@/hooks/use-notes";
 import { useNoteStore } from "@/store/noteStore";
@@ -16,7 +16,9 @@ import { ReferenceSidebar } from "@/components/tiptap-ui/reference-sidebar";
 
 export default function NotePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const noteId = useId();
+  const highlightTerm = searchParams.get("h") || undefined;
 
   const { user } = useAuthStore();
   const userId = user?.uid ?? "";
@@ -130,6 +132,7 @@ export default function NotePage() {
             content={note.content || ""}
             userId={userId}
             onChange={handleUpdate}
+            highlightTerm={highlightTerm}
           />
         )
       ) : (

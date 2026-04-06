@@ -54,9 +54,7 @@ export const chatService = {
       orderBy("updatedAt", "desc")
     );
     const snapshot = await getDocs(q);
-    const allChats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
-    // Filter archived chats on client side to avoid missing old documents or requiring indexes
-    return allChats.filter(chat => chat.status !== "archived");
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
   },
 
   async getMessages(chatId: string) {
@@ -72,6 +70,14 @@ export const chatService = {
     const chatRef = doc(db, "chats", chatId);
     await updateDoc(chatRef, {
       status: "archived",
+      updatedAt: serverTimestamp(),
+    });
+  },
+
+  async unarchiveChat(chatId: string) {
+    const chatRef = doc(db, "chats", chatId);
+    await updateDoc(chatRef, {
+      status: "active",
       updatedAt: serverTimestamp(),
     });
   },
