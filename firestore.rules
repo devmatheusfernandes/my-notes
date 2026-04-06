@@ -25,7 +25,7 @@ service cloud.firestore {
       
       allow create: if isOwner(request.resource.data.userId)
                     && request.resource.data.id == noteId
-                    && isValidString(request.resource.data.title, 1, 20)
+                    && isValidString(request.resource.data.title, 1, 150)
                     && request.resource.data.type in ['note', 'pdf']
                     && request.resource.data.archived is bool
                     && request.resource.data.trashed is bool
@@ -36,7 +36,7 @@ service cloud.firestore {
                     && isOwner(request.resource.data.userId)
                     && (request.resource.data.diff(resource.data).affectedKeys()
                         .hasOnly(['title', 'content', 'searchText', 'tagIds', 'folderId', 'archived', 'trashed', 'pinned', 'updatedAt', 'fileUrl', 'isLocked']))
-                    && (!request.resource.data.diff(resource.data).affectedKeys().contains('title') || isValidString(request.resource.data.title, 1, 20))
+                    && (!request.resource.data.diff(resource.data).affectedKeys().contains('title') || isValidString(request.resource.data.title, 1, 150))
                     && (!request.resource.data.diff(resource.data).affectedKeys().contains('archived') || request.resource.data.archived is bool)
                     && (!request.resource.data.diff(resource.data).affectedKeys().contains('trashed') || request.resource.data.trashed is bool);
     }

@@ -196,7 +196,7 @@ export default function SettingsPage() {
           const json = JSON.parse(text);
           const data = Array.isArray(json) ? json : [json];
           notesToImport = (data as Record<string, unknown>[]).map((item) => ({
-            title: (item.title as string) || "Nota Importada",
+            title: ((item.title as string) || "Nota Importada").substring(0, 150),
             content: (item.content as string) || "",
             pinned: !!item.pinned || !!item.isFavorite,
             tagIds: [],
@@ -217,7 +217,7 @@ export default function SettingsPage() {
           notesToImport = lines.slice(1).map(line => {
             const cells = line.split(",");
             return {
-              title: cells[titleIdx]?.trim() || "Sem título",
+              title: (cells[titleIdx]?.trim() || "Sem título").substring(0, 150),
               content: cells[contentIdx]?.trim() || "",
               pinned: false,
               tagIds: [],
@@ -226,7 +226,7 @@ export default function SettingsPage() {
           });
         } else if (file.name.endsWith(".txt")) {
           notesToImport = [{
-            title: file.name.replace(".txt", ""),
+            title: file.name.replace(".txt", "").substring(0, 150),
             content: text,
             pinned: false,
             tagIds: [],
@@ -578,7 +578,6 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="sm:col-span-2 flex flex-col justify-center gap-4 p-4 rounded-2xl border bg-accent/5">
-                      <h3 className="text-sm font-medium flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-500" /> Formatos Suportados</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                         <div className="flex items-start gap-2"><FileJson className="w-4 h-4 shrink-0 text-blue-500" /><p><span className="font-bold">JSON:</span> Array com title/content.</p></div>
                         <div className="flex items-start gap-2"><FileType className="w-4 h-4 shrink-0 text-orange-500" /><p><span className="font-bold">TXT:</span> Nome como título.</p></div>

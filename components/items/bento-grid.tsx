@@ -52,7 +52,7 @@ import { UnlockDrawer } from "@/components/modals/unlock-drawer";
 
 export default function BentoGrid({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid grid-flow-dense auto-rows-[170px] grid-cols-2 gap-3 md:auto-rows-[190px] md:grid-cols-4">
+    <div className="grid grid-flow-dense auto-rows-[170px] grid-cols-2 gap-4 md:auto-rows-[190px] md:grid-cols-4">
       {children}
     </div>
   );
@@ -183,7 +183,7 @@ export function ItemsBentoGrid({
           })()
           : updateNote(id, { trashed: true });
 
-        await toast.promise(promise, {
+        toast.promise(promise, {
           loading: isTrashPageItem ? "Excluindo nota..." : "Movendo nota para a lixeira...",
           success: isTrashPageItem ? "Nota excluída com sucesso." : "Nota movida para a lixeira.",
           error: isTrashPageItem ? "Erro ao excluir nota." : "Erro ao mover nota.",
@@ -193,7 +193,7 @@ export function ItemsBentoGrid({
           ? deleteFolder(id)
           : updateFolder(id, { trashed: true });
 
-        await toast.promise(promise, {
+        toast.promise(promise, {
           loading: isTrashPageItem ? "Excluindo pasta..." : "Movendo pasta para a lixeira...",
           success: isTrashPageItem ? "Pasta excluída com sucesso." : "Pasta movida para a lixeira.",
           error: isTrashPageItem ? "Erro ao excluir pasta." : "Erro ao mover pasta.",
