@@ -24,8 +24,5 @@ jobs:
             exit 1
           fi
           
-          # Remove protocol and trailing slash if they exist in the secret
-          CLEAN_URL=$(echo $APP_URL | sed -e 's|^https://||' -e 's|^http://||' -e 's|/$||')
-          
-          curl -f -L -X GET "https://$CLEAN_URL/api/cron/tokenize" \
+          curl -f -X GET "https://$APP_URL/api/cron/tokenize" \
           -H "Authorization: Bearer $CRON_SECRET"
