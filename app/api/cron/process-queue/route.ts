@@ -3,6 +3,7 @@ import { db } from "@/lib/db/turso";
 import { embeddingsQueue } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { creditService } from "@/services/creditService";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const model = genAI.getGenerativeModel({ model: "gemini-embedding-2-preview" });
@@ -28,6 +29,14 @@ export async function POST(req: Request) {
     // Process in batch
     for (const item of pendingItems) {
       try {
+        // 1. Credit Check per User
+        const hasCredits = await creditService.hasCredits(item.userId);
+        if (!hasCredits && item.userId !== 'shared') {
+          // Skip this item if user has no credits, keep as pending for next month
+          console.warn(`Skipping item ${item.id} for user ${item.userId}: No credits`);
+          continue;
+        }
+
         const result = await model.embedContent(item.contentToEmbed);
         const embeddingArray = result.embedding.values;
 
@@ -43,6 +52,21 @@ export async function POST(req: Request) {
             updatedAt: new Date(),
           })
           .where(eq(embeddingsQueue.id, item.id));
+
+        // 2. Deduct 1 credit for successful vectorization
+        if (item.userId !== 'shared') {
+          await creditService.deductCredits(item.userId, 1);
+          await creditService.logTransaction({
+            userId: item.userId,
+            amount: 1,
+            type: "vectorize",
+            details: {
+              sourceId: item.sourceId,
+              sourceType: item.sourceType
+            }
+          });
+          console.log(`[VECTOR-CRON] Usuário: ${item.userId} | Fonte: ${item.sourceId} | Crédito: 1`);
+        }
       } catch (err) {
         console.error(`Error embedding item ${item.id}:`, err);
         await db

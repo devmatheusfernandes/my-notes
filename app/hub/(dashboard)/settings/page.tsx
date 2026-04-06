@@ -14,6 +14,8 @@ import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
 import { Loading } from "@/components/ui/loading";
 import { StorageWidget } from "@/components/hub/storage-widget";
 import { useBackup } from "@/hooks/use-backup";
+import { useCredits } from "@/hooks/use-credits";
+import { Progress } from "@/components/ui/progress";
 import {
   AlertTriangle,
   FileUp,
@@ -63,6 +65,8 @@ export default function SettingsPage() {
     restoreBackup,
     linkGoogleDrive
   } = useBackup(userId);
+
+  const { credits } = useCredits();
 
   const [isImporting, setIsImporting] = useState(false);
   const [activeTab, setActiveTab] = useState<"appearance" | "security" | "backup" | "storage" | "IA">("security");
@@ -611,6 +615,43 @@ export default function SettingsPage() {
                 transition={{ duration: 0.2 }}
                 className="space-y-6"
               >
+                <section className="card-section">
+                  <div className="mb-5">
+                    <h2 className="card-title flex items-center gap-2">
+                      <Bot className="w-5 h-5 text-primary" />
+                      Créditos de IA
+                    </h2>
+                    <p className="card-description">
+                      Você recebe 1.000 créditos mensais para usar o Chat e o processamento inteligente de notas.
+                    </p>
+                  </div>
+
+                  <div className="p-6 rounded-2xl bg-accent/10 border border-accent/20">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Saldo Atual</p>
+                        <p className="text-2xl font-bold">{credits?.amount ?? 0} <span className="text-sm font-normal text-muted-foreground">/ 1000</span></p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">Reseta em: {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString('pt-BR')}</p>
+                      </div>
+                    </div>
+
+                    <Progress value={(credits?.amount ?? 0) / 10} className="h-2" />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                      <div className="p-3 rounded-lg bg-card border text-xs text-muted-foreground">
+                        <p className="font-semibold text-foreground mb-1">💬 Chat de IA</p>
+                        ~1.000 tokens ≈ 1 crédito
+                      </div>
+                      <div className="p-3 rounded-lg bg-card border text-xs text-muted-foreground">
+                        <p className="font-semibold text-foreground mb-1">🧠 Processamento</p>
+                        1 nota ou link = 1 crédito
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
                 <div className="flex flex-col gap-2">
                   <BulkImportStatus type="user" />
                   <BulkImportStatus type="shared" />

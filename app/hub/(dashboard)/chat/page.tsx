@@ -20,6 +20,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ReactMarkdown from "react-markdown";
 import { useSidebar } from "@/components/ui/sidebar";
+import { toast } from "sonner";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   Drawer,
@@ -53,17 +54,17 @@ interface ChatHistoryListProps {
   onSelect?: () => void;
 }
 
-const ChatHistoryList = ({ 
-  chats, 
-  currentChatId, 
-  setCurrentChatId, 
-  handleArchiveChat, 
+const ChatHistoryList = ({
+  chats,
+  currentChatId,
+  setCurrentChatId,
+  handleArchiveChat,
   handleUnarchiveChat,
-  handleDeleteChat, 
+  handleDeleteChat,
   viewMode,
-  onSelect 
+  onSelect
 }: ChatHistoryListProps) => {
-  const filteredChats = chats.filter(chat => 
+  const filteredChats = chats.filter(chat =>
     viewMode === "archived" ? chat.status === "archived" : chat.status !== "archived"
   );
 
@@ -268,7 +269,16 @@ export default function ChatPage() {
         }),
       });
 
-      if (!response.ok) throw new Error("Falha na requisição da API");
+      if (!response.ok) {
+        if (response.status === 403) {
+          const data = await response.json();
+          toast.error(data.error || "Limite de créditos atingido.");
+          setMessages((prev) => prev.slice(0, -2)); // Remove user message and placeholder
+          setIsLoading(false);
+          return;
+        }
+        throw new Error("Falha na requisição da API");
+      }
 
       const newChatId = response.headers.get("X-Chat-Id");
       if (newChatId && newChatId !== currentChatId) {
@@ -422,7 +432,7 @@ export default function ChatPage() {
               </button>
             </div>
           </DrawerHeader>
-          <ChatHistoryList 
+          <ChatHistoryList
             chats={chats}
             currentChatId={currentChatId}
             setCurrentChatId={setCurrentChatId}
@@ -430,7 +440,7 @@ export default function ChatPage() {
             handleUnarchiveChat={handleUnarchiveChat}
             handleDeleteChat={handleDeleteChat}
             viewMode={viewMode}
-            onSelect={() => setIsDrawerOpen(false)} 
+            onSelect={() => setIsDrawerOpen(false)}
           />
         </DrawerContent>
       </Drawer>
@@ -513,7 +523,7 @@ export default function ChatPage() {
             </button>
           </div>
         </div>
-        <ChatHistoryList 
+        <ChatHistoryList
           chats={chats}
           currentChatId={currentChatId}
           setCurrentChatId={setCurrentChatId}

@@ -4,6 +4,7 @@ import { embeddingsQueue } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getUserFromSession } from "@/utils/auth-server";
+import { creditService } from "@/services/creditService";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const model = genAI.getGenerativeModel({ model: "gemini-embedding-2-preview" });
@@ -18,6 +19,17 @@ export async function POST(req: Request) {
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type") || "user";
     const targetUserId = type === "shared" ? "shared" : user.uid;
+
+    // 1. Credit Check (only for user-owned processing)
+    if (type !== "shared") {
+      const hasCredits = await creditService.hasCredits(user.uid);
+      if (!hasCredits) {
+        return NextResponse.json(
+          { error: "Limite de créditos de IA atingido para este mês." },
+          { status: 403 }
+        );
+      }
+    }
 
     // Fetch up to 50 pending records specifically for the target context
     const pendingItems = await db
@@ -56,6 +68,21 @@ export async function POST(req: Request) {
             updatedAt: new Date(),
           })
           .where(eq(embeddingsQueue.id, item.id));
+
+        // 2. Deduct credit
+        if (targetUserId !== "shared") {
+          await creditService.deductCredits(user.uid, 1);
+          await creditService.logTransaction({
+            userId: user.uid,
+            amount: 1,
+            type: "manual_process",
+            details: {
+              sourceId: item.id,
+              sourceType: item.sourceType
+            }
+          });
+          console.log(`[VECTOR-MANUAL] Usuário: ${user.uid} | Fonte: ${item.sourceId} | Crédito: 1`);
+        }
 
         successCount++;
       } catch (err) {

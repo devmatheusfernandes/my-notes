@@ -98,12 +98,20 @@ service cloud.firestore {
                     && isOwner(request.resource.data.userId);
     }
 
-    // Coleção de Uso de Quota
+    // Coleção de Uso de Quota (Armazenamento)
     match /usage/{userId} {
       allow read: if isOwner(userId);
-      // Permitir escrita apenas se o usuário estiver autenticado e for o dono.
-      // O sistema incrementa o totalBytesUsed via storageService.
-      allow write: if isOwner(userId);
+      // Negar qualquer escrita direta do cliente. 
+      // O sistema gerencia via firebase-admin no servidor.
+      allow write: if false;
+    }
+
+    // Coleção de Créditos de IA
+    match /credits/{userId} {
+      allow read: if isOwner(userId);
+      // Negar qualquer escrita direta do cliente.
+      // O gerenciamento de recarga mensal e descontos é feito via servidor.
+      allow write: if false;
     }
 
     // Deny all other access

@@ -4,6 +4,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { streamText } from "ai";
 import { getUserFromSession } from "@/utils/auth-server";
 import { NextResponse } from "next/server";
+import { creditService } from "@/services/creditService";
 
 const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -27,8 +28,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. RAG: Search for context
-    const searchResults = await searchService.semanticSearch(lastMessage, userId, 5);
+    // 1.1 Credit Check
+    const hasCredits = await creditService.hasCredits(userId);
+    if (!hasCredits) {
+      return NextResponse.json(
+        { error: "Você atingiu seu limite de créditos de IA para este mês." },
+        { status: 403 }
+      );
+    }
+
+    // 2. RAG: Search for context (Reduced from 5 to 3 for efficiency)
+    const searchResults = await searchService.semanticSearch(lastMessage, userId, 3);
 
     // Fetch content & titles for attribution links
     const contextParts = await Promise.all(
@@ -57,7 +67,7 @@ export async function POST(req: Request) {
           url = `/hub/personal-study/video/${id}`;
         }
 
-        return `### FONTE: ${title}\nURL: ${url}\nCONTEÚDO PARA REFERÊNCIA:\n"""\n${res.content}\n"""`;
+        return `### FONTE: ${title}\nURL: ${url}\nCONTEÚDO PARA REFERÊNCIA:\n"""\n${res.content.substring(0, 4000)}${res.content.length > 4000 ? '... [Conteúdo truncado para economia de créditos]' : ''}\n"""`;
       })
     );
 
@@ -111,11 +121,11 @@ Lembre-se: Se não houver nada relevante no contexto acima para a pergunta feita
     const result = streamText({
       model: google("gemini-flash-latest"),
       system: systemInstruction,
-      messages: messages.map((m: ChatMessage) => ({
+      messages: messages.slice(-10).map((m: ChatMessage) => ({
         role: (m.role === "model" ? "assistant" : m.role) as "user" | "assistant",
         content: m.content,
       })),
-      onFinish: async ({ text }) => {
+      onFinish: async ({ text, usage }) => {
         // Save the AI message to the database when it finishes streaming
         if (chatId) {
           await adminDb.collection("chats").doc(chatId).collection("messages").add({
@@ -126,6 +136,27 @@ Lembre-se: Se não houver nada relevante no contexto acima para a pergunta feita
 
           await adminDb.collection("chats").doc(chatId).update({
             updatedAt: new Date(),
+          });
+        }
+
+        // Deduct credits based on tokens used
+        if (usage) {
+          const { promptTokens = 0, completionTokens = 0, totalTokens = (promptTokens + completionTokens) } = usage as { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+          const creditsToDeduct = Math.ceil(totalTokens / 1000);
+
+          //console.log(`[AI-CHAT] Usuário: ${userId} | Prompt: ${promptTokens} | Completion: ${completionTokens} | Total: ${totalTokens} | Créditos Aplicados: ${creditsToDeduct}`);
+
+          await creditService.deductCredits(userId, creditsToDeduct);
+          await creditService.logTransaction({
+            userId,
+            amount: creditsToDeduct,
+            type: "chat",
+            details: {
+              promptTokens,
+              completionTokens,
+              totalTokens,
+              chatId
+            }
           });
         }
       },
