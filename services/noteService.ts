@@ -43,6 +43,7 @@ export const noteService = {
         });
       } else {
         // Client-side: call our new sync-queue API
+        // SILENT FAIL: If offline, the sync will fail but the note is still saved in Firestore
         fetch("/api/sync/queue", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -53,7 +54,7 @@ export const noteService = {
                     content: syncContent,
                 }]
             })
-        }).catch(err => console.error("Erro ao sincronizar nota para busca:", err));
+        }).catch(err => console.warn("[noteService] Local sync failed (offline?):", err));
       }
 
       return newNote;
@@ -106,6 +107,7 @@ export const noteService = {
           );
       } else {
         // Client-side: call our sync-remove API
+        // SILENT FAIL: If offline, we just log a warning
         fetch("/api/sync/remove", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -113,7 +115,7 @@ export const noteService = {
               sourceIds: [noteId],
               sourceType: "note",
           })
-        }).catch(err => console.error("Erro ao remover nota do índice:", err));
+        }).catch(err => console.warn("[noteService] Local sync removal failed (offline?):", err));
       }
     } catch (error) {
       console.error("Erro ao deletar nota no Firebase:", error);
@@ -142,6 +144,7 @@ export const noteService = {
             content: syncContent,
           });
         } else {
+          // SILENT FAIL: If offline, we just log a warning
           fetch("/api/sync/queue", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -152,7 +155,7 @@ export const noteService = {
                     content: syncContent,
                 }]
             })
-          }).catch(err => console.error("Erro ao ressincronizar nota:", err));
+          }).catch(err => console.warn("[noteService] Local sync update failed (offline?):", err));
         }
       }
     } catch (error) {
@@ -199,11 +202,12 @@ export const noteService = {
         const { vectorService } = await import("@/services/vectorService");
         await vectorService.queueMany(itemsToSync.map(i => ({ ...i, userId })));
       } else {
+        // SILENT FAIL: If offline, we just log a warning
         fetch("/api/sync/queue", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ items: itemsToSync })
-        }).catch(err => console.error("Erro ao sincronizar lote de notas:", err));
+        }).catch(err => console.warn("[noteService] Local batch sync failed (offline?):", err));
       }
     } catch (error) {
       console.error("Erro ao criar múltiplas notas no Firebase:", error);

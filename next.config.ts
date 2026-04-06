@@ -2,20 +2,46 @@ import withPWAInit, { runtimeCaching } from "@ducanh2912/next-pwa";
 
 const withPWA = withPWAInit({
   dest: "public",
-  disable: process.env.NODE_ENV === "development",
+  disable: false, // Force enable for testing
   register: true,
-  // Force API routes to be NetworkOnly to prevent buffering of streaming responses
-  extendDefaultRuntimeCaching: true,
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
   workboxOptions: {
+    skipWaiting: true,
+    clientsClaim: true,
     runtimeCaching: [
       {
-        urlPattern: /^\/api\/.*/i,
-        handler: "NetworkOnly",
+        urlPattern: /^\/hub\/.*/i,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "pages-hub",
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 60 * 60 * 24, // 24 hours
+          },
+        },
+      },
+      {
+        urlPattern: /^\/api\/(?!chat|auth).*/i,
+        handler: "StaleWhileRevalidate",
+        options: {
+          cacheName: "api-cache",
+          expiration: {
+            maxEntries: 100,
+            maxAgeSeconds: 60 * 60 * 24 * 7, // 1 week
+          },
+        },
       },
       ...runtimeCaching,
     ],
   },
+  fallbacks: {
+    document: "/offline",
+  },
 });
+
+
+
 
 /** @type {import('next').NextConfig} */
 const nextConfig: import('next').NextConfig = {
@@ -44,7 +70,8 @@ const nextConfig: import('next').NextConfig = {
       },
     ];
   },
-  turbopack: {},
+  // Remove turbopack to allow next-pwa to use Webpack during build
 };
+
 
 export default withPWA(nextConfig);

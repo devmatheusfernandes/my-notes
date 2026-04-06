@@ -27,12 +27,15 @@ function localStorageProvider() {
   };
 
   window.addEventListener("beforeunload", handleUnload);
+  window.addEventListener("pagehide", handleUnload);
+
   // Também salvar em intervalos ou visibilidade para maior segurança
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
       handleUnload();
     }
   });
+
 
   return cache;
 }
