@@ -1,5 +1,11 @@
 import { BIBLE_BOOKS_PT } from "@/lib/bible/bible-books-pt";
 
+export interface TranscriptSegment {
+    startTime: number;
+    startTimeFormatted: string;
+    text: string;
+}
+
 export function extractBook(title: string): string | undefined {
     const lower = title.toLowerCase()
     for (const b of BIBLE_BOOKS_PT) {
@@ -31,6 +37,77 @@ export function formatVttToText(vtt: string): string {
     }
     if (buffer) paragraphs.push(buffer.trim())
     return paragraphs.join("\n\n")
+}
+
+export function formatSecondsToTimestamp(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+}
+
+export function parseVttToSegments(vtt: string): TranscriptSegment[] {
+    const lines = vtt.split(/\r?\n/);
+    const segments: TranscriptSegment[] = [];
+    let currentStartTime: number | null = null;
+    let currentBuffer = "";
+
+    const timestampRegex = /(\d{2}:\d{2}:\d{2}.\d{3}) --> (\d{2}:\d{2}:\d{2}.\d{3})/;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line || line === "WEBVTT") continue;
+
+        const tsMatch = line.match(timestampRegex);
+        if (tsMatch) {
+            const startStr = tsMatch[1];
+            const parts = startStr.split(":");
+            const h = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            const s = parseFloat(parts[2]);
+            const seconds = h * 3600 + m * 60 + s;
+
+            if (currentStartTime === null) {
+                currentStartTime = seconds;
+            }
+            continue;
+        }
+
+        if (/^\d+$/.test(line)) continue;
+
+        // It's text
+        const cleanText = line.replace(/<[^>]+>/g, "").trim();
+        if (!cleanText) continue;
+
+        if (currentBuffer) {
+            currentBuffer += " " + cleanText;
+        } else {
+            currentBuffer = cleanText;
+        }
+
+        // If it ends a sentence, push the segment
+        if (/[.!?…]$/.test(cleanText)) {
+            if (currentStartTime !== null) {
+                segments.push({
+                    startTime: currentStartTime,
+                    startTimeFormatted: formatSecondsToTimestamp(currentStartTime),
+                    text: currentBuffer.trim()
+                });
+                currentStartTime = null;
+                currentBuffer = "";
+            }
+        }
+    }
+
+    // Push remaining buffer
+    if (currentBuffer && currentStartTime !== null) {
+        segments.push({
+            startTime: currentStartTime,
+            startTimeFormatted: formatSecondsToTimestamp(currentStartTime),
+            text: currentBuffer.trim()
+        });
+    }
+
+    return segments;
 }
 
 interface VideoFile {

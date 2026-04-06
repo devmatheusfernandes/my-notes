@@ -13,12 +13,18 @@ import {
   Archive,
   Trash2,
   Menu,
-  RotateCcw
+  RotateCcw,
+  PlayCircle,
+  FileText,
+  BookOpen,
+  ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import Link from "next/link";
 import { useSidebar } from "@/components/ui/sidebar";
 import { toast } from "sonner";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
@@ -46,6 +52,93 @@ const parseDate = (date: unknown): Date => {
   if (date instanceof Date) return date;
   if (typeof date === 'string' || typeof date === 'number') return new Date(date);
   return new Date();
+};
+
+/**
+ * Pre-processes message content to fix common AI-generated Markdown issues.
+ * Specifically handles links with spaces in URLs by encoding them.
+ */
+const preprocessMessageContent = (content: string) => {
+  if (!content) return "";
+  
+  // Fix markdown links [text](url) where url has spaces but is not wrapped in <>
+  // Regex explains: find [text]( then capture until ) but only if there's a space or non-encoded char
+  return content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
+    // If it's already wrapped in <>, it's valid markdown for spaces, but standard ReactMarkdown might still struggle
+    if (url.startsWith('<') && url.endsWith('>')) {
+      const innerUrl = url.substring(1, url.length - 1);
+      return `[${text}](${innerUrl.replace(/ /g, '%20')})`;
+    }
+    
+    // Encode spaces in the URL
+    const encodedUrl = url.replace(/ /g, '%20');
+    return `[${text}](${encodedUrl})`;
+  });
+};
+
+interface MarkdownLinkProps {
+  href?: string;
+  children: React.ReactNode;
+}
+
+const ChatMarkdownLink = ({ href, children }: MarkdownLinkProps) => {
+  if (!href) return <span>{children}</span>;
+
+  const isInternal = href.startsWith('/') || href.startsWith('https://my-notes');
+  const isVideo = href.includes('/personal-study/video/');
+  const isNote = href.includes('/hub/notes/');
+  const isPub = href.includes('/personal-study/') && !isVideo;
+
+  // Base styles for all "Reference Chips"
+  const baseChipClass = "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-medium transition-all border no-underline mx-0.5 align-baseline text-sm";
+
+  if (isVideo) {
+    return (
+      <Link 
+        href={href} 
+        className={cn(baseChipClass, "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/30")}
+      >
+        <PlayCircle className="w-3.5 h-3.5 fill-current/10" />
+        {children}
+      </Link>
+    );
+  }
+
+  if (isNote) {
+    return (
+      <Link 
+        href={href} 
+        className={cn(baseChipClass, "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/30")}
+      >
+        <FileText className="w-3.5 h-3.5 opacity-80" />
+        {children}
+      </Link>
+    );
+  }
+
+  if (isPub) {
+    return (
+      <Link 
+        href={href} 
+        className={cn(baseChipClass, "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/30")}
+      >
+        <BookOpen className="w-3.5 h-3.5 opacity-80" />
+        {children}
+      </Link>
+    );
+  }
+
+  return (
+    <a 
+      href={href} 
+      target={isInternal ? "_self" : "_blank"} 
+      rel={isInternal ? "" : "noopener noreferrer"}
+      className="text-blue-600 dark:text-blue-400 underline decoration-blue-500/30 hover:decoration-blue-500 transition-all inline-flex items-center gap-1"
+    >
+      {children}
+      {!isInternal && <ExternalLink className="w-3 h-3 opacity-50" />}
+    </a>
+  );
 };
 
 interface ChatHistoryListProps {
@@ -692,7 +785,18 @@ export default function ChatPage() {
                               <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" />
                             </div>
                           ) : (
-                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                            <ReactMarkdown 
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                a: ({ ...props }) => (
+                                  <ChatMarkdownLink href={props.href}>
+                                    {props.children}
+                                  </ChatMarkdownLink>
+                                )
+                              }}
+                            >
+                              {preprocessMessageContent(message.content)}
+                            </ReactMarkdown>
                           )}
                           {message.role === "model" && isLoading && i === messages.length - 1 && message.content !== "" && (
                             <motion.span

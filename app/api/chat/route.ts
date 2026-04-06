@@ -81,7 +81,8 @@ DIRETRIZES DE RESPOSTA:
    - Cite a fonte usando um link Markdown no formato: [Título da Fonte](URL_DA_FONTE_COM_H).
    - Use exatamente a 'URL' fornecida no contexto e anexe o parâmetro 'h' ao final.
    - Como anexar 'h': Se a URL já tiver '?', use '&h=texto'. Se não tiver, use '?h=texto'.
-   - O valor de 'h' deve ser de 3 a 7 palavras extraídas LITERALMENTE do documento (sem mudar nada).
+   - O valor de 'h' deve ser de 3 a 7 palavras extraídas LITERALMENTE do documento.
+   - **DICA**: O sistema processará espaços no link automaticamente, então foque apenas em usar o formato [Texto](URL).
    - Logo após a citação, inclua o trecho que justifica sua resposta usando um blockquote (>).
 5. **ESTILO**: Responda em Português do Brasil de forma clara e organizada.
 
