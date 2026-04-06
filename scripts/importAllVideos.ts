@@ -34,7 +34,7 @@ export async function importAllVideos() {
             const contentText = formatVttToText(vtt)
 
             const cleanVideo = Object.fromEntries(
-                Object.entries(video).filter(([v]) => v !== undefined)
+                Object.entries(video).filter(([, v]) => v !== undefined)
             );
 
             await docRef.set({
