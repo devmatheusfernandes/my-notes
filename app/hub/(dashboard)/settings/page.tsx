@@ -199,7 +199,6 @@ export default function SettingsPage() {
             title: (item.title as string) || "Nota Importada",
             content: (item.content as string) || "",
             pinned: !!item.pinned || !!item.isFavorite,
-            folderId: undefined,
             tagIds: [],
             isLocked: false,
           }));
@@ -221,7 +220,6 @@ export default function SettingsPage() {
               title: cells[titleIdx]?.trim() || "Sem título",
               content: cells[contentIdx]?.trim() || "",
               pinned: false,
-              folderId: undefined,
               tagIds: [],
               isLocked: false,
             };
@@ -231,7 +229,6 @@ export default function SettingsPage() {
             title: file.name.replace(".txt", ""),
             content: text,
             pinned: false,
-            folderId: undefined,
             tagIds: [],
             isLocked: false,
           }];
