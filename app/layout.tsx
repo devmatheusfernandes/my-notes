@@ -16,6 +16,9 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "MyNotes",
   description: "A simple notes app",
+  verification: {
+    google: "wQqAiFc2gQt35VXQlNdfLXR0dz4WTXOtwCBRDCs-hCs",
+  },
 };
 
 export default function RootLayout({
