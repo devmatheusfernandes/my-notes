@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,10 +15,29 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: "MyNotes",
-  description: "A simple notes app",
+  description: "Seu hub de notas inteligente e conectado",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "MyNotes",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    apple: "/icon.png",
+  },
   verification: {
     google: "MjZ6_z5WtjdMuQXEWPrCM9JaQ3oC3uT3bWcKnWYE_Us",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#000000",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({

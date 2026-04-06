@@ -24,6 +24,7 @@ import TagChips from "../items/tag-chips";
 import { Tag } from "@/schemas/tagSchema";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useScrollThreshold } from "@/hooks/use-scroll-threshold";
+import { OfflineIndicator } from "../ui/offline-indicator";
 
 interface HeaderProps {
   scrollSearch?: boolean;
@@ -189,6 +190,7 @@ export default function Header({
           </div>
 
           <div className="flex-shrink-0 flex items-center gap-2">
+            <OfflineIndicator />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">

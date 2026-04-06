@@ -1,3 +1,11 @@
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  disable: process.env.NODE_ENV === "development",
+  register: true,
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig: import('next').NextConfig = {
   images: {
@@ -25,6 +33,7 @@ const nextConfig: import('next').NextConfig = {
       },
     ];
   },
+  turbopack: {},
 };
 
-export default nextConfig;
+export default withPWA(nextConfig);
