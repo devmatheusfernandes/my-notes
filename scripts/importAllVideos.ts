@@ -60,6 +60,7 @@ export async function importAllVideos() {
                     tokens: tokenize(contentText),
                     subtitlesHash: hash(contentText),
                     tokenVersion: 1,
+                    vectorSynced: false,
                     createdAt: admin.firestore.FieldValue.serverTimestamp(),
                     updatedAt: admin.firestore.FieldValue.serverTimestamp()
                 })
