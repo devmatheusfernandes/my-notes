@@ -2,7 +2,7 @@ import withPWAInit, { runtimeCaching } from "@ducanh2912/next-pwa";
 
 const withPWA = withPWAInit({
   dest: "public",
-  disable: false, // Force enable for testing
+  disable: process.env.NODE_ENV === "development",
   register: true,
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
