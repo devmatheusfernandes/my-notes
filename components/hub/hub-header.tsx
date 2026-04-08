@@ -24,6 +24,7 @@ import { Tag } from "@/schemas/tagSchema";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useScrollThreshold } from "@/hooks/use-scroll-threshold";
 import { OfflineIndicator } from "../ui/offline-indicator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 interface HeaderProps {
   scrollSearch?: boolean;
@@ -74,7 +75,7 @@ export default function Header({
       <div className="w-full">
         <div className="flex flex-row items-center justify-between w-full gap-4 py-2 px-2 md:px-4">
           <div className="flex flex-row items-center gap-2">
-
+            {isMobile && <SidebarTrigger className="md:hidden" />}
 
             {isDesktop && showSearch && (
               <h1 className="text-xl font-bold truncate max-w-[200px] lg:max-w-xs text-foreground/90">

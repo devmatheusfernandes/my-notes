@@ -41,6 +41,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const parseDate = (date: unknown): Date => {
   if (!date) return new Date();
@@ -550,6 +551,7 @@ export default function ChatPage() {
           <DrawerHeader className="border-b text-left">
             <div className="flex items-center justify-between">
               <DrawerTitle className="text-sm font-semibold flex items-center gap-2">
+                <SidebarTrigger />
                 Histórico
               </DrawerTitle>
               <div className="flex items-center gap-1">
@@ -637,6 +639,7 @@ export default function ChatPage() {
       >
         <div className="h-16 px-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
+            <SidebarTrigger />
             <h2 className="font-semibold text-sm">Histórico</h2>
           </div>
           <div className="flex items-center gap-1">

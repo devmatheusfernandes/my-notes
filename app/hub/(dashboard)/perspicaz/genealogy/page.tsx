@@ -4,6 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { LayoutGrid, Network, Info } from "lucide-react";
 import { GenealogyNode, GenealogyLink } from "@/utils/transformData";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import genealogyDataRaw from "@/data/genealogy/genealogy.json";
 
 const genealogyData = genealogyDataRaw as {
@@ -27,7 +28,10 @@ export default function GenealogiaPage() {
   return (
     <div className="h-screen w-full bg-[#0a0a0a] text-white/90 p-4 md:p-6 flex flex-col gap-4 font-[Outfit,sans-serif] overflow-hidden">
 
-      <header className="flex justify-center md:justify-end">
+      <header className="flex items-center justify-between md:justify-end gap-4">
+        <div className="md:hidden">
+          <SidebarTrigger />
+        </div>
         <div className="flex items-center bg-white/5 p-1 rounded-lg border border-white/5">
           <button
             onClick={() => setViewMode("graph")}
