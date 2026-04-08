@@ -12,7 +12,7 @@ import Header from '@/components/hub/hub-header';
 import { Loading } from '@/components/ui/loading';
 
 // Dynamically import GraphView because it uses browser-only APIs (Canvas/Bodymovin/ForceGraph)
-const GraphView = dynamic(() => import('@/components/graph/GraphView'), {
+const GraphView = dynamic(() => import('@/components/graph/notes-graph-view'), {
   ssr: false,
   loading: () => (
     <Loading />

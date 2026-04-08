@@ -1,0 +1,2155 @@
+{
+    "graphName": "Genealogia Bíblica Completa",
+    "nodes": [
+        {
+            "id": "Adao",
+            "label": "Adão",
+            "tags": [
+                "Patriarca"
+            ],
+            "color": "#4682B4"
+        },
+        {
+            "id": "Sete",
+            "label": "Sete",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Enos",
+            "label": "Enos",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Quena",
+            "label": "Quenã",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Malalel",
+            "label": "Malaleel",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Jarede",
+            "label": "Jarede",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Enoque",
+            "label": "Enoque",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Metusalem",
+            "label": "Metusalém",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Lameque",
+            "label": "Lameque",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Noe",
+            "label": "Noé",
+            "color": "#4682B4",
+            "tags": [
+                "Patriarca"
+            ]
+        },
+        {
+            "id": "Sem",
+            "label": "Sem",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Arpaxade",
+            "label": "Arpaxade",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Sela",
+            "label": "Selá",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Eber",
+            "label": "Éber",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Pelegue",
+            "label": "Pelegue",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Reu",
+            "label": "Reú",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Serugue",
+            "label": "Serugue",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Naor_Pai",
+            "label": "Naor",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Tera",
+            "label": "Tera",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Abraao",
+            "label": "Abraão",
+            "tags": [
+                "Patriarca"
+            ],
+            "color": "#4682B4"
+        },
+        {
+            "id": "Sara",
+            "label": "Sara",
+            "tags": [
+                "Matriarca"
+            ],
+            "color": "#4682B4"
+        },
+        {
+            "id": "Isaque",
+            "label": "Isaque",
+            "tags": [
+                "Patriarca"
+            ],
+            "color": "#4682B4"
+        },
+        {
+            "id": "Rebeca",
+            "label": "Rebeca",
+            "tags": [
+                "Matriarca"
+            ],
+            "color": "#4682B4"
+        },
+        {
+            "id": "Jaco",
+            "label": "Jacó (Israel)",
+            "tags": [
+                "Patriarca"
+            ],
+            "color": "#4682B4"
+        },
+        {
+            "id": "Esau",
+            "label": "Esaú",
+            "notes": "Origem dos Edomitas",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Juda",
+            "label": "Judá",
+            "tags": [
+                "Tribo"
+            ],
+            "color": "#2E8B57"
+        },
+        {
+            "id": "Benjamim",
+            "label": "Benjamim",
+            "tags": [
+                "Tribo"
+            ],
+            "color": "#2E8B57"
+        },
+        {
+            "id": "Peres",
+            "label": "Peres",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Esrom",
+            "label": "Esrom",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Rao",
+            "label": "Rão",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Aminadabe",
+            "label": "Aminadabe",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Nasom",
+            "label": "Nasom",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Salmom",
+            "label": "Salmom",
+            "refs": "1Cr 2:11",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Boaz",
+            "label": "Boaz",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Obede",
+            "label": "Obede",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Jesse",
+            "label": "Jessé",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Afia",
+            "label": "Afia",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Becorate",
+            "label": "Becorate",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Zeror",
+            "label": "Zeror",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Abiel",
+            "label": "Abiel ou Jeiel",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Quis_Saul",
+            "label": "Quis",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Saul",
+            "label": "Saul",
+            "tags": [
+                "Rei de Israel Unido"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Mical",
+            "label": "Mical",
+            "notes": "Filha de Saul, esposa de Davi",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Davi",
+            "label": "Davi",
+            "tags": [
+                "Rei de Israel Unido"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Bate_Seba",
+            "label": "Bate-Seba",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Salomao",
+            "label": "Salomão",
+            "tags": [
+                "Rei de Israel Unido"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Roboao",
+            "label": "Roboão",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Abias",
+            "label": "Abias",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Asa",
+            "label": "Asa",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Jeosafa",
+            "label": "Jeosafá",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Jeorao_Juda",
+            "label": "Jeorão",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Acazias_Juda",
+            "label": "Acazias",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#FF8C00",
+            "notes": "Omitido por Mateus"
+        },
+        {
+            "id": "Jeoas_Juda",
+            "label": "Jeoás",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#FF8C00",
+            "notes": "Omitido por Mateus"
+        },
+        {
+            "id": "Amazias",
+            "label": "Amazias",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#FF8C00",
+            "notes": "Omitido por Mateus"
+        },
+        {
+            "id": "Uzias",
+            "label": "Uzias (Azarias)",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Jotao",
+            "label": "Jotão",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Acaz",
+            "label": "Acaz",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Ezequias",
+            "label": "Ezequias",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Manasses",
+            "label": "Manassés",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Amom",
+            "label": "Amom",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Josias",
+            "label": "Josias",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Jeoiaquim",
+            "label": "Jeoiaquim",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#FF8C00",
+            "notes": "Omitido por Mateus"
+        },
+        {
+            "id": "Jeconias",
+            "label": "Jeconias (Joaquim)",
+            "tags": [
+                "Rei de Judá"
+            ],
+            "color": "#8B0000"
+        },
+        {
+            "id": "Pedaias",
+            "label": "Pedaías",
+            "refs": "1Cr 3:18",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Simei_Pedaias",
+            "label": "Simei",
+            "refs": "1Cr 3:19",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Mesulao",
+            "label": "Mesulão",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Hananias",
+            "label": "Hananias",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Selomite",
+            "label": "Selomite",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Hasuba",
+            "label": "Hasubá",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Oel",
+            "label": "Oel",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Berequias",
+            "label": "Berequias",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Hasadias",
+            "label": "Hasadias",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Jusabe_Hesede",
+            "label": "Jusabe-Hesede",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Sealtiel",
+            "label": "Sealtiel",
+            "refs": "1Cr 3:17",
+            "notes": "Filho de Jeconias, genro de Néri",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Zorobabel",
+            "label": "Zorobabel",
+            "refs": "1Cr 3:19",
+            "notes": "Filho biológico de Pedaías, legal de Sealtiel",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Abiude",
+            "label": "Abiúde",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Eliaquim",
+            "label": "Eliaquim",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Azor",
+            "label": "Azor",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Sadoque",
+            "label": "Sadoque",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Aquim",
+            "label": "Aquim",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Eliude",
+            "label": "Eliúde",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Eleazar",
+            "label": "Eleazar",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Mata",
+            "label": "Matã",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Jaco_Pai_Jose",
+            "label": "Jacó",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Jose",
+            "label": "José",
+            "notes": "Esposo de Maria, pai adotivo de Jesus",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Nata",
+            "label": "Natã",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Matata",
+            "label": "Matatá",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Mena",
+            "label": "Mena",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Melea",
+            "label": "Meleá",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Eliaquim_Lucas",
+            "label": "Eliaquim",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Jona",
+            "label": "Jonã",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Jose_Lucas",
+            "label": "José",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Judas_Lucas",
+            "label": "Judas",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Simeao_Lucas",
+            "label": "Simeão",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Levi_Lucas_1",
+            "label": "Levi",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Matate_1",
+            "label": "Matate",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Jorim",
+            "label": "Jorim",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Eliezer",
+            "label": "Eliézer",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Jesus_Antepassado",
+            "label": "Jesus",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Er",
+            "label": "Er",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Elmada",
+            "label": "Elmadã",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Cosa",
+            "label": "Cosã",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Adi",
+            "label": "Adi",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Melqui_1",
+            "label": "Melqui",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Neri",
+            "label": "Néri",
+            "notes": "Sogro de Sealtiel",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Resa",
+            "label": "Resa",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Joana",
+            "label": "Joanã",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Joda",
+            "label": "Jodá",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Joseque",
+            "label": "Joseque",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Semei",
+            "label": "Semei",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Matatias_1",
+            "label": "Matatias",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Maate",
+            "label": "Maate",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Nagai",
+            "label": "Nagai",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Esli",
+            "label": "Esli",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Naum",
+            "label": "Naum",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Amos",
+            "label": "Amós",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Matatias_2",
+            "label": "Matatias",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Jose_Antepassado_2",
+            "label": "José",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Janai",
+            "label": "Janai",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Melqui_2",
+            "label": "Melqui",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Levi_Lucas_2",
+            "label": "Levi",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Matate_2",
+            "label": "Matate",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Eli",
+            "label": "Eli",
+            "notes": "Pai de Maria",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Maria",
+            "label": "Maria",
+            "notes": "Mãe biológica de Jesus",
+            "color": "#A9A9A9"
+        },
+        {
+            "id": "Jesus_Cristo",
+            "label": "JESUS CRISTO",
+            "tags": [
+                "Messias"
+            ],
+            "color": "#FFD700"
+        },
+        {
+            "id": "Jeroboao_I",
+            "label": "Jeroboão",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Nadabe",
+            "label": "Nadabe",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Baasa",
+            "label": "Baasa",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Ela",
+            "label": "Elá",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Zinri",
+            "label": "Zinri",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Onri",
+            "label": "Onri",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Acabe",
+            "label": "Acabe",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Acazias_Israel",
+            "label": "Acazias",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Jeorao_Israel",
+            "label": "Jeorão",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Jeu",
+            "label": "Jeú",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Jeoacaz_Israel",
+            "label": "Jeoacaz",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Jeoas_Israel",
+            "label": "Jeoás",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Jeroboao_II",
+            "label": "Jeroboão II",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Zacarias_Rei",
+            "label": "Zacarias",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Salum",
+            "label": "Salum",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Menaem",
+            "label": "Menaém",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Pecaias",
+            "label": "Pecaías",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Peca",
+            "label": "Peca",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Oseias",
+            "label": "Oseias",
+            "color": "#CD5C5C"
+        },
+        {
+            "id": "Ca",
+            "label": "Cã",
+            "tags": [
+                "Patriarca"
+            ],
+            "color": "#CD853F"
+        },
+        {
+            "id": "Jafe",
+            "label": "Jafé",
+            "tags": [
+                "Patriarca"
+            ],
+            "color": "#20B2AA"
+        },
+        {
+            "id": "Cuxe",
+            "label": "Cuxe",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Mizraim",
+            "label": "Mizraim",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Pute",
+            "label": "Pute",
+            "notes": "Líbios",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Canaa",
+            "label": "Canaã",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Ninrode",
+            "label": "Ninrode",
+            "notes": "Babel, Acade, Ereque, Calné",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Seba_Cuxe",
+            "label": "Sebá",
+            "notes": "Sabeus, Méroe; Leste da África",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Havila",
+            "label": "Havilá",
+            "notes": "Península Arábica",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Sabta",
+            "label": "Sabtá",
+            "notes": "Arábia Meridional",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Sabteca",
+            "label": "Sabteca",
+            "notes": "Etiópia",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Raama",
+            "label": "Raamá",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Saba_Raama",
+            "label": "Sabá",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Deda",
+            "label": "Dedã",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Ludim",
+            "label": "Ludim",
+            "notes": "Norte da África",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Anamim",
+            "label": "Anamim",
+            "notes": "Sinônimo de Egito",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Leabim",
+            "label": "Leabim",
+            "notes": "Líbia",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Naftuim",
+            "label": "Naftuim",
+            "notes": "Setentrional Egito",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Patrusim",
+            "label": "Patrusim",
+            "notes": "Alto Egito",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Casluim",
+            "label": "Casluim",
+            "notes": "Filisteus",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Caftorim",
+            "label": "Caftorim",
+            "notes": "Cretenses",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Sidon",
+            "label": "Sidon",
+            "notes": "Fenícios",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Hete",
+            "label": "Hete",
+            "notes": "Hititas",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Jebuseus",
+            "label": "Jebuseus",
+            "notes": "Primitiva Jerusalém",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Amorreus",
+            "label": "Amorreus",
+            "notes": "Palestina",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Girgaseus",
+            "label": "Girgaseus",
+            "notes": "Oeste do Jordão",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Heveus",
+            "label": "Heveus",
+            "notes": "Palestina Central",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Arqueus",
+            "label": "Arqueus",
+            "notes": "Oeste Líbano",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Sineus",
+            "label": "Sineus",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Arvadeus",
+            "label": "Arvadeus",
+            "notes": "Ilha Síria",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Zemareus",
+            "label": "Zemareus",
+            "notes": "Norte Fenícia",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Hamateus",
+            "label": "Hamateus",
+            "notes": "Norte Palestina",
+            "color": "#CD853F"
+        },
+        {
+            "id": "Gomer",
+            "label": "Gômer",
+            "color": "#20B2AA"
+        },
+        {
+            "id": "Javan",
+            "label": "Javã",
+            "color": "#20B2AA"
+        },
+        {
+            "id": "Madai",
+            "label": "Madai",
+            "notes": "Medos, (NO) Irã",
+            "color": "#20B2AA"
+        },
+        {
+            "id": "Magogue",
+            "label": "Magogue",
+            "notes": "Irlanda e Hungria",
+            "color": "#20B2AA"
+        },
+        {
+            "id": "Asquenaz",
+            "label": "Asquenaz",
+            "notes": "Alemanha",
+            "color": "#20B2AA"
+        },
+        {
+            "id": "Rifa",
+            "label": "Rifá",
+            "notes": "Paflagônia",
+            "color": "#20B2AA"
+        },
+        {
+            "id": "Togarma",
+            "label": "Togarma",
+            "notes": "Armênia",
+            "color": "#20B2AA"
+        },
+        {
+            "id": "Tarsis",
+            "label": "Társis",
+            "notes": "Sul da Espanha / Anatólia",
+            "color": "#20B2AA"
+        },
+        {
+            "id": "Elisa",
+            "label": "Elisa",
+            "notes": "Grécia",
+            "color": "#20B2AA"
+        },
+        {
+            "id": "Quitim",
+            "label": "Quitim",
+            "notes": "Chipre",
+            "color": "#20B2AA"
+        },
+        {
+            "id": "Dodanim",
+            "label": "Dodanim",
+            "notes": "Ilha de Rodes",
+            "color": "#20B2AA"
+        },
+        {
+            "id": "Antipater_I",
+            "label": "Antípater I",
+            "tags": [
+                "Herodes"
+            ],
+            "color": "#D2691E"
+        },
+        {
+            "id": "Herodes_Grande",
+            "label": "Herodes, O Grande",
+            "tags": [
+                "Herodes"
+            ],
+            "refs": "Mt 2:1-22; Lu 1:5",
+            "color": "#D2691E"
+        },
+        {
+            "id": "Herodes_Filipe",
+            "label": "Herodes Filipe",
+            "tags": [
+                "Herodes"
+            ],
+            "refs": "Mt 14:3",
+            "color": "#D2691E"
+        },
+        {
+            "id": "Filipe_Tetrarca",
+            "label": "Filipe, Tetrarca",
+            "tags": [
+                "Herodes"
+            ],
+            "refs": "Lu 3:1",
+            "color": "#D2691E"
+        },
+        {
+            "id": "Arquelau",
+            "label": "Arquelau",
+            "tags": [
+                "Herodes"
+            ],
+            "refs": "Mt 2:22",
+            "color": "#D2691E"
+        },
+        {
+            "id": "Antipas",
+            "label": "Ântipas",
+            "tags": [
+                "Herodes"
+            ],
+            "refs": "Mt 14:1-12; Mr 6:14-29; Lu 3:1, 19, 20",
+            "color": "#D2691E"
+        },
+        {
+            "id": "Agripa_I",
+            "label": "Agripa I",
+            "tags": [
+                "Herodes"
+            ],
+            "refs": "At 12:1-6, 18-23",
+            "color": "#D2691E"
+        },
+        {
+            "id": "Herodias",
+            "label": "Herodias",
+            "tags": [
+                "Herodes"
+            ],
+            "refs": "Mt 14:3, 4, 6-8",
+            "color": "#D2691E"
+        },
+        {
+            "id": "Agripa_II",
+            "label": "Agripa II",
+            "tags": [
+                "Herodes"
+            ],
+            "refs": "At 25:13, 22-27",
+            "color": "#D2691E"
+        },
+        {
+            "id": "Drusilla",
+            "label": "Drusilla",
+            "tags": [
+                "Herodes"
+            ],
+            "refs": "At 24:24",
+            "color": "#D2691E"
+        },
+        {
+            "id": "Berenice",
+            "label": "Berenice",
+            "tags": [
+                "Herodes"
+            ],
+            "refs": "At 25:13",
+            "color": "#D2691E"
+        }
+    ],
+    "links": [
+        {
+            "source": "Adao",
+            "target": "Sete",
+            "type": "parent"
+        },
+        {
+            "source": "Sete",
+            "target": "Enos",
+            "type": "parent"
+        },
+        {
+            "source": "Enos",
+            "target": "Quena",
+            "type": "parent"
+        },
+        {
+            "source": "Quena",
+            "target": "Malalel",
+            "type": "parent"
+        },
+        {
+            "source": "Malalel",
+            "target": "Jarede",
+            "type": "parent"
+        },
+        {
+            "source": "Jarede",
+            "target": "Enoque",
+            "type": "parent"
+        },
+        {
+            "source": "Enoque",
+            "target": "Metusalem",
+            "type": "parent"
+        },
+        {
+            "source": "Metusalem",
+            "target": "Lameque",
+            "type": "parent"
+        },
+        {
+            "source": "Lameque",
+            "target": "Noe",
+            "type": "parent"
+        },
+        {
+            "source": "Noe",
+            "target": "Sem",
+            "type": "parent"
+        },
+        {
+            "source": "Noe",
+            "target": "Ca",
+            "type": "parent"
+        },
+        {
+            "source": "Noe",
+            "target": "Jafe",
+            "type": "parent"
+        },
+        {
+            "source": "Sem",
+            "target": "Arpaxade",
+            "type": "parent"
+        },
+        {
+            "source": "Arpaxade",
+            "target": "Sela",
+            "type": "parent"
+        },
+        {
+            "source": "Sela",
+            "target": "Eber",
+            "type": "parent"
+        },
+        {
+            "source": "Eber",
+            "target": "Pelegue",
+            "type": "parent"
+        },
+        {
+            "source": "Pelegue",
+            "target": "Reu",
+            "type": "parent"
+        },
+        {
+            "source": "Reu",
+            "target": "Serugue",
+            "type": "parent"
+        },
+        {
+            "source": "Serugue",
+            "target": "Naor_Pai",
+            "type": "parent"
+        },
+        {
+            "source": "Naor_Pai",
+            "target": "Tera",
+            "type": "parent"
+        },
+        {
+            "source": "Tera",
+            "target": "Abraao",
+            "type": "parent"
+        },
+        {
+            "source": "Abraao",
+            "target": "Sara",
+            "type": "spouse"
+        },
+        {
+            "source": "Abraao",
+            "target": "Isaque",
+            "type": "parent"
+        },
+        {
+            "source": "Isaque",
+            "target": "Rebeca",
+            "type": "spouse"
+        },
+        {
+            "source": "Isaque",
+            "target": "Jaco",
+            "type": "parent"
+        },
+        {
+            "source": "Isaque",
+            "target": "Esau",
+            "type": "parent"
+        },
+        {
+            "source": "Rebeca",
+            "target": "Jaco",
+            "type": "parent"
+        },
+        {
+            "source": "Jaco",
+            "target": "Juda",
+            "type": "parent"
+        },
+        {
+            "source": "Jaco",
+            "target": "Benjamim",
+            "type": "parent"
+        },
+        {
+            "source": "Juda",
+            "target": "Peres",
+            "type": "parent"
+        },
+        {
+            "source": "Peres",
+            "target": "Esrom",
+            "type": "parent"
+        },
+        {
+            "source": "Esrom",
+            "target": "Rao",
+            "type": "parent"
+        },
+        {
+            "source": "Rao",
+            "target": "Aminadabe",
+            "type": "parent"
+        },
+        {
+            "source": "Aminadabe",
+            "target": "Nasom",
+            "type": "parent"
+        },
+        {
+            "source": "Nasom",
+            "target": "Salmom",
+            "type": "parent"
+        },
+        {
+            "source": "Salmom",
+            "target": "Boaz",
+            "type": "parent"
+        },
+        {
+            "source": "Boaz",
+            "target": "Obede",
+            "type": "parent"
+        },
+        {
+            "source": "Obede",
+            "target": "Jesse",
+            "type": "parent"
+        },
+        {
+            "source": "Jesse",
+            "target": "Davi",
+            "type": "parent"
+        },
+        {
+            "source": "Benjamim",
+            "target": "Afia",
+            "type": "parent"
+        },
+        {
+            "source": "Afia",
+            "target": "Becorate",
+            "type": "parent"
+        },
+        {
+            "source": "Becorate",
+            "target": "Zeror",
+            "type": "parent"
+        },
+        {
+            "source": "Zeror",
+            "target": "Abiel",
+            "type": "parent"
+        },
+        {
+            "source": "Abiel",
+            "target": "Quis_Saul",
+            "type": "parent"
+        },
+        {
+            "source": "Quis_Saul",
+            "target": "Saul",
+            "type": "parent"
+        },
+        {
+            "source": "Saul",
+            "target": "Mical",
+            "type": "parent"
+        },
+        {
+            "source": "Davi",
+            "target": "Mical",
+            "type": "spouse"
+        },
+        {
+            "source": "Davi",
+            "target": "Bate_Seba",
+            "type": "spouse"
+        },
+        {
+            "source": "Davi",
+            "target": "Salomao",
+            "type": "parent"
+        },
+        {
+            "source": "Davi",
+            "target": "Nata",
+            "type": "parent"
+        },
+        {
+            "source": "Salomao",
+            "target": "Roboao",
+            "type": "parent"
+        },
+        {
+            "source": "Roboao",
+            "target": "Abias",
+            "type": "parent"
+        },
+        {
+            "source": "Abias",
+            "target": "Asa",
+            "type": "parent"
+        },
+        {
+            "source": "Asa",
+            "target": "Jeosafa",
+            "type": "parent"
+        },
+        {
+            "source": "Jeosafa",
+            "target": "Jeorao_Juda",
+            "type": "parent"
+        },
+        {
+            "source": "Jeorao_Juda",
+            "target": "Acazias_Juda",
+            "type": "parent"
+        },
+        {
+            "source": "Acazias_Juda",
+            "target": "Jeoas_Juda",
+            "type": "parent"
+        },
+        {
+            "source": "Jeoas_Juda",
+            "target": "Amazias",
+            "type": "parent"
+        },
+        {
+            "source": "Amazias",
+            "target": "Uzias",
+            "type": "parent"
+        },
+        {
+            "source": "Uzias",
+            "target": "Jotao",
+            "type": "parent"
+        },
+        {
+            "source": "Jotao",
+            "target": "Acaz",
+            "type": "parent"
+        },
+        {
+            "source": "Acaz",
+            "target": "Ezequias",
+            "type": "parent"
+        },
+        {
+            "source": "Ezequias",
+            "target": "Manasses",
+            "type": "parent"
+        },
+        {
+            "source": "Manasses",
+            "target": "Amom",
+            "type": "parent"
+        },
+        {
+            "source": "Amom",
+            "target": "Josias",
+            "type": "parent"
+        },
+        {
+            "source": "Josias",
+            "target": "Jeoiaquim",
+            "type": "parent"
+        },
+        {
+            "source": "Jeoiaquim",
+            "target": "Jeconias",
+            "type": "parent"
+        },
+        {
+            "source": "Jeconias",
+            "target": "Sealtiel",
+            "type": "parent"
+        },
+        {
+            "source": "Neri",
+            "target": "Sealtiel",
+            "type": "father_in_law"
+        },
+        {
+            "source": "Jeconias",
+            "target": "Pedaias",
+            "type": "parent"
+        },
+        {
+            "source": "Pedaias",
+            "target": "Zorobabel",
+            "type": "biological_parent"
+        },
+        {
+            "source": "Pedaias",
+            "target": "Simei_Pedaias",
+            "type": "parent"
+        },
+        {
+            "source": "Sealtiel",
+            "target": "Zorobabel",
+            "type": "parent"
+        },
+        {
+            "source": "Zorobabel",
+            "target": "Abiude",
+            "type": "parent"
+        },
+        {
+            "source": "Zorobabel",
+            "target": "Resa",
+            "type": "parent"
+        },
+        {
+            "source": "Zorobabel",
+            "target": "Mesulao",
+            "type": "parent"
+        },
+        {
+            "source": "Zorobabel",
+            "target": "Hananias",
+            "type": "parent"
+        },
+        {
+            "source": "Zorobabel",
+            "target": "Selomite",
+            "type": "parent"
+        },
+        {
+            "source": "Zorobabel",
+            "target": "Hasuba",
+            "type": "parent"
+        },
+        {
+            "source": "Zorobabel",
+            "target": "Oel",
+            "type": "parent"
+        },
+        {
+            "source": "Zorobabel",
+            "target": "Berequias",
+            "type": "parent"
+        },
+        {
+            "source": "Zorobabel",
+            "target": "Hasadias",
+            "type": "parent"
+        },
+        {
+            "source": "Zorobabel",
+            "target": "Jusabe_Hesede",
+            "type": "parent"
+        },
+        {
+            "source": "Abiude",
+            "target": "Eliaquim",
+            "type": "parent"
+        },
+        {
+            "source": "Eliaquim",
+            "target": "Azor",
+            "type": "parent"
+        },
+        {
+            "source": "Azor",
+            "target": "Sadoque",
+            "type": "parent"
+        },
+        {
+            "source": "Sadoque",
+            "target": "Aquim",
+            "type": "parent"
+        },
+        {
+            "source": "Aquim",
+            "target": "Eliude",
+            "type": "parent"
+        },
+        {
+            "source": "Eliude",
+            "target": "Eleazar",
+            "type": "parent"
+        },
+        {
+            "source": "Eleazar",
+            "target": "Mata",
+            "type": "parent"
+        },
+        {
+            "source": "Mata",
+            "target": "Jaco_Pai_Jose",
+            "type": "parent"
+        },
+        {
+            "source": "Jaco_Pai_Jose",
+            "target": "Jose",
+            "type": "parent"
+        },
+        {
+            "source": "Nata",
+            "target": "Matata",
+            "type": "parent"
+        },
+        {
+            "source": "Matata",
+            "target": "Mena",
+            "type": "parent"
+        },
+        {
+            "source": "Mena",
+            "target": "Melea",
+            "type": "parent"
+        },
+        {
+            "source": "Melea",
+            "target": "Eliaquim_Lucas",
+            "type": "parent"
+        },
+        {
+            "source": "Eliaquim_Lucas",
+            "target": "Jona",
+            "type": "parent"
+        },
+        {
+            "source": "Jona",
+            "target": "Jose_Lucas",
+            "type": "parent"
+        },
+        {
+            "source": "Jose_Lucas",
+            "target": "Judas_Lucas",
+            "type": "parent"
+        },
+        {
+            "source": "Judas_Lucas",
+            "target": "Simeao_Lucas",
+            "type": "parent"
+        },
+        {
+            "source": "Simeao_Lucas",
+            "target": "Levi_Lucas_1",
+            "type": "parent"
+        },
+        {
+            "source": "Levi_Lucas_1",
+            "target": "Matate_1",
+            "type": "parent"
+        },
+        {
+            "source": "Matate_1",
+            "target": "Jorim",
+            "type": "parent"
+        },
+        {
+            "source": "Jorim",
+            "target": "Eliezer",
+            "type": "parent"
+        },
+        {
+            "source": "Eliezer",
+            "target": "Jesus_Antepassado",
+            "type": "parent"
+        },
+        {
+            "source": "Jesus_Antepassado",
+            "target": "Er",
+            "type": "parent"
+        },
+        {
+            "source": "Er",
+            "target": "Elmada",
+            "type": "parent"
+        },
+        {
+            "source": "Elmada",
+            "target": "Cosa",
+            "type": "parent"
+        },
+        {
+            "source": "Cosa",
+            "target": "Adi",
+            "type": "parent"
+        },
+        {
+            "source": "Adi",
+            "target": "Melqui_1",
+            "type": "parent"
+        },
+        {
+            "source": "Melqui_1",
+            "target": "Neri",
+            "type": "parent"
+        },
+        {
+            "source": "Resa",
+            "target": "Joana",
+            "type": "parent"
+        },
+        {
+            "source": "Joana",
+            "target": "Joda",
+            "type": "parent"
+        },
+        {
+            "source": "Joda",
+            "target": "Joseque",
+            "type": "parent"
+        },
+        {
+            "source": "Joseque",
+            "target": "Semei",
+            "type": "parent"
+        },
+        {
+            "source": "Semei",
+            "target": "Matatias_1",
+            "type": "parent"
+        },
+        {
+            "source": "Matatias_1",
+            "target": "Maate",
+            "type": "parent"
+        },
+        {
+            "source": "Maate",
+            "target": "Nagai",
+            "type": "parent"
+        },
+        {
+            "source": "Nagai",
+            "target": "Esli",
+            "type": "parent"
+        },
+        {
+            "source": "Esli",
+            "target": "Naum",
+            "type": "parent"
+        },
+        {
+            "source": "Naum",
+            "target": "Amos",
+            "type": "parent"
+        },
+        {
+            "source": "Amos",
+            "target": "Matatias_2",
+            "type": "parent"
+        },
+        {
+            "source": "Matatias_2",
+            "target": "Jose_Antepassado_2",
+            "type": "parent"
+        },
+        {
+            "source": "Jose_Antepassado_2",
+            "target": "Janai",
+            "type": "parent"
+        },
+        {
+            "source": "Janai",
+            "target": "Melqui_2",
+            "type": "parent"
+        },
+        {
+            "source": "Melqui_2",
+            "target": "Levi_Lucas_2",
+            "type": "parent"
+        },
+        {
+            "source": "Levi_Lucas_2",
+            "target": "Matate_2",
+            "type": "parent"
+        },
+        {
+            "source": "Matate_2",
+            "target": "Eli",
+            "type": "parent"
+        },
+        {
+            "source": "Eli",
+            "target": "Maria",
+            "type": "parent"
+        },
+        {
+            "source": "Jose",
+            "target": "Maria",
+            "type": "spouse"
+        },
+        {
+            "source": "Maria",
+            "target": "Jesus_Cristo",
+            "type": "parent"
+        },
+        {
+            "source": "Jose",
+            "target": "Jesus_Cristo",
+            "type": "adoptive_parent"
+        },
+        {
+            "source": "Jeroboao_I",
+            "target": "Nadabe",
+            "type": "parent"
+        },
+        {
+            "source": "Baasa",
+            "target": "Ela",
+            "type": "parent"
+        },
+        {
+            "source": "Onri",
+            "target": "Acabe",
+            "type": "parent"
+        },
+        {
+            "source": "Acabe",
+            "target": "Acazias_Israel",
+            "type": "parent"
+        },
+        {
+            "source": "Acabe",
+            "target": "Jeorao_Israel",
+            "type": "parent"
+        },
+        {
+            "source": "Jeu",
+            "target": "Jeoacaz_Israel",
+            "type": "parent"
+        },
+        {
+            "source": "Jeoacaz_Israel",
+            "target": "Jeoas_Israel",
+            "type": "parent"
+        },
+        {
+            "source": "Jeoas_Israel",
+            "target": "Jeroboao_II",
+            "type": "parent"
+        },
+        {
+            "source": "Jeroboao_II",
+            "target": "Zacarias_Rei",
+            "type": "parent"
+        },
+        {
+            "source": "Menaem",
+            "target": "Pecaias",
+            "type": "parent"
+        },
+        {
+            "source": "Ca",
+            "target": "Cuxe",
+            "type": "parent"
+        },
+        {
+            "source": "Ca",
+            "target": "Mizraim",
+            "type": "parent"
+        },
+        {
+            "source": "Ca",
+            "target": "Pute",
+            "type": "parent"
+        },
+        {
+            "source": "Ca",
+            "target": "Canaa",
+            "type": "parent"
+        },
+        {
+            "source": "Cuxe",
+            "target": "Ninrode",
+            "type": "parent"
+        },
+        {
+            "source": "Cuxe",
+            "target": "Seba_Cuxe",
+            "type": "parent"
+        },
+        {
+            "source": "Cuxe",
+            "target": "Havila",
+            "type": "parent"
+        },
+        {
+            "source": "Cuxe",
+            "target": "Sabta",
+            "type": "parent"
+        },
+        {
+            "source": "Cuxe",
+            "target": "Sabteca",
+            "type": "parent"
+        },
+        {
+            "source": "Cuxe",
+            "target": "Raama",
+            "type": "parent"
+        },
+        {
+            "source": "Raama",
+            "target": "Saba_Raama",
+            "type": "parent"
+        },
+        {
+            "source": "Raama",
+            "target": "Deda",
+            "type": "parent"
+        },
+        {
+            "source": "Mizraim",
+            "target": "Ludim",
+            "type": "parent"
+        },
+        {
+            "source": "Mizraim",
+            "target": "Anamim",
+            "type": "parent"
+        },
+        {
+            "source": "Mizraim",
+            "target": "Leabim",
+            "type": "parent"
+        },
+        {
+            "source": "Mizraim",
+            "target": "Naftuim",
+            "type": "parent"
+        },
+        {
+            "source": "Mizraim",
+            "target": "Patrusim",
+            "type": "parent"
+        },
+        {
+            "source": "Mizraim",
+            "target": "Casluim",
+            "type": "parent"
+        },
+        {
+            "source": "Mizraim",
+            "target": "Caftorim",
+            "type": "parent"
+        },
+        {
+            "source": "Canaa",
+            "target": "Sidon",
+            "type": "parent"
+        },
+        {
+            "source": "Canaa",
+            "target": "Hete",
+            "type": "parent"
+        },
+        {
+            "source": "Canaa",
+            "target": "Jebuseus",
+            "type": "parent"
+        },
+        {
+            "source": "Canaa",
+            "target": "Amorreus",
+            "type": "parent"
+        },
+        {
+            "source": "Canaa",
+            "target": "Girgaseus",
+            "type": "parent"
+        },
+        {
+            "source": "Canaa",
+            "target": "Heveus",
+            "type": "parent"
+        },
+        {
+            "source": "Canaa",
+            "target": "Arqueus",
+            "type": "parent"
+        },
+        {
+            "source": "Canaa",
+            "target": "Sineus",
+            "type": "parent"
+        },
+        {
+            "source": "Canaa",
+            "target": "Arvadeus",
+            "type": "parent"
+        },
+        {
+            "source": "Canaa",
+            "target": "Zemareus",
+            "type": "parent"
+        },
+        {
+            "source": "Canaa",
+            "target": "Hamateus",
+            "type": "parent"
+        },
+        {
+            "source": "Jafe",
+            "target": "Gomer",
+            "type": "parent"
+        },
+        {
+            "source": "Jafe",
+            "target": "Javan",
+            "type": "parent"
+        },
+        {
+            "source": "Jafe",
+            "target": "Madai",
+            "type": "parent"
+        },
+        {
+            "source": "Jafe",
+            "target": "Magogue",
+            "type": "parent"
+        },
+        {
+            "source": "Gomer",
+            "target": "Asquenaz",
+            "type": "parent"
+        },
+        {
+            "source": "Gomer",
+            "target": "Rifa",
+            "type": "parent"
+        },
+        {
+            "source": "Gomer",
+            "target": "Togarma",
+            "type": "parent"
+        },
+        {
+            "source": "Javan",
+            "target": "Tarsis",
+            "type": "parent"
+        },
+        {
+            "source": "Javan",
+            "target": "Elisa",
+            "type": "parent"
+        },
+        {
+            "source": "Javan",
+            "target": "Quitim",
+            "type": "parent"
+        },
+        {
+            "source": "Javan",
+            "target": "Dodanim",
+            "type": "parent"
+        },
+        {
+            "source": "Esau",
+            "target": "Antipater_I",
+            "type": "lineage"
+        },
+        {
+            "source": "Antipater_I",
+            "target": "Herodes_Grande",
+            "type": "parent"
+        },
+        {
+            "source": "Herodes_Grande",
+            "target": "Herodes_Filipe",
+            "type": "parent"
+        },
+        {
+            "source": "Herodes_Grande",
+            "target": "Filipe_Tetrarca",
+            "type": "parent"
+        },
+        {
+            "source": "Herodes_Grande",
+            "target": "Arquelau",
+            "type": "parent"
+        },
+        {
+            "source": "Herodes_Grande",
+            "target": "Antipas",
+            "type": "parent"
+        },
+        {
+            "source": "Herodes_Grande",
+            "target": "Agripa_I",
+            "type": "lineage"
+        },
+        {
+            "source": "Herodes_Filipe",
+            "target": "Herodias",
+            "type": "spouse"
+        },
+        {
+            "source": "Agripa_I",
+            "target": "Agripa_II",
+            "type": "parent"
+        },
+        {
+            "source": "Agripa_I",
+            "target": "Drusilla",
+            "type": "parent"
+        },
+        {
+            "source": "Agripa_I",
+            "target": "Berenice",
+            "type": "parent"
+        }
+    ]
+}
