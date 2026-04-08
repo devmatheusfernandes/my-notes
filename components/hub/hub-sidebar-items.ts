@@ -59,6 +59,12 @@ export const hubSidebarStudyItems: HubSidebarItem[] = [
     tooltip: "Conversar com IA",
     icon: MessageSquareIcon,
     href: "/hub/chat",
+  },
+  {
+    label: "Perspicaz",
+    tooltip: "Perspicaz",
+    icon: BookTextIcon,
+    href: "/hub/perspicaz",
   }
 ];
 

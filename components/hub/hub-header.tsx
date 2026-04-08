@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useSidebar } from "../ui/sidebar";
-import { Menu, LogOut, Sun, Moon, Search, X } from "lucide-react";
+import { LogOut, Sun, Moon, Search, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { useAuthStore } from "@/store/authStore";
@@ -49,7 +48,7 @@ export default function Header({
   selectedTagId = null,
   setSelectedTagId,
 }: HeaderProps) {
-  const { toggleSidebar } = useSidebar();
+
   const { user } = useAuthStore();
   const pathname = usePathname();
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -75,15 +74,7 @@ export default function Header({
       <div className="w-full">
         <div className="flex flex-row items-center justify-between w-full gap-4 py-2 px-2 md:px-4">
           <div className="flex flex-row items-center gap-2">
-            <Button
-              variant="ghost"
-              className="rounded-full hover:bg-muted/50 transition-colors"
-              size="icon"
-              onClick={toggleSidebar}
-              aria-label="Abrir menu"
-            >
-              <Menu className="w-5 h-5 text-foreground/80" />
-            </Button>
+
 
             {isDesktop && showSearch && (
               <h1 className="text-xl font-bold truncate max-w-[200px] lg:max-w-xs text-foreground/90">

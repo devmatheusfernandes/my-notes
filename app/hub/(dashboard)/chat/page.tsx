@@ -25,7 +25,6 @@ import { ptBR } from "date-fns/locale";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Link from "next/link";
-import { useSidebar } from "@/components/ui/sidebar";
 import { toast } from "sonner";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
@@ -60,7 +59,7 @@ const parseDate = (date: unknown): Date => {
  */
 const preprocessMessageContent = (content: string) => {
   if (!content) return "";
-  
+
   // Fix markdown links [text](url) where url has spaces but is not wrapped in <>
   // Regex explains: find [text]( then capture until ) but only if there's a space or non-encoded char
   return content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
@@ -69,7 +68,7 @@ const preprocessMessageContent = (content: string) => {
       const innerUrl = url.substring(1, url.length - 1);
       return `[${text}](${innerUrl.replace(/ /g, '%20')})`;
     }
-    
+
     // Encode spaces in the URL
     const encodedUrl = url.replace(/ /g, '%20');
     return `[${text}](${encodedUrl})`;
@@ -94,8 +93,8 @@ const ChatMarkdownLink = ({ href, children }: MarkdownLinkProps) => {
 
   if (isVideo) {
     return (
-      <Link 
-        href={href} 
+      <Link
+        href={href}
         className={cn(baseChipClass, "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/30")}
       >
         <PlayCircle className="w-3.5 h-3.5 fill-current/10" />
@@ -106,8 +105,8 @@ const ChatMarkdownLink = ({ href, children }: MarkdownLinkProps) => {
 
   if (isNote) {
     return (
-      <Link 
-        href={href} 
+      <Link
+        href={href}
         className={cn(baseChipClass, "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/30")}
       >
         <FileText className="w-3.5 h-3.5 opacity-80" />
@@ -118,8 +117,8 @@ const ChatMarkdownLink = ({ href, children }: MarkdownLinkProps) => {
 
   if (isPub) {
     return (
-      <Link 
-        href={href} 
+      <Link
+        href={href}
         className={cn(baseChipClass, "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/30")}
       >
         <BookOpen className="w-3.5 h-3.5 opacity-80" />
@@ -129,9 +128,9 @@ const ChatMarkdownLink = ({ href, children }: MarkdownLinkProps) => {
   }
 
   return (
-    <a 
-      href={href} 
-      target={isInternal ? "_self" : "_blank"} 
+    <a
+      href={href}
+      target={isInternal ? "_self" : "_blank"}
       rel={isInternal ? "" : "noopener noreferrer"}
       className="text-blue-600 dark:text-blue-400 underline decoration-blue-500/30 hover:decoration-blue-500 transition-all inline-flex items-center gap-1"
     >
@@ -242,7 +241,6 @@ const ChatHistoryList = ({
 
 export default function ChatPage() {
   const { user } = useAuthStore();
-  const { toggleSidebar } = useSidebar();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -258,7 +256,7 @@ export default function ChatPage() {
   const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState(false);
   const [chatToDeleteId, setChatToDeleteId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"active" | "archived">("active");
-  
+
   const { settings, updateSettings } = useSettings();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -518,7 +516,7 @@ export default function ChatPage() {
                   <Label htmlFor="accuracy" className="text-base font-semibold">Mostrar Precisão da Busca</Label>
                   <p className="text-sm text-neutral-500">Exibe a percentagem de similaridade média dos resultados encontrados no banco de dados.</p>
                 </div>
-                <Checkbox 
+                <Checkbox
                   id="accuracy"
                   checked={settings?.showSearchAccuracy ?? false}
                   onCheckedChange={(checked) => {
@@ -543,14 +541,6 @@ export default function ChatPage() {
           <DrawerHeader className="border-b text-left">
             <div className="flex items-center justify-between">
               <DrawerTitle className="text-sm font-semibold flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  className="rounded-full hover:bg-muted/50 transition-colors"
-                  size="icon"
-                  onClick={toggleSidebar}
-                >
-                  <Menu className="w-5 h-5 text-foreground/80" />
-                </Button>
                 Histórico
               </DrawerTitle>
               <div className="flex items-center gap-1">
@@ -638,14 +628,6 @@ export default function ChatPage() {
       >
         <div className="h-16 px-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              className="rounded-full hover:bg-muted/50 transition-colors"
-              size="icon"
-              onClick={toggleSidebar}
-            >
-              <Menu className="w-5 h-5 text-foreground/80" />
-            </Button>
             <h2 className="font-semibold text-sm">Histórico</h2>
           </div>
           <div className="flex items-center gap-1">
@@ -765,7 +747,7 @@ export default function ChatPage() {
                         <div className="flex flex-col gap-2">
                           {settings?.showSearchAccuracy && message.accuracy !== undefined && (
                             <div className="flex items-center gap-2 mb-1">
-                              <Badge 
+                              <Badge
                                 variant={message.accuracy > 85 ? "default" : message.accuracy > 65 ? "secondary" : "destructive"}
                                 className={cn(
                                   "text-[10px] py-0 px-2 h-5 font-bold uppercase tracking-wider rounded-full flex items-center gap-1",
@@ -784,34 +766,34 @@ export default function ChatPage() {
                             </div>
                           )}
                           <div className="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none break-words text-[15px] leading-relaxed">
-                          {message.content === "" && isLoading && i === messages.length - 1 ? (
-                            <div className="flex gap-1.5 items-center py-2">
-                              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" />
-                            </div>
-                          ) : (
-                            <ReactMarkdown 
-                              remarkPlugins={[remarkGfm]}
-                              components={{
-                                a: ({ ...props }) => (
-                                  <ChatMarkdownLink href={props.href}>
-                                    {props.children}
-                                  </ChatMarkdownLink>
-                                )
-                              }}
-                            >
-                              {preprocessMessageContent(message.content)}
-                            </ReactMarkdown>
-                          )}
-                          {message.role === "model" && isLoading && i === messages.length - 1 && message.content !== "" && (
-                            <motion.span
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
-                              className="inline-block w-2.5 h-5 bg-blue-500 dark:bg-blue-400 ml-1 align-middle rounded-sm"
-                            />
-                          )}
+                            {message.content === "" && isLoading && i === messages.length - 1 ? (
+                              <div className="flex gap-1.5 items-center py-2">
+                                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" />
+                              </div>
+                            ) : (
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  a: ({ ...props }) => (
+                                    <ChatMarkdownLink href={props.href}>
+                                      {props.children}
+                                    </ChatMarkdownLink>
+                                  )
+                                }}
+                              >
+                                {preprocessMessageContent(message.content)}
+                              </ReactMarkdown>
+                            )}
+                            {message.role === "model" && isLoading && i === messages.length - 1 && message.content !== "" && (
+                              <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
+                                className="inline-block w-2.5 h-5 bg-blue-500 dark:bg-blue-400 ml-1 align-middle rounded-sm"
+                              />
+                            )}
                           </div>
                         </div>
                       )}

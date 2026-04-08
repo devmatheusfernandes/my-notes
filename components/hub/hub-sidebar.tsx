@@ -6,10 +6,12 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import {
   hubSidebarFooterItems,
@@ -20,6 +22,11 @@ import {
 export default function HubSidebar() {
   return (
     <Sidebar collapsible="icon">
+      <SidebarHeader>
+        <div className="flex items-center px-1">
+          <SidebarTrigger />
+        </div>
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
