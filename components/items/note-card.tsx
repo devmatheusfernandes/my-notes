@@ -88,7 +88,10 @@ export default function NoteCard({
   });
 
   const handleClick = (e: React.MouseEvent) => {
-    if (isSelectionActive) {
+    // Detect mobile by checking for coarse pointer (touch)
+    const isMobile = window.matchMedia("(pointer: coarse)").matches;
+
+    if (isSelectionActive && !isMobile) {
       e.preventDefault();
       e.stopPropagation();
       handleToggle();

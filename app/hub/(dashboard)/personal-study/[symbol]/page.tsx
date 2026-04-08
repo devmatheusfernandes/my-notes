@@ -26,7 +26,13 @@ export default function JwpubReaderPage() {
   const { symbol } = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { getPublication } = useJwpub();
+  const { 
+    getPublication, 
+    importFromCloud, 
+    isProcessing, 
+    downloadProgress,
+    remoteSymbols 
+  } = useJwpub();
   const { user } = useAuthStore();
   const { fetchSettings } = useSettings();
 
@@ -186,11 +192,21 @@ export default function JwpubReaderPage() {
       const parsed = publicationService.parseBibleUrl(ref.url);
       if (parsed && parsed.verses.length > 0) {
         try {
-          const res = await fetch(`/api/bible?v=NWT&b=${encodeURIComponent(parsed.book)}&c=${parsed.chapter}`);
-          if (res.ok) {
-            const data = await res.json();
+          const bibleId = `NWT-${parsed.book}-${parsed.chapter}`;
+          let data = await indexedDbService.getBibleChapter(bibleId);
+
+          if (!data) {
+            const res = await fetch(`/api/bible?v=NWT&b=${encodeURIComponent(parsed.book)}&c=${parsed.chapter}`);
+            if (res.ok) {
+              data = await res.json();
+              await indexedDbService.saveBibleChapter(bibleId, data);
+            }
+          }
+
+          if (data) {
+            const bibleData = data as { verses: { verse: number; text: string }[] };
             const versesText = parsed.verses.map(vNum => {
-              const found = data.verses.find((v: { verse: number; text: string }) => v.verse === vNum);
+              const found = bibleData.verses.find((v: { verse: number; text: string }) => v.verse === vNum);
               return found ? `<p><sup class="text-[10px] mr-1 text-primary animate-pulse">${vNum}</sup>${found.text}</p>` : "";
             }).join("");
 
@@ -223,13 +239,50 @@ export default function JwpubReaderPage() {
   if (loading) return <Loading />;
 
   if (!pub) {
+    const isRemoteAvailable = remoteSymbols.includes(symbol as string);
+
     return (
-      <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
-        <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
-          <BookOpen className="w-10 h-10 text-red-600 dark:text-red-400" />
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-6 max-w-md mx-auto">
+        <div className="w-24 h-24 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center animate-pulse">
+          <BookOpen className="w-12 h-12 text-red-600 dark:text-red-400" />
         </div>
-        <h2 className="text-2xl font-bold">Publicação não encontrada</h2>
-        <Button onClick={() => router.push("/hub/personal-study")}>Voltar para Biblioteca</Button>
+        <div className="space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight">Publicação não encontrada</h2>
+          <p className="text-muted-foreground text-sm">
+            Esta publicação não está disponível localmente no seu dispositivo.
+          </p>
+        </div>
+        
+        <div className="flex flex-col w-full gap-3">
+          {isRemoteAvailable ? (
+            <Button 
+              size="lg" 
+              className="w-full gap-2 relative overflow-hidden" 
+              disabled={isProcessing}
+              onClick={() => importFromCloud(symbol as string)}
+            >
+              {isProcessing ? (
+                <>
+                  <div 
+                    className="absolute inset-0 bg-primary-foreground/10 transition-all duration-300"
+                    style={{ width: `${downloadProgress}%` }}
+                  />
+                  <span>Baixando ({downloadProgress}%)...</span>
+                </>
+              ) : (
+                <>Baixar Publicação</>
+              )}
+            </Button>
+          ) : (
+            <div className="p-4 rounded-xl bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-900/20 text-orange-800 dark:text-orange-400 text-xs font-medium">
+              Esta publicação não foi encontrada na nuvem. Você pode subir o arquivo JWPUB na biblioteca.
+            </div>
+          )}
+          
+          <Button variant="outline" className="w-full" onClick={() => router.push("/hub/personal-study")}>
+            Voltar para Biblioteca
+          </Button>
+        </div>
       </div>
     );
   }

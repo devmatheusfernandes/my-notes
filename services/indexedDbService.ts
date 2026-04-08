@@ -4,11 +4,12 @@ const DB_NAME = "MyNotesJwpubDB";
 const DB_VERSION = 1;
 const STORE_PUBS = "publications";
 const STORE_IMAGES = "images";
+const STORE_BIBLE = "bible";
 
 export const indexedDbService = {
   async openDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      const request = indexedDB.open(DB_NAME, DB_VERSION + 1);
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
@@ -17,6 +18,9 @@ export const indexedDbService = {
         }
         if (!db.objectStoreNames.contains(STORE_IMAGES)) {
           db.createObjectStore(STORE_IMAGES, { keyPath: "id" });
+        }
+        if (!db.objectStoreNames.contains(STORE_BIBLE)) {
+          db.createObjectStore(STORE_BIBLE, { keyPath: "id" });
         }
       };
 
@@ -206,5 +210,29 @@ export const indexedDbService = {
       totalBytes: pubs.size + imagesSize,
       pubCount: pubs.count
     };
+  },
+
+  async saveBibleChapter(id: string, data: unknown): Promise<void> {
+    const db = await this.openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_BIBLE, "readwrite");
+      const store = transaction.objectStore(STORE_BIBLE);
+      const request = store.put({ id, data, updatedAt: new Date().toISOString() });
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  },
+
+  async getBibleChapter(id: string): Promise<unknown | null> {
+    const db = await this.openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_BIBLE, "readonly");
+      const store = transaction.objectStore(STORE_BIBLE);
+      const request = store.get(id);
+
+      request.onsuccess = () => resolve(request.result?.data || null);
+      request.onerror = () => reject(request.error);
+    });
   }
 };

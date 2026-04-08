@@ -3,7 +3,7 @@
   "short_name": "MyNotes",
   "description": "Seu hub de notas inteligente e conectado",
   "start_url": "/hub/items",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#ffffff",
   "theme_color": "#000000",
   "icons": [
@@ -11,7 +11,7 @@
       "src": "/icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ]
 }
