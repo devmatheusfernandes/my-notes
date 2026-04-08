@@ -69,6 +69,41 @@ export const vectorService = {
       );
     
     return results.map(r => r.sourceId);
+  },
+
+  async getRemotePublicationSymbols(userId: string) {
+    const results = await db
+      .select({ sourceId: embeddingsQueue.sourceId })
+      .from(embeddingsQueue)
+      .where(
+        and(
+          eq(embeddingsQueue.userId, userId),
+          eq(embeddingsQueue.sourceType, "publication")
+        )
+      );
+    
+    // Extract symbol: everything before the last hyphen to handle symbols with internal hyphens
+    const symbols = new Set(results.map(r => {
+      const lastHyphenIndex = r.sourceId.lastIndexOf("-");
+      return lastHyphenIndex !== -1 ? r.sourceId.substring(0, lastHyphenIndex) : r.sourceId;
+    }));
+    
+    return Array.from(symbols);
+  },
+
+  async getPublicationContent(userId: string, symbol: string) {
+    const results = await db
+      .select()
+      .from(embeddingsQueue)
+      .where(
+        and(
+          eq(embeddingsQueue.userId, userId),
+          eq(embeddingsQueue.sourceType, "publication"),
+          sql`${embeddingsQueue.sourceId} LIKE ${symbol + "-%"}`
+        )
+      );
+    
+    return results;
   }
 };
 

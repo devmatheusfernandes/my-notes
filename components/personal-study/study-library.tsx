@@ -10,7 +10,9 @@ import {
   ChevronRight,
   FileText,
   Loader2,
-  SearchX
+  SearchX,
+  CloudDownload,
+  Check
 } from "lucide-react";
 import {
   Empty,
@@ -41,6 +43,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
+import { Progress } from "@/components/ui/progress";
 
 const CATEGORIES: CategoriaPublicacao[] = [
   'Bíblias', 'Obras de referência', 'Periódicos', 'Livros', 'Anuários',
@@ -54,7 +57,16 @@ interface StudyLibraryProps {
 }
 
 export function StudyLibrary({ search, searchResults, isSearching }: StudyLibraryProps) {
-  const { publications: allPubs, isLoading: isLoadingAll, deletePublication } = useJwpub();
+  const { 
+    publications: allPubs, 
+    remoteSymbols,
+    isLoading: isLoadingAll, 
+    isProcessing,
+    processingSymbol,
+    downloadProgress,
+    deletePublication,
+    importFromCloud 
+  } = useJwpub();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
   const [pubToDelete, setPubToDelete] = useState<JwpubMetadata | null>(null);
@@ -80,15 +92,36 @@ export function StudyLibrary({ search, searchResults, isSearching }: StudyLibrar
     );
   }, [hasSearch, searchResults]);
 
-  const filteredPubs = useMemo(() => {
-    if (hasSearch || !allPubs) return [];
-    if (selectedCategories.length === 0) return allPubs;
+  const mergedPubs = useMemo(() => {
+    // Start with local publications
+    const localMap = new Map((allPubs || []).map(p => [p.symbol, { ...p, status: 'local' as 'local' | 'remote' }]));
+    
+    // Find symbols that are in Turso but NOT local
+    const remoteOnlySymbols = (remoteSymbols || []).filter(s => !localMap.has(s));
+    
+    // Create placeholder metadata for remote-only publications
+    const remoteOnlyPubs = remoteOnlySymbols.map(symbol => {
+      const info = publicacoes.find(p => p.codigo === symbol);
+      return {
+        symbol,
+        title: info?.titulo || symbol,
+        lastAccessed: new Date(0).toISOString(),
+        status: 'remote' as const,
+      };
+    });
 
-    return allPubs.filter(pub => {
+    return [...Array.from(localMap.values()), ...remoteOnlyPubs];
+  }, [allPubs, remoteSymbols]);
+
+  const filteredPubs = useMemo(() => {
+    if (hasSearch || !mergedPubs) return [];
+    if (selectedCategories.length === 0) return mergedPubs;
+
+    return mergedPubs.filter(pub => {
       const info = publicacoes.find(p => p.codigo === pub.symbol);
       return info && selectedCategories.includes(info.categoria);
     });
-  }, [allPubs, selectedCategories, hasSearch]);
+  }, [mergedPubs, selectedCategories, hasSearch]);
 
   const displayPubs = hasSearch ? [] : filteredPubs;
 
@@ -105,6 +138,12 @@ export function StudyLibrary({ search, searchResults, isSearching }: StudyLibrar
       setIsDeleteDrawerOpen(false);
       setPubToDelete(null);
     }
+  };
+
+  const handleImportCloud = async (symbol: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await importFromCloud(symbol);
   };
 
   return (
@@ -125,13 +164,13 @@ export function StudyLibrary({ search, searchResults, isSearching }: StudyLibrar
                 </div>
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
                   <BookOpen className="w-3 h-3" />
-                  {allPubs?.length || 0} publicações importadas localmente
+                  {allPubs?.length || 0} locais • {remoteSymbols?.length || 0} na nuvem
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
                 <div className="hidden sm:block text-xs font-bold text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full border border-border/40">
-                  {hasSearch ? `${flattenedMatches.length} RESULTADOS` : `${allPubs?.length || 0} DISPONÍVEIS`}
+                  {hasSearch ? `${flattenedMatches.length} RESULTADOS` : `${mergedPubs.length} DISPONÍVEIS`}
                 </div>
                 <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
                   <DrawerTrigger asChild>
@@ -250,36 +289,90 @@ export function StudyLibrary({ search, searchResults, isSearching }: StudyLibrar
                 {displayPubs.map((pub) => (
                   <motion.div
                     key={pub.symbol}
-                    className="group flex flex-col p-0 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+                    className={cn(
+                        "group flex flex-col p-0 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors",
+                        pub.status === 'remote' && "opacity-75"
+                    )}
                     variants={itemFadeInUpVariants}
                   >
                     <div className="flex items-center p-4">
-                      <Link
-                        href={`/hub/personal-study/${pub.symbol}`}
-                        className="flex-1 flex items-center gap-4 overflow-hidden"
-                      >
-                        <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-                          <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium truncate text-foreground">{pub.title}</h3>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded uppercase text-[10px] font-bold">{pub.symbol}</span>
-                            <span>•</span>
-                            <span>Acessado {formatDistanceToNow(new Date(pub.lastAccessed), { addSuffix: true, locale: ptBR })}</span>
-                          </div>
-                        </div>
-                      </Link>
+                      <div className="flex-1 flex items-center gap-4 overflow-hidden">
+                        <Link
+                            href={pub.status === 'local' ? `/hub/personal-study/${pub.symbol}` : "#"}
+                            onClick={(e) => {
+                                if (pub.status === 'remote') {
+                                    handleImportCloud(pub.symbol, e as unknown as React.MouseEvent);
+                                }
+                            }}
+                            className="flex-1 flex items-center gap-4 overflow-hidden"
+                        >
+                            <div className={cn(
+                                "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
+                                pub.status === 'local' ? "bg-blue-100 dark:bg-blue-900/30" : "bg-zinc-100 dark:bg-zinc-800"
+                            )}>
+                            <BookOpen className={cn(
+                                "w-5 h-5",
+                                pub.status === 'local' ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"
+                            )} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="font-medium truncate text-foreground">{pub.title}</h3>
+                                    {pub.status === 'local' ? (
+                                        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-tight">
+                                            <Check className="w-2.5 h-2.5" />
+                                            Salvo
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[9px] font-black uppercase tracking-tight">
+                                            <CloudDownload className="w-2.5 h-2.5" />
+                                            Na Nuvem
+                                        </span>
+                                    )}
+                                </div>
+                                {processingSymbol === pub.symbol && (
+                                    <div className="mt-2 space-y-1">
+                                        <div className="flex items-center justify-between text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase">
+                                            <span>Baixando conteúdo...</span>
+                                            <span>{downloadProgress}%</span>
+                                        </div>
+                                        <Progress value={downloadProgress} className="h-1 bg-blue-100 dark:bg-blue-900/30" />
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                    <span className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded uppercase text-[10px] font-bold">{pub.symbol}</span>
+                                    <span>•</span>
+                                    {pub.status === 'local' ? (
+                                        <span>Acessado {formatDistanceToNow(new Date(pub.lastAccessed), { addSuffix: true, locale: ptBR })}</span>
+                                    ) : (
+                                        <span>Disponível para importar</span>
+                                    )}
+                                </div>
+                            </div>
+                        </Link>
+                      </div>
 
                       <div className="flex items-center gap-2 ml-4">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
-                          onClick={(e) => handleDeleteClick(pub, e)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {pub.status === 'local' ? (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                                onClick={(e) => handleDeleteClick(pub as JwpubMetadata, e)}
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </Button>
+                        ) : (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                disabled={isProcessing}
+                                className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 h-8 w-8"
+                                onClick={(e) => handleImportCloud(pub.symbol, e)}
+                            >
+                                {processingSymbol === pub.symbol ? <Loader2 className="w-4 h-4 animate-spin" /> : <CloudDownload className="w-4 h-4" />}
+                            </Button>
+                        )}
                         <ChevronRight className="w-4 h-4 text-muted-foreground" />
                       </div>
                     </div>

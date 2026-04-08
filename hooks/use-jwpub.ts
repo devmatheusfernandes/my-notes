@@ -4,22 +4,26 @@ import { jwpubService } from "@/services/jwpubService";
 import { indexedDbService } from "@/services/indexedDbService";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import { JwpubPublication, JwpubChapter } from "@/schemas/jwpubSchema";
 
 const CACHE_KEY = "jwpub_publications";
 
 export function useJwpub() {
   const { data: symbols, mutate: mutateSymbols } = useSWR("jwpub_symbols", () => indexedDbService.listPublications());
   const { data: publications, isLoading, mutate: mutatePubs } = useSWR(CACHE_KEY, () => indexedDbService.getPublicationsMetadata());
+  const { data: remoteData, mutate: mutateRemote } = useSWR<{ symbols: string[] }>("/api/sync/publications", (url: string) => fetch(url).then(res => res.json()));
 
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingSymbol, setProcessingSymbol] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number>(0);
 
   const refresh = useCallback(() => {
     mutateSymbols();
     mutatePubs();
-  }, [mutateSymbols, mutatePubs]);
+    mutateRemote();
+  }, [mutateSymbols, mutatePubs, mutateRemote]);
 
   const uploadJwpub = useCallback(async (file: File) => {
-    setIsProcessing(true);
+    setProcessingSymbol("upload");
     try {
       const pub = await jwpubService.processFile(file);
       
@@ -43,7 +47,7 @@ export function useJwpub() {
         });
 
         if (!confirm) {
-          setIsProcessing(false);
+          setProcessingSymbol(null);
           return null;
         }
       }
@@ -93,7 +97,55 @@ export function useJwpub() {
       toast.error(message || "Falha ao processar arquivo JWPUB.");
       throw err;
     } finally {
-      setIsProcessing(false);
+      setProcessingSymbol(null);
+    }
+  }, [refresh]);
+
+  const importFromCloud = useCallback(async (symbol: string) => {
+    setProcessingSymbol(symbol);
+    setDownloadProgress(0);
+    try {
+      // 1. Get metadata/skeleton
+      const infoRes = await fetch(`/api/sync/publications/${symbol}?info=true`);
+      if (!infoRes.ok) throw new Error("Falha ao obter metadados da nuvem.");
+      const info = await infoRes.json();
+      
+      const { chapterIds, title } = info;
+      const total = chapterIds.length;
+      
+      const fullPub: JwpubPublication = {
+        symbol,
+        title,
+        chapters: [] as JwpubChapter[],
+        lastAccessed: new Date().toISOString()
+      };
+
+      const CHUNK_SIZE = 25;
+      for (let i = 0; i < chapterIds.length; i += CHUNK_SIZE) {
+        const chunkIds = chapterIds.slice(i, i + CHUNK_SIZE);
+        const chunkRes = await fetch(`/api/sync/publications/${symbol}?ids=${chunkIds.join(",")}`);
+        if (!chunkRes.ok) throw new Error("Falha ao baixar capítulos da nuvem.");
+        
+        const chunkData = await chunkRes.json();
+        fullPub.chapters.push(...chunkData.chapters);
+        
+        const progress = Math.round(((i + chunkIds.length) / total) * 100);
+        setDownloadProgress(progress);
+        
+        // Save intermediate progress to IndexedDB
+        await indexedDbService.savePublication(fullPub);
+      }
+      
+      refresh();
+      toast.success(`Publicação ${symbol} recuperada da nuvem!`);
+      return fullPub;
+    } catch (err) {
+      const message = getErrorMessage(err);
+      toast.error(message || "Falha ao baixar da nuvem.");
+      throw err;
+    } finally {
+      setProcessingSymbol(null);
+      setDownloadProgress(0);
     }
   }, [refresh]);
 
@@ -142,9 +194,13 @@ export function useJwpub() {
   return {
     symbols,
     publications,
-    isLoading,
-    isProcessing,
+    remoteSymbols: remoteData?.symbols || [],
+    isLoading: isLoading || (!remoteData && !publications),
+    isProcessing: !!processingSymbol,
+    processingSymbol,
+    downloadProgress,
     uploadJwpub,
+    importFromCloud,
     getPublication,
     deletePublication,
     refresh
