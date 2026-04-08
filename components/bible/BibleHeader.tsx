@@ -1,8 +1,7 @@
 "use client";
-import { Search, Globe, ChevronLeft, X, PanelRight, Menu } from "lucide-react";
+import { Search, Globe, ChevronLeft, X, PanelRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Button } from "../ui/button";
 
 interface BibleHeaderProps {
   version: string;

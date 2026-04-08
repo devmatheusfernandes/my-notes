@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Network, Sparkles, BookOpen, BrainCircuit } from "lucide-react";
+import { Network, BookOpen, BrainCircuit } from "lucide-react";
 import Header from "@/components/hub/hub-header";
 import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
 import { cn } from "@/lib/utils";

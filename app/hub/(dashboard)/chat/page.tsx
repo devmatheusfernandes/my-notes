@@ -12,7 +12,6 @@ import {
   MenuIcon,
   Archive,
   Trash2,
-  Menu,
   RotateCcw,
   PlayCircle,
   FileText,
@@ -261,6 +260,7 @@ export default function ChatPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isSendingRef = useRef(false);
 
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     if (messagesEndRef.current) {
@@ -301,17 +301,19 @@ export default function ChatPage() {
     }
   }, []);
 
+  // 1. Initial load and URL sync
   useEffect(() => {
     if (user) {
       loadChats();
+      
       const chatIdFromUrl = searchParams.get("id");
-      if (chatIdFromUrl) {
+      if (chatIdFromUrl && chatIdFromUrl !== currentChatId) {
         setCurrentChatId(chatIdFromUrl);
-        loadMessages(chatIdFromUrl);
       }
     }
-  }, [user, loadChats, loadMessages, searchParams]);
+  }, [user, loadChats, currentChatId, searchParams]); // Run once on user/loadChats ready or URL change
 
+  // 2. State to URL Sync
   useEffect(() => {
     const currentIdInUrl = searchParams.get("id");
     if (currentChatId !== currentIdInUrl) {
@@ -325,7 +327,12 @@ export default function ChatPage() {
     }
   }, [currentChatId, router, pathname, searchParams]);
 
+  // 3. Current Chat History Loader
   useEffect(() => {
+    // If we're already sending/streaming, we don't want to reload the messages
+    // as it would overwrite the current local state and stream.
+    if (isSendingRef.current) return;
+
     if (currentChatId) {
       loadMessages(currentChatId);
     } else {
@@ -334,8 +341,9 @@ export default function ChatPage() {
   }, [currentChatId, loadMessages]);
 
   const handleSend = async () => {
-    if (!input.trim() || !user || isLoading) return;
+    if (!input.trim() || !user || isLoading || isSendingRef.current) return;
 
+    isSendingRef.current = true;
     const userMessageText = input.trim();
     setInput("");
 
@@ -430,6 +438,7 @@ export default function ChatPage() {
       ]);
     } finally {
       setIsLoading(false);
+      isSendingRef.current = false;
     }
   };
 
