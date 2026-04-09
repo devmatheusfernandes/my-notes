@@ -4,9 +4,11 @@ import React, {
   useState,
 } from 'react'
 import { motion } from 'framer-motion'
-import { Book, Search } from 'lucide-react'
+import { Book, Search, Database } from 'lucide-react'
+import { useVectorStatus } from "@/hooks/use-vector-status";
 
 import { JwpubMetadata } from '@/schemas/jwpubSchema'
+import { cn } from '@/lib/utils';
 
 export interface PublicationListProps {
   items: JwpubMetadata[]
@@ -19,6 +21,7 @@ export interface PublicationListRef {
 
 export const PublicationList = forwardRef<PublicationListRef, PublicationListProps>((props, ref) => {
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const { isVectorized } = useVectorStatus()
 
   const selectItem = (index: number) => {
     const item = props.items[index]
@@ -102,10 +105,23 @@ export const PublicationList = forwardRef<PublicationListRef, PublicationListPro
                 <span className="text-sm font-semibold truncate leading-tight">
                   {item.title}
                 </span>
-                <span className={`text-[10px] font-medium leading-none mt-1 ${index === selectedIndex ? 'text-amber-100' : 'text-zinc-400'
-                  }`}>
-                  {item.symbol}
-                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`text-[10px] font-medium leading-none ${index === selectedIndex ? 'text-amber-100' : 'text-zinc-400'
+                    }`}>
+                    {item.symbol}
+                  </span>
+                  {isVectorized(item.symbol, "publication") && (
+                    <div className={cn(
+                      "flex items-center gap-0.5 px-1 rounded-sm text-[8px] font-black uppercase tracking-tighter",
+                      index === selectedIndex
+                        ? "bg-white/20 text-white"
+                        : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    )}>
+                      <Database className="w-2 h-2" />
+                      Vetorizado
+                    </div>
+                  )}
+                </div>
               </div>
             </button>
           ))

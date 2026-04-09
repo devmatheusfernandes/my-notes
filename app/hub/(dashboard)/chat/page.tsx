@@ -302,36 +302,33 @@ export default function ChatPage() {
     }
   }, []);
 
-  // 1. Initial load and URL sync
+  const handleChatSelect = React.useCallback((id: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (id) {
+      params.set("id", id);
+    } else {
+      params.delete("id");
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  }, [pathname, router, searchParams]);
+
+  // 1. Initial load
   useEffect(() => {
     if (user) {
       loadChats();
-      
-      const chatIdFromUrl = searchParams.get("id");
-      if (chatIdFromUrl && chatIdFromUrl !== currentChatId) {
-        setCurrentChatId(chatIdFromUrl);
-      }
     }
-  }, [user, loadChats, currentChatId, searchParams]); // Run once on user/loadChats ready or URL change
+  }, [user, loadChats]);
 
-  // 2. State to URL Sync
+  // 2. URL -> State Sync (Unidirectional)
   useEffect(() => {
-    const currentIdInUrl = searchParams.get("id");
-    if (currentChatId !== currentIdInUrl) {
-      const params = new URLSearchParams(searchParams.toString());
-      if (currentChatId) {
-        params.set("id", currentChatId);
-      } else {
-        params.delete("id");
-      }
-      router.replace(`${pathname}?${params.toString()}`);
+    const chatIdFromUrl = searchParams.get("id");
+    if (chatIdFromUrl !== currentChatId) {
+      setCurrentChatId(chatIdFromUrl);
     }
-  }, [currentChatId, router, pathname, searchParams]);
+  }, [searchParams, currentChatId]);
 
   // 3. Current Chat History Loader
   useEffect(() => {
-    // If we're already sending/streaming, we don't want to reload the messages
-    // as it would overwrite the current local state and stream.
     if (isSendingRef.current) return;
 
     if (currentChatId) {
@@ -390,7 +387,7 @@ export default function ChatPage() {
 
       const newChatId = response.headers.get("X-Chat-Id");
       if (newChatId && newChatId !== currentChatId) {
-        setCurrentChatId(newChatId);
+        handleChatSelect(newChatId);
         loadChats();
       }
 
@@ -444,7 +441,7 @@ export default function ChatPage() {
   };
 
   const startNewChat = () => {
-    setCurrentChatId(null);
+    handleChatSelect(null);
     setMessages([]);
     if (window.innerWidth < 768) setIsSidebarOpen(false);
   };
@@ -468,7 +465,7 @@ export default function ChatPage() {
       await chatService.archiveChat(chatId);
       setChats(prev => prev.map(c => c.id === chatId ? { ...c, status: "archived" } : c));
       if (currentChatId === chatId) {
-        setCurrentChatId(null);
+        handleChatSelect(null);
         setMessages([]);
       }
     } catch (error) {
@@ -498,7 +495,7 @@ export default function ChatPage() {
       await chatService.deleteChat(chatToDeleteId);
       setChats(prev => prev.filter(c => c.id !== chatToDeleteId));
       if (currentChatId === chatToDeleteId) {
-        setCurrentChatId(null);
+        handleChatSelect(null);
         setMessages([]);
       }
       setIsDeleteDrawerOpen(false);
@@ -587,12 +584,11 @@ export default function ChatPage() {
           <ChatHistoryList
             chats={chats}
             currentChatId={currentChatId}
-            setCurrentChatId={setCurrentChatId}
+            setCurrentChatId={handleChatSelect}
             handleArchiveChat={handleArchiveChat}
             handleUnarchiveChat={handleUnarchiveChat}
             handleDeleteChat={handleDeleteChat}
             viewMode={viewMode}
-            onSelect={() => setIsDrawerOpen(false)}
           />
         </DrawerContent>
       </Drawer>
@@ -676,7 +672,7 @@ export default function ChatPage() {
         <ChatHistoryList
           chats={chats}
           currentChatId={currentChatId}
-          setCurrentChatId={setCurrentChatId}
+          setCurrentChatId={handleChatSelect}
           handleArchiveChat={handleArchiveChat}
           handleUnarchiveChat={handleUnarchiveChat}
           handleDeleteChat={handleDeleteChat}

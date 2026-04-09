@@ -1,6 +1,6 @@
 import { db } from "@/lib/db/turso";
 import { embeddingsQueue } from "@/lib/db/schema";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, sql, or } from "drizzle-orm";
 
 export const vectorService = {
   async queueForEmbedding(params: {
@@ -100,6 +100,26 @@ export const vectorService = {
           eq(embeddingsQueue.userId, userId),
           eq(embeddingsQueue.sourceType, "publication"),
           sql`${embeddingsQueue.sourceId} LIKE ${symbol + "-%"}`
+        )
+      );
+    
+    return results;
+  },
+
+  async getSyncedIds(userId: string) {
+    const results = await db
+      .select({ 
+        sourceId: embeddingsQueue.sourceId,
+        sourceType: embeddingsQueue.sourceType 
+      })
+      .from(embeddingsQueue)
+      .where(
+        and(
+          or(
+            eq(embeddingsQueue.userId, userId),
+            eq(embeddingsQueue.userId, "shared")
+          ),
+          eq(embeddingsQueue.syncStatus, "synced")
         )
       );
     

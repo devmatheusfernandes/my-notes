@@ -1,12 +1,13 @@
 "use client";
 
 import { VideoData } from "@/schemas/videos";
-import { Clock, Play, BookOpen } from "lucide-react";
+import { Clock, Play, BookOpen, Database } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { HighlightedSnippet } from "./../search/highlighted-snippet";
 import { cn } from "@/lib/utils";
+import { useVectorStatus } from "@/hooks/use-vector-status";
 
 interface VideoCardProps {
   video: VideoData;
@@ -17,6 +18,8 @@ interface VideoCardProps {
 export function VideoCard({ video, searchQuery, variant = "grid" }: VideoCardProps) {
   const hasSearch = searchQuery && searchQuery.trim().length > 0;
   const isList = variant === "list";
+  const { isVectorized } = useVectorStatus();
+  const isVectorizedVideo = isVectorized(video.id, "video");
 
   return (
     <Link
@@ -57,11 +60,22 @@ export function VideoCard({ video, searchQuery, variant = "grid" }: VideoCardPro
         </div>
 
         {video.importedAsNote && (
-          <div className="absolute top-2 right-2">
+          <div className={cn(
+            "absolute top-2 right-2",
+            isVectorizedVideo && "right-8"
+          )}>
             <Badge variant="secondary" className="bg-blue-500/90 text-white border-none shadow-sm gap-1 py-0.5">
               <BookOpen className="w-3 h-3" />
               Importado
             </Badge>
+          </div>
+        )}
+
+        {isVectorizedVideo && (
+          <div className="absolute top-2 right-2">
+            <div className="flex items-center justify-center p-1.5 rounded-full bg-emerald-500/90 text-white shadow-lg border border-white/20">
+              <Database className="w-3 h-3" />
+            </div>
           </div>
         )}
       </div>

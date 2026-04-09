@@ -5,12 +5,13 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { VideoData } from "@/schemas/videos";
 import { Loading } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Play, Clock, BookOpen, ExternalLink, Share2, FileText, Check, Loader2, Zap } from "lucide-react";
+import { ChevronLeft, Play, Clock, BookOpen, ExternalLink, Share2, FileText, Check, Loader2, Zap, Database } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatVttToText, parseVttToSegments, TranscriptSegment } from "@/lib/video/video-utils";
 import { videoService } from "@/lib/video/video-service";
 import { useAuthStore } from "@/store/authStore";
 import { useNotes } from "@/hooks/use-notes";
+import { useVectorStatus } from "@/hooks/use-vector-status";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ export default function VideoPlaybackPage() {
   const searchParams = useSearchParams();
   const { user } = useAuthStore();
   const { createNote } = useNotes(user?.uid);
+  const { isVectorized } = useVectorStatus();
   const [video, setVideo] = useState<VideoData | null>(null);
   const [segments, setSegments] = useState<TranscriptSegment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -303,6 +305,12 @@ export default function VideoPlaybackPage() {
                   <Clock className="w-3 h-3 mr-1.5 inline" />
                   {video.durationFormatted}
                 </Badge>
+                {video && isVectorized(video.id, "video") && (
+                  <Badge variant="default" className="rounded-full px-3 py-1 font-medium bg-emerald-500/15 text-emerald-700 border-none">
+                    <Database className="w-3 h-3 mr-1.5 inline" />
+                    Vetorizado
+                  </Badge>
+                )}
                 {video.book && (
                   <Badge variant="outline" className="rounded-full px-3 py-1 font-medium">
                     {video.book}

@@ -18,8 +18,9 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useLongPress } from "@/hooks/use-long-press";
-import { MoreVertical, FileText, Pin, LockIcon } from "lucide-react";
+import { MoreVertical, FileText, Pin, LockIcon, Database } from "lucide-react";
 import { useNotes } from "@/hooks/use-notes";
+import { useVectorStatus } from "@/hooks/use-vector-status";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
 import { useNoteStore } from "@/store/noteStore";
@@ -56,10 +57,12 @@ export default function NoteCard({
   const { settings, fetchSettings } = useSettings();
   const { unlockedNotes, lockNote } = useNoteStore();
   const [isDeleting] = useState(false);
+  const { isVectorized } = useVectorStatus();
 
   const isSelected = selectedNoteIds.has(note.id);
   const isUnlockedInSession = unlockedNotes.has(note.id);
   const isMasked = note.isLocked && !isUnlockedInSession;
+  const isVectorizedNote = isVectorized(note.id, "note");
   const hasRealTitle = note.title && note.title.trim() !== "" && note.title !== "Nota nova";
   const metadata = useMemo(() => extractNoteMetadata(note), [note]);
 
@@ -258,11 +261,16 @@ export default function NoteCard({
             )}
 
             {/* Pin Overlay (Corner) */}
-            {note.pinned && (
-              <div className="absolute top-2 right-2 z-20 pointer-events-none">
+            <div className="absolute bottom-2 right-2 z-20 pointer-events-none flex flex-col items-center gap-1.5 pt-1">
+              {note.pinned && (
                 <Pin className="h-3.5 w-3.5 text-primary/70 fill-primary/10" />
-              </div>
-            )}
+              )}
+              {isVectorizedNote && (
+                <div className="flex items-center justify-center h-5 w-5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 shadow-sm animate-in fade-in zoom-in duration-300">
+                  <Database className="h-2.5 w-2.5" />
+                </div>
+              )}
+            </div>
 
             {/* Content Area */}
             <div className="flex flex-col p-4 pt-4 flex-1 relative min-h-0">

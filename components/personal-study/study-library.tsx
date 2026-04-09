@@ -12,7 +12,8 @@ import {
   Loader2,
   SearchX,
   CloudDownload,
-  Check
+  Check,
+  Database
 } from "lucide-react";
 import {
   Empty,
@@ -44,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
 import { Progress } from "@/components/ui/progress";
+import { useVectorStatus } from "@/hooks/use-vector-status";
 
 const CATEGORIES: CategoriaPublicacao[] = [
   'Bíblias', 'Obras de referência', 'Periódicos', 'Livros', 'Anuários',
@@ -71,6 +73,8 @@ export function StudyLibrary({ search, searchResults, isSearching }: StudyLibrar
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
   const [pubToDelete, setPubToDelete] = useState<JwpubMetadata | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  const { isVectorized } = useVectorStatus();
 
   const hasSearch = search.trim().length > 0;
   const [visibleSearchCount, setVisibleSearchCount] = useState(9);
@@ -327,6 +331,12 @@ export function StudyLibrary({ search, searchResults, isSearching }: StudyLibrar
                                         <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[9px] font-black uppercase tracking-tight">
                                             <CloudDownload className="w-2.5 h-2.5" />
                                             Na Nuvem
+                                        </span>
+                                    )}
+                                    {isVectorized(pub.symbol, "publication") && (
+                                        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-tight">
+                                            <Database className="w-2.5 h-2.5" />
+                                            Vetorizado
                                         </span>
                                     )}
                                 </div>
