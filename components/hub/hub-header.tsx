@@ -77,7 +77,7 @@ export default function Header({
           <div className="flex flex-row items-center gap-2">
             {isMobile && <SidebarTrigger className="md:hidden" />}
 
-            {isDesktop && showSearch && (
+            {isDesktop && (
               <h1 className="text-xl font-bold truncate max-w-[200px] lg:max-w-xs text-foreground/90">
                 {getPageTitle(pathname)}
               </h1>
@@ -87,7 +87,7 @@ export default function Header({
           <div className="flex-grow flex justify-center items-center relative h-10 overflow-hidden">
             <AnimatePresence mode="wait">
               {!showSearch ? (
-                isScrolled && (
+                (isMobile || isScrolled) && (
                   <motion.h1
                     key="central-title"
                     initial={{ opacity: 0, y: 10 }}

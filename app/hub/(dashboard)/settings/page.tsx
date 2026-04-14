@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { settingsService } from "@/services/settingsService";
 import { hasWebAuthn, isValidPin } from "@/lib/utils";
-import { pageContainerVariants, itemFadeInUpVariants } from "@/lib/animations";
+import { itemFadeInUpVariants } from "@/lib/animations";
 import { Loading } from "@/components/ui/loading";
 import { StorageWidget } from "@/components/hub/storage-widget";
 import { useBackup } from "@/hooks/use-backup";
@@ -321,26 +321,14 @@ export default function SettingsPage() {
 
   return (
     <>
-      <Header showBreadcrumb={false} scrollSearch={false} showSearch={false} />
-      <motion.main
-        className="page-container"
-        variants={pageContainerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        <motion.div variants={itemFadeInUpVariants} className="mb-8">
-          <h1 className="page-title">
-            Configurações
-          </h1>
-          <p className="page-description">
-            Gerencie suas preferências de aparência, segurança e dados.
-          </p>
-        </motion.div>
-
+      <Header showSearch={false} />
+      <div className="flex flex-col h-full w-full overflow-hidden bg-background px-6">
         {/* Tabs Navigation */}
         <motion.div
           variants={itemFadeInUpVariants}
-          className="flex flex-wrap items-center gap-2 mb-8 p-1 rounded-2xl bg-accent/5 overflow-x-auto no-scrollbar"
+          initial="hidden"
+          animate="visible"
+          className="flex flex-wrap items-center justify-center gap-2 mb-8 p-1 rounded-2xl bg-accent/5 overflow-x-auto no-scrollbar"
         >
           {TABS.map((tab) => {
             const Icon = tab.icon;
@@ -364,7 +352,7 @@ export default function SettingsPage() {
           })}
         </motion.div>
 
-        <div className="min-h-[400px]">
+        <main className="flex-1 overflow-y-auto pb-20 no-scrollbar">
           <AnimatePresence mode="wait">
             {activeTab === "appearance" && (
               <motion.div
@@ -696,8 +684,8 @@ export default function SettingsPage() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-      </motion.main>
+        </main>
+      </div>
 
       <Drawer open={isImportDrawerOpen} onOpenChange={setIsImportDrawerOpen}>
         <DrawerContent className="max-w-md mx-auto">
@@ -723,7 +711,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-3">
-                <div 
+                <div
                   className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-accent/5 transition-colors cursor-pointer"
                   onClick={() => setImportOptions(prev => ({ ...prev, folders: !prev.folders }))}
                 >
@@ -731,13 +719,13 @@ export default function SettingsPage() {
                     <span className="text-sm font-medium">Pastas (Folders)</span>
                     <span className="text-xs text-muted-foreground">Importar vínculo com pastas.</span>
                   </div>
-                  <Checkbox 
-                    checked={importOptions.folders} 
-                    onCheckedChange={(checked) => setImportOptions(prev => ({ ...prev, folders: !!checked }))} 
+                  <Checkbox
+                    checked={importOptions.folders}
+                    onCheckedChange={(checked) => setImportOptions(prev => ({ ...prev, folders: !!checked }))}
                   />
                 </div>
 
-                <div 
+                <div
                   className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-accent/5 transition-colors cursor-pointer"
                   onClick={() => setImportOptions(prev => ({ ...prev, tags: !prev.tags }))}
                 >
@@ -745,13 +733,13 @@ export default function SettingsPage() {
                     <span className="text-sm font-medium">Tags</span>
                     <span className="text-xs text-muted-foreground">Importar etiquetas associadas.</span>
                   </div>
-                  <Checkbox 
-                    checked={importOptions.tags} 
-                    onCheckedChange={(checked) => setImportOptions(prev => ({ ...prev, tags: !!checked }))} 
+                  <Checkbox
+                    checked={importOptions.tags}
+                    onCheckedChange={(checked) => setImportOptions(prev => ({ ...prev, tags: !!checked }))}
                   />
                 </div>
 
-                <div 
+                <div
                   className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-accent/5 transition-colors cursor-pointer"
                   onClick={() => setImportOptions(prev => ({ ...prev, isLocked: !prev.isLocked }))}
                 >
@@ -759,13 +747,13 @@ export default function SettingsPage() {
                     <span className="text-sm font-medium">Segurança (Cadeado)</span>
                     <span className="text-xs text-muted-foreground">Manter notas bloqueadas se estiverem no arquivo.</span>
                   </div>
-                  <Checkbox 
-                    checked={importOptions.isLocked} 
-                    onCheckedChange={(checked) => setImportOptions(prev => ({ ...prev, isLocked: !!checked }))} 
+                  <Checkbox
+                    checked={importOptions.isLocked}
+                    onCheckedChange={(checked) => setImportOptions(prev => ({ ...prev, isLocked: !!checked }))}
                   />
                 </div>
 
-                <div 
+                <div
                   className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-accent/5 transition-colors cursor-pointer"
                   onClick={() => setImportOptions(prev => ({ ...prev, pinned: !prev.pinned }))}
                 >
@@ -773,9 +761,9 @@ export default function SettingsPage() {
                     <span className="text-sm font-medium">Fixar (Pinned)</span>
                     <span className="text-xs text-muted-foreground">Importar status de favorita/fixada.</span>
                   </div>
-                  <Checkbox 
-                    checked={importOptions.pinned} 
-                    onCheckedChange={(checked) => setImportOptions(prev => ({ ...prev, pinned: !!checked }))} 
+                  <Checkbox
+                    checked={importOptions.pinned}
+                    onCheckedChange={(checked) => setImportOptions(prev => ({ ...prev, pinned: !!checked }))}
                   />
                 </div>
               </div>

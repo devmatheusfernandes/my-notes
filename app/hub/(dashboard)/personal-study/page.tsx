@@ -18,7 +18,7 @@ export default function PersonalStudyPage() {
         scrollSearch
         searchQuery={search}
         setSearchQuery={setSearch}
-        showSearch={true}
+        showSearch={false}
       />
 
       <div className="page-container hidden md:flex flex-col md:flex-row lg:flex-row gap-8">

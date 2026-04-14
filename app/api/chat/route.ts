@@ -12,7 +12,7 @@ const google = createGoogleGenerativeAI({
 
 export async function POST(req: Request) {
   try {
-    const { messages, chatId: existingChatId } = await req.json();
+    const { messages, chatId: existingChatId, sourceTypes } = await req.json();
     const lastMessage = messages[messages.length - 1]?.content;
 
     if (!lastMessage) {
@@ -38,24 +38,28 @@ export async function POST(req: Request) {
     }
 
     // 2. RAG: Search for context
-    const searchResults = await searchService.semanticSearch(lastMessage, userId, 3);
+    const searchResults = await searchService.semanticSearch(lastMessage, userId, 3, sourceTypes);
 
     // Filter IDs by type for batch fetching
     const noteIds = [...new Set(searchResults.filter(r => r.sourceType === "note").map(r => r.sourceId))];
     const videoIds = [...new Set(searchResults.filter(r => r.sourceType === "video").map(r => r.sourceId))];
+    const letterIds = [...new Set(searchResults.filter(r => r.sourceType === "letter").map(r => r.sourceId))];
 
     // Batch fetch from Firestore
     const noteRefs = noteIds.map(id => adminDb.collection("notes").doc(id));
     const videoRefs = videoIds.map(id => adminDb.collection("videos").doc(id));
+    const letterRefs = letterIds.map(id => adminDb.collection("letters").doc(id));
 
-    const [noteDocs, videoDocs] = await Promise.all([
+    const [noteDocs, videoDocs, letterDocs] = await Promise.all([
       noteRefs.length > 0 ? adminDb.getAll(...noteRefs) : Promise.resolve([]),
       videoRefs.length > 0 ? adminDb.getAll(...videoRefs) : Promise.resolve([]),
+      letterRefs.length > 0 ? adminDb.getAll(...letterRefs) : Promise.resolve([]),
     ]);
 
     // Create maps for quick lookup
     const noteMap = new Map(noteDocs.map(d => [d.id, d.data()]));
     const videoMap = new Map(videoDocs.map(d => [d.id, d.data()]));
+    const letterMap = new Map(letterDocs.map(d => [d.id, d.data()]));
 
     // 2.1 Prepare context parts using batch-fetched data
     const contextParts = searchResults.map((res) => {
@@ -75,6 +79,10 @@ export async function POST(req: Request) {
         const data = videoMap.get(id);
         title = data?.title || "Vídeo Sem Título";
         url = `/hub/personal-study/video/${id}`;
+      } else if (res.sourceType === "letter") {
+        const data = letterMap.get(id);
+        title = data?.title || "Carta Sem Título";
+        url = `/hub/letters?id=${id}`;
       }
 
       return `### FONTE: ${title}\nURL: ${url}\nCONTEÚDO PARA REFERÊNCIA:\n"""\n${res.content.substring(0, 4000)}${res.content.length > 4000 ? '... [Conteúdo truncado]' : ''}\n"""`;
@@ -83,7 +91,7 @@ export async function POST(req: Request) {
     const context = contextParts.join("\n\n---\n\n");
 
     // 3. Prepare AI Prompt
-    const systemInstruction = `Você é um assistente pessoal inteligente. Seu objetivo é ajudar o usuário com base exclusivamente em suas próprias notas, vídeos e publicações.
+    const systemInstruction = `Você é um assistente pessoal inteligente. Seu objetivo é ajudar o usuário com base exclusivamente em suas próprias notas, vídeos, publicações e cartas temporárias.
 
 DIRETRIZES DE RESPOSTA:
 1. **POLIDEZ**: Você pode ser amigável e responder saudações de forma natural.

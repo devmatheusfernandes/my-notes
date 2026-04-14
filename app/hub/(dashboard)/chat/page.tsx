@@ -256,6 +256,7 @@ export default function ChatPage() {
   const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState(false);
   const [chatToDeleteId, setChatToDeleteId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"active" | "archived">("active");
+  const [selectedSources, setSelectedSources] = useState<string[]>(["note", "video", "publication", "letter"]);
 
   const { settings, updateSettings } = useSettings();
 
@@ -370,7 +371,8 @@ export default function ChatPage() {
             content: m.content
           })),
           chatId: currentChatId,
-          userId: user.uid
+          userId: user.uid,
+          sourceTypes: selectedSources
         }),
       });
 
@@ -532,12 +534,48 @@ export default function ChatPage() {
                   className="h-6 w-6 rounded-md"
                 />
               </div>
-            </div>
 
-            <div className="pt-2 pb-6">
-              <DrawerClose asChild>
-                <Button variant="outline" className="w-full h-12 rounded-xl">Fechar</Button>
-              </DrawerClose>
+              <div className="space-y-4 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
+                <div className="space-y-0.5 mb-2">
+                  <Label className="text-base font-semibold">Fontes de Conhecimento</Label>
+                  <p className="text-sm text-neutral-500">Escolha quais fontes a IA deve consultar para responder.</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { id: "note", label: "Notas", icon: <FileText className="w-4 h-4 text-amber-500" /> },
+                    { id: "video", label: "Vídeos", icon: <PlayCircle className="w-4 h-4 text-blue-500" /> },
+                    { id: "publication", label: "Publicações", icon: <BookOpen className="w-4 h-4 text-emerald-500" /> },
+                    { id: "letter", label: "Cartas", icon: <BotIcon className="w-4 h-4 text-purple-500" /> },
+                  ].map((source) => (
+                    <div key={source.id} className="flex items-center gap-3">
+                      <Checkbox
+                        id={`source-${source.id}`}
+                        checked={selectedSources.includes(source.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedSources(prev => [...prev, source.id]);
+                          } else {
+                            if (selectedSources.length > 1) {
+                              setSelectedSources(prev => prev.filter(s => s !== source.id));
+                            } else {
+                              toast.error("Selecione pelo menos uma fonte.");
+                            }
+                          }
+                        }}
+                        className="h-5 w-5 rounded-md"
+                      />
+                      <label
+                        htmlFor={`source-${source.id}`}
+                        className="text-sm font-medium flex items-center gap-2 cursor-pointer"
+                      >
+                        {source.icon}
+                        {source.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </DrawerContent>

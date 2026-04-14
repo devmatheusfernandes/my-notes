@@ -21,7 +21,7 @@ import {
 
 export default function HubSidebar() {
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center px-1">
           <SidebarTrigger />

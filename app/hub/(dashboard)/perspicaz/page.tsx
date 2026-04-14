@@ -33,8 +33,6 @@ function FeatureCard({ title, description, href, icon: Icon, disabled = false }:
                 </div>
             </div>
 
-            {/* Subtle bottom accent line */}
-            <div className="absolute bottom-0 left-0 h-1 w-0 bg-gradient-to-r from-primary/50 to-transparent transition-all duration-500 group-hover:w-full" />
         </div>
     );
 
@@ -80,35 +78,22 @@ export default function PerspicazPage() {
     ];
 
     return (
-        <div className="flex flex-col min-h-screen">
-            <Header
-                showSearch={false}
-                showBreadcrumb={false}
-            />
+        <>
+            <Header showSearch={false} />
 
-            <motion.main
-                className="page-container"
-                variants={pageContainerVariants}
-                initial="hidden"
-                animate="visible"
-            >
-                <div className="flex flex-col gap-8">
-                    <motion.div variants={itemFadeInUpVariants} className="space-y-4">
-                        <h1 className="page-title">
-                            Perspicaz
-                        </h1>
-                        <p className="page-description">
-                            Expanda sua compreensão através de visualizações avançadas e processamento inteligente de informações.
-                        </p>
-                    </motion.div>
+            <div className="flex flex-col h-full w-full overflow-hidden bg-background px-6 pt-6">
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-                        {features.map((feature, index) => (
-                            <FeatureCard key={index} {...feature} />
-                        ))}
-                    </div>
-                </div>
-            </motion.main>
-        </div>
+                <motion.div
+                    variants={pageContainerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                >
+                    {features.map((feature, index) => (
+                        <FeatureCard key={index} {...feature} />
+                    ))}
+                </motion.div>
+            </div>
+        </>
     );
 }

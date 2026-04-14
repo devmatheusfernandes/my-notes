@@ -138,6 +138,13 @@ service cloud.firestore {
       }
     }
 
+    // Coleção de Cartas Temporárias
+    match /letters/{letterId} {
+      allow read, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId) && isOwner(request.resource.data.userId);
+    }
+
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;

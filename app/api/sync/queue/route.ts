@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     interface EmbeddingItem {
       userId: string;
       sourceId: string;
-      sourceType: "note" | "video";
+      sourceType: "note" | "video" | "letter";
       content: string;
     }
 

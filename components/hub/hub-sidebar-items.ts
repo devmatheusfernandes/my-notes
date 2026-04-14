@@ -4,7 +4,7 @@ import { DeleteIcon } from "../ui/delete";
 import { SettingsIcon } from "../icon-animated/settings";
 import { GraduationCapIcon } from "../icon-animated/graduation-cap";
 import { BookTextIcon } from "../icon-animated/book-text";
-import { MessageSquareIcon, Share2Icon } from "lucide-react";
+import { MessageSquareIcon, Paperclip, Pencil, Share2Icon } from "lucide-react";
 
 
 export type HubSidebarItem = {
@@ -57,8 +57,14 @@ export const hubSidebarStudyItems: HubSidebarItem[] = [
   {
     label: "Perspicaz",
     tooltip: "Perspicaz",
-    icon: BookTextIcon,
+    icon: Pencil,
     href: "/hub/perspicaz",
+  },
+  {
+    label: "Cartas",
+    tooltip: "Cartas",
+    icon: Paperclip,
+    href: "/hub/letters",
   },
   {
     label: "Chat",

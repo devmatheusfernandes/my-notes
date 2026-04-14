@@ -9,8 +9,10 @@ export const getPageTitle = (pathname: string) => {
   if (pathname.includes("/personal-study")) return "Estudo Pessoal";
   if (pathname.includes("/items")) return "Notas";
   if (pathname.includes("/archived")) return "Arquivadas";
+  if (pathname.includes("/letters")) return "Cartas";
   if (pathname.includes("/trash")) return "Lixeira";
   if (pathname.includes("/settings")) return "Configurações";
+  if (pathname.includes("/perspicaz")) return "Perspicaz";
   return "My Notes";
 };
 

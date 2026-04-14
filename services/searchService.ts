@@ -1,13 +1,13 @@
 import { db } from "@/lib/db/turso";
 import { embeddingsQueue } from "@/lib/db/schema";
-import { eq, and, or, sql } from "drizzle-orm";
+import { eq, and, or, sql, inArray } from "drizzle-orm";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
 
 export const searchService = {
-  async semanticSearch(queryText: string, userId: string, limit: number = 20) {
+  async semanticSearch(queryText: string, userId: string, limit: number = 20, sourceTypes?: string[]) {
     // 1. Generate embedding for the query
     const result = await model.embedContent(queryText);
     const embeddingArray = result.embedding.values;
@@ -34,7 +34,8 @@ export const searchService = {
           or(
             eq(embeddingsQueue.userId, userId),
             eq(embeddingsQueue.userId, 'shared')
-          )
+          ),
+          sourceTypes && sourceTypes.length > 0 ? inArray(embeddingsQueue.sourceType, sourceTypes as ("note" | "video" | "publication" | "letter")[]) : undefined
         )
       )
       .orderBy(sql`vector_distance_cos(${embeddingsQueue.embedding}, ${buffer}) ASC`)

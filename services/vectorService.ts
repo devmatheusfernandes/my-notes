@@ -6,7 +6,7 @@ export const vectorService = {
   async queueForEmbedding(params: {
     userId: string;
     sourceId: string;
-    sourceType: "note" | "video";
+    sourceType: "note" | "video" | "letter";
     content: string;
   }) {
     const { userId, sourceId, sourceType, content } = params;
@@ -32,7 +32,7 @@ export const vectorService = {
   async queueMany(items: {
     userId: string;
     sourceId: string;
-    sourceType: "note" | "video" | "publication";
+    sourceType: "note" | "video" | "publication" | "letter";
     content: string;
   }[]) {
     if (items.length === 0) return;
@@ -56,7 +56,7 @@ export const vectorService = {
     });
   },
 
-  async getExistingSourceIdsByPrefix(userId: string, prefix: string, sourceType: "note" | "video" | "publication") {
+  async getExistingSourceIdsByPrefix(userId: string, prefix: string, sourceType: "note" | "video" | "publication" | "letter") {
     const results = await db
       .select({ sourceId: embeddingsQueue.sourceId })
       .from(embeddingsQueue)
